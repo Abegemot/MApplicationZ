@@ -36,7 +36,7 @@ import java.util.*
 
  @Model
 class KArticles(var articles: List<KArticle>)
-val KA = KArticles(listOf(KArticle("uni", "deri", "cateri")))
+val KA = KArticles(listOf(KArticle("uni", "deri", "cateriddd")))
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
