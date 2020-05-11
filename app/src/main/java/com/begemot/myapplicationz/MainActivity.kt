@@ -159,10 +159,9 @@ fun drawHeadlines(
 ) {
     val original=state{true}
     AdapterList(data = loriginalTransLink) {
-        Card(shape = RoundedCornerShape(8.dp),elevation = 7.dp, modifier = Modifier.fillMaxHeight() + Modifier.padding(2.dp) ){
+        Card(shape = RoundedCornerShape(8.dp),elevation = 7.dp, modifier = Modifier.fillMaxHeight() + Modifier.padding(2.dp) )  {
             Column() {
                 val bplaytext=state{false}
-
                         Clickable(onClick = {original.value=true; bplaytext.value=true  }) {
                             KText2(txt = it.kArticle.title, size = statusApp.fontSize)
                         }
