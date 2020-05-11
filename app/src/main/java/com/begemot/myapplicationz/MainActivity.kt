@@ -22,6 +22,7 @@ import androidx.ui.material.icons.filled.Settings
 import androidx.ui.tooling.preview.Preview
 import androidx.ui.unit.dp
 import com.begemot.kclib.*
+import com.begemot.myapplicationz.StatusApp.currentStatus
 import io.grpc.myproto.Word
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -32,11 +33,6 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.net.URLEncoder
 import java.util.*
-
-
- @Model
-class KArticles(var articles: List<KArticle>)
-val KA = KArticles(listOf(KArticle("uni", "deri", "cateriddd")))
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,7 +48,6 @@ class MainActivity : AppCompatActivity() {
 sealed class Screens {
     class ListHeadlines : Screens()
     class FullArticle(val originalTransLink: OriginalTransLink) : Screens()
-//    class HeadLine(val article: KArticle) : Screens()
 }
 
 sealed class AppStatus {
@@ -76,14 +71,12 @@ object StatusApp {
 
 @Composable
 fun LoginUi() {
-    onActive { search(StatusApp) }
     val s = Word.newBuilder()
         .setId(10)
         .setRomanized("ZZTOPwwwwwy")
         .build()
     val kt = state { kTheme.DARK }
     val selectLang = state { false }
-    //val currentLang = state { "es" }
     MaterialTheme(colors = kt.value.theme) {
         Column() {
             TopAppBar(
@@ -104,9 +97,8 @@ fun LoginUi() {
             Surface() {
                 val s = StatusApp.currentScreen
                 when (s) {
-                    is Screens.ListHeadlines -> listArticles(StatusApp)
-                    is Screens.FullArticle -> viewLink(s.originalTransLink, StatusApp)
-                    //is Screens.HeadLine -> viewShort(s.article,StatusApp)
+                    is Screens.ListHeadlines -> headlinesScreen(StatusApp)
+                    is Screens.FullArticle -> articleScreen(s.originalTransLink, StatusApp)
                 }
             }
        }
@@ -116,41 +108,57 @@ fun LoginUi() {
  @Composable
  fun title(statusApp: StatusApp){
      Column() {
-         Text(text = " RT novesti ${prefs.fontSize}  ${prefs.kLang}")
+         Text(text = "RT novesti")
          val currScreen=statusApp.currentScreen
          val sAux=when(currScreen){
-             is Screens.FullArticle->"Full Article"
-           //  is Screens.HeadLine->"Head Line"
-             is Screens.ListHeadlines->"List of Headlines"
+             is Screens.FullArticle->" Article"
+             is Screens.ListHeadlines->" Headlines"
          }
          Text(" $sAux")
      }
  }
 
 
-
-
-
 @Composable
-fun listArticles(statusApp: StatusApp) {
-    val lArticles=state{ listOf<OriginalTransLink>()}
+fun headlinesScreen(statusApp: StatusApp) {
+    val lHeadlines = state{ listOf<OriginalTransLink>()}
     onCommit(statusApp.lang){
-        getLTransArticles(lArticles,statusApp)
+        getLTransArticles(lHeadlines,statusApp)
     }
     Box {
-        if (statusApp.currentStatus is AppStatus.Loading) {
-            Box(modifier = Modifier.fillMaxSize(),gravity = Alignment.Center,backgroundColor = Color.Transparent  ) {
-                CircularProgressIndicator()
+        val status=statusApp.currentStatus
+        when(status){
+            is AppStatus.Loading-> waiting()
+            is AppStatus.Error->displayError(status.sError)
+            is AppStatus.Idle->{
+                AdapterList(data = lHeadlines.value) {
+                    drawHeadline(it, statusApp)
+                }
             }
-        } else
-        AdapterList(data = lArticles.value) {
-            drawArticle(it, statusApp)
         }
     }
 }
 
 @Composable
-fun drawArticle(
+ fun waiting(){
+   Box(modifier = Modifier.fillMaxSize(),gravity = Alignment.Center,backgroundColor = Color.Transparent  ) {
+       CircularProgressIndicator()
+   }
+}
+
+@Composable
+   fun displayError(sError:String){
+       VerticalScroller() {
+           Box(border = Border(2.dp, Color.Blue)) {
+               Text("Error : $sError}")
+           }
+       }
+   }
+
+
+
+@Composable
+fun drawHeadline(
     originalTransLink: OriginalTransLink,
     statusApp: StatusApp
 ) {
@@ -158,18 +166,14 @@ fun drawArticle(
     {
         Column() {
             Clickable(onClick = { }) {
-           // Clickable(onClick = { currItem.value = it;viewShort.value = true }) {
                 Column() {
-                    KText2(txt=originalTransLink.kArticle.title,size = statusApp.fontSize)
-                    KText2(txt=originalTransLink.translated,size = statusApp.fontSize)
-                    if (originalTransLink.kArticle.desc.length > 0) KText2(txt = originalTransLink.kArticle.desc,size = statusApp.fontSize)
-                }
+                KText2(txt=originalTransLink.kArticle.title,size = statusApp.fontSize)
+                KText2(txt=originalTransLink.translated,size = statusApp.fontSize)
+              }
             }
-            //Box(modifier = Modifier.fillMaxWidth(),gravity = Alignment.TopEnd) {
-             Row(horizontalArrangement = Arrangement.End,modifier = Modifier.fillMaxWidth() ){
+            Row(horizontalArrangement = Arrangement.End,modifier = Modifier.fillMaxWidth() ){
                  Clickable(onClick = { statusApp.currentScreen=Screens.FullArticle(originalTransLink)  }) {
-                 //Clickable(onClick = { viewLink.value = true; currItem.value = it }) {
-                         KTextLink(txt = "-->LINK  ")
+                     KTextLink(txt = "-->LINK  ")
                 }
             }
         }
@@ -178,60 +182,46 @@ fun drawArticle(
 
 
 @Composable
-fun viewLink(originalTransLink: OriginalTransLink, statusApp: StatusApp) {
-    val trans3 = state { LOriginalTrans() }
+fun articleScreen(originalTransLink: OriginalTransLink, statusApp: StatusApp) {
+    val trans3 = state { mutableListOf<OriginalTrans>() }
     onCommit(statusApp.lang) {
         getTranslationLink(originalTransLink, trans3, statusApp)
     }
-
     Box() {
         when(statusApp.currentStatus){
-            is AppStatus.Loading -> {Box(modifier = Modifier.fillMaxSize(),gravity = Alignment.Center,backgroundColor = Color.Transparent  ) {
-                CircularProgressIndicator()
-            } }
+            is AppStatus.Loading -> waiting()
             is AppStatus.Idle->drawListOriginalTranslated(originalTransLink,loriginalTranslate = trans3.value,statusApp = statusApp)
-            is AppStatus.Error->{
-                VerticalScroller() {
+            is AppStatus.Error-> displayError(sError = (statusApp.currentStatus as AppStatus.Error).sError)
+               /* VerticalScroller() {
                     Box(border = Border(2.dp, Color.Blue)) {
                         Text("Error view Link ${(statusApp.currentStatus as AppStatus.Error).sError}")
                     }
                 }
-            }
+            }*/
         }
     }
-    /*KWindow() {
-        drawListOriginalTranslated(loriginalTranslate = trans3.value)
-
-    }*/
 }
 
 @Composable
-fun drawListOriginalTranslated(originalTransLink: OriginalTransLink,loriginalTranslate:LOriginalTrans,statusApp: StatusApp){
+fun drawListOriginalTranslated(originalTransLink: OriginalTransLink,loriginalTranslate:MutableList<OriginalTrans>,statusApp: StatusApp){
     KWindow() {
-
-
-      //  KText2(txt = originalTransLink.kArticle.title)
-      //  KText2(txt = originalTransLink.translated)
-        //KText2(txt = article.)
-       // loriginalTranslate.lOriginalTrans.add(0, OriginalTrans(originalTransLink.kArticle.title,originalTransLink.translated))
-        AdapterList(data = loriginalTranslate.lOriginalTrans) {
-        Card(shape= RoundedCornerShape(8.dp),elevation = 7.dp, modifier = Modifier.fillMaxHeight()+ Modifier.padding(2.dp)+ Modifier.fillMaxWidth()) {
-            Column() {
-                val bplaytext=state{false}
-                Clickable(onClick ={bplaytext.value=true} ) {
-                    KText2(it.original,size = statusApp.fontSize)
+        AdapterList(data = loriginalTranslate) {
+            Card(shape= RoundedCornerShape(8.dp),elevation = 7.dp, modifier = Modifier.fillMaxHeight()+ Modifier.padding(2.dp)+ Modifier.fillMaxWidth()) {
+                Column() {
+                    val bplaytext=state{false}
+                    Clickable(onClick ={bplaytext.value=true} ) {
+                        KText2(it.original,size = statusApp.fontSize)
+                    }
+                    KText2(it.translated,size = statusApp.fontSize)
+                    if(bplaytext.value) playText(bplaytext,it.original,statusApp)
                 }
-
-                KText2(it.translated,size = statusApp.fontSize)
-                if(bplaytext.value) playText(bplaytext,it.original)
             }
         }
-    }
     }
 }
 
  @Composable
- fun playText(bplayText:MutableState<Boolean>,txt:String){
+ fun playText(bplayText:MutableState<Boolean>,txt:String,statusApp: StatusApp){
      val context = ContextAmbient.current
     lateinit var t1:TextToSpeech
      t1 = TextToSpeech(
@@ -242,8 +232,9 @@ fun drawListOriginalTranslated(originalTransLink: OriginalTransLink,loriginalTra
              }
          })
      Dialog(onCloseRequest = {t1.shutdown(); bplayText.value=false}){
-         Box(modifier = Modifier.fillMaxWidth(),backgroundColor = Color.Green){
-             Text("HOLA NENG $txt")
+         //Box(modifier = Modifier.fillMaxWidth(),backgroundColor = Color.Green){
+         KWindow() {
+             KText2(txt,size = statusApp.fontSize)
              Button(onClick = {t1.speak(txt,TextToSpeech.QUEUE_FLUSH,null)}) {
                  Text("talk")
              }
@@ -303,25 +294,6 @@ fun selectLanguage(selectLang: MutableState<Boolean>, statusApp: StatusApp) {
 data class KArticle(val title: String = "", val link: String = "", val desc: String = "")
 data class OriginalTransLink(val kArticle: KArticle,val translated: String)
 data class OriginalTrans(val original:String="",val translated:String="")
-data class LOriginalTrans(val lOriginalTrans:MutableList<OriginalTrans> = mutableListOf<OriginalTrans>())
-
-/*@Composable
-fun viewShort(article: KArticle,  statusApp: StatusApp) {
-    val trans3 = state { LOriginalTrans() }
-    onCommit(statusApp.lang) { getTranslation2(article, trans3, statusApp) }
-    //getTranslation2(article, trans3, statusApp)
-    Box() {
-           when(statusApp.currentStatus){
-               is AppStatus.Loading -> {Box(modifier = Modifier.fillMaxSize(),gravity = Alignment.Center,backgroundColor = Color.Transparent  ) {
-                   CircularProgressIndicator()
-               } }
-               is AppStatus.Idle->drawListOriginalTranslated(article,loriginalTranslate = trans3.value,statusApp = statusApp)
-               is AppStatus.Error->{ Text("Error view Short  ${(statusApp.currentStatus as AppStatus.Error).sError}")}
-           }
-    }
-}*/
-
-
 
 
 suspend fun getArticles():List<KArticle> = withContext(Dispatchers.IO) {
@@ -367,72 +339,36 @@ suspend fun getArticle(originalTransLink: OriginalTransLink) = withContext(Dispa
     lt
 }
 
-fun search(statusApp: StatusApp) {
-    statusApp.currentStatus = AppStatus.Loading()
-    GlobalScope.launch(Dispatchers.Main) {
-        KA.articles = getArticles()
-
-        val sb=StringBuilder()
-        KA.articles.forEach{ sb.append(it.title) }
-        val rt=translate(sb.toString(),statusApp.lang)
-        val q=(rt as ResultTranslation.ResultList).Lorigtrans.lOriginalTrans
-
-
-        //val JJ=KA.articles.zip(q,{arle,cu->OriginalTransLink(arle,cu)})
-        val JJ=KA.articles.zip(q,{a,c->OriginalTransLink(a,c.translated)})
-        println(JJ)
-        statusApp.currentStatus = AppStatus.Idle()
-    }
-}
-
 fun getLTransArticles(tt:MutableState<List<OriginalTransLink>>,statusApp: StatusApp){
     statusApp.currentStatus = AppStatus.Loading()
     GlobalScope.launch(Dispatchers.Main) {
-        KA.articles = getArticles()
+        val LA = getArticles()
 
         val sb=StringBuilder()
-        KA.articles.forEach{ sb.append(it.title) }
+        LA.forEach{ sb.append(it.title) }
         val rt=translate(sb.toString(),statusApp.lang)
-        val q=(rt as ResultTranslation.ResultList).Lorigtrans.lOriginalTrans
+        val q=(rt as ResultTranslation.ResultList).Lorigtrans
 
-
-        //val JJ=KA.articles.zip(q,{arle,cu->OriginalTransLink(arle,cu)})
-        val JJ=KA.articles.zip(q,{a,c->OriginalTransLink(a,c.translated)})
+        val JJ=LA.zip(q,{a,c->OriginalTransLink(a,c.translated)})
         tt.value=JJ
-        println(JJ)
         statusApp.currentStatus = AppStatus.Idle()
-        //return tt.value
     }
 }
 
  sealed class ResultTranslation{
-        class ResultList(val Lorigtrans:LOriginalTrans):ResultTranslation()
+        class ResultList(val Lorigtrans:MutableList<OriginalTrans>):ResultTranslation()
         class Error(val sError:String):ResultTranslation()
  }
 
 suspend fun translate(text:String,lang:String):ResultTranslation{
-    //var RS:ResultTranslation by lazy
-    /*val lOT=LOriginalTrans()
-    val ql=splitLongText(text)
-    lOT.lOriginalTrans.add(OriginalTrans("n chunks: ${ql.size}","translated size 1 $lang"))
-    ql.forEach {
-        lOT.lOriginalTrans.add(OriginalTrans("${it.length} ","translated size 1 $lang"))
-        lOT.lOriginalTrans.add(OriginalTrans("$it ","translated 1 $lang"))
-    }*/
-
-   //lOT.lOriginalTrans.add(OriginalTrans("->original text size ${text.length} ","translated 1 $lang"))
-   // lOT.lOriginalTrans.add(OriginalTrans("original 2 ","translated 2 $lang "))
-   // lOT.lOriginalTrans.add(OriginalTrans("chunks ${translateLongText(text,lang).size} ","translated 3 $lang "))
-    //val RT=ResultTranslation.ResultList(lOT)
-    //val RT=ResultTranslation.ResultList()
-    val lot=LOriginalTrans()
+    val lot=mutableListOf<OriginalTrans>()
     return try {
         //gettranslatedText(text,lang)
         val slT=splitLongText(text)
         slT.forEach {
             val RT2=gettranslatedText(it,lang)
             val rl=RT2 as ResultTranslation.ResultList
-            lot.lOriginalTrans.addAll(rl.Lorigtrans.lOriginalTrans)
+            lot.addAll(rl.Lorigtrans)
         }
         return ResultTranslation.ResultList(lot)
 
@@ -469,15 +405,6 @@ fun splitLongText(text:String):List<String>{
 
 suspend fun gettranslatedText(text: String, lang: String):ResultTranslation = withContext(Dispatchers.IO) {
    println("get translated text")
-  /* val lOT=LOriginalTrans()
-   lOT.lOriginalTrans.add(OriginalTrans("original 1 ","translated 1 $lang"))
-    lOT.lOriginalTrans.add(OriginalTrans("original 2 ","translated 2 $lang "))
-    lOT.lOriginalTrans.add(OriginalTrans("original 3 ","translated 3 $lang "))
-    throw Exception("caca de la vaca")
-   //   ResultTranslation.Error("cagada pastoret")
-    ResultTranslation.ResultList(lOT)*/
-   // lOT
-   // println("url->$text")
     var url =
         "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" + "ru" + "&tl=" + "$lang" + "&dt=t&q=" + URLEncoder.encode(
             text,
@@ -485,15 +412,12 @@ suspend fun gettranslatedText(text: String, lang: String):ResultTranslation = wi
         )
     val d = Jsoup.connect(url).ignoreContentType(true).get().text()
     val t = JSONArray(d)
-
-
-    val lOriginalTrans=LOriginalTrans()
-
+    val lOriginalTrans= mutableListOf<OriginalTrans>()
     val qsm = t.getJSONArray(0)
     for (i in 0 until qsm.length()) {
         val l = qsm.getJSONArray(i)
         val originalTrans=OriginalTrans(l.getString(1),l.getString(0))
-        lOriginalTrans.lOriginalTrans.add(originalTrans)
+        lOriginalTrans.add(originalTrans)
     }
     ResultTranslation.ResultList(lOriginalTrans)
 }
@@ -502,7 +426,7 @@ fun separateParagrafs(text: String): List<String> {
     return sP
 }
 
-fun getTranslationLink(originalTransLink: OriginalTransLink, trans: MutableState<LOriginalTrans>, statusApp: StatusApp) {
+fun getTranslationLink(originalTransLink: OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp) {
     println("--------------------gettranslationlink")
     statusApp.currentStatus = AppStatus.Loading()
     GlobalScope.launch(Dispatchers.Main) {
@@ -516,26 +440,6 @@ fun getTranslationLink(originalTransLink: OriginalTransLink, trans: MutableState
         }
         //trans.value = sall
         //statusApp.currentStatus = AppStatus.Idle()
-    }
-}
-
-fun getTranslation2(
-    article: KArticle,
-    trans: MutableState<LOriginalTrans>,
-    statusApp: StatusApp
-) {
-    println("getTranslation2")
-    statusApp.currentStatus = AppStatus.Loading()
-    GlobalScope.launch(Dispatchers.Main) {
-        val sTotalOriginal = article.title + ". " + article.desc
-        //val sall = gettranslatedText(sTotalOriginal, statusApp.lang)
-        val sall = translate(sTotalOriginal, statusApp.lang)
-        when(sall){
-            is ResultTranslation.ResultList->{trans.value=sall.Lorigtrans; statusApp.currentStatus = AppStatus.Idle() }
-            is ResultTranslation.Error->{statusApp.currentStatus=AppStatus.Error(sall.sError)}
-        }
-       // trans.value = sall
-       // statusApp.currentStatus = AppStatus.Idle()
     }
 }
 
