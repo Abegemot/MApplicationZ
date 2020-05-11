@@ -12,6 +12,7 @@ import androidx.ui.core.setContent
 import androidx.ui.foundation.*
 import androidx.ui.foundation.shape.corner.RoundedCornerShape
 import androidx.ui.graphics.Color
+import androidx.ui.graphics.vector.VectorAsset
 import androidx.ui.layout.*
 import androidx.ui.material.*
 import androidx.ui.material.icons.Icons
@@ -19,10 +20,10 @@ import androidx.ui.material.icons.filled.Favorite
 import androidx.ui.material.icons.filled.KeyboardArrowDown
 import androidx.ui.material.icons.filled.KeyboardArrowUp
 import androidx.ui.material.icons.filled.Settings
+import androidx.ui.res.vectorResource
 import androidx.ui.tooling.preview.Preview
 import androidx.ui.unit.dp
 import com.begemot.kclib.*
-import com.begemot.myapplicationz.StatusApp.currentStatus
 import io.grpc.myproto.Word
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -121,21 +122,15 @@ fun LoginUi() {
 
 @Composable
 fun headlinesScreen(statusApp: StatusApp) {
-    val lHeadlines = state{ listOf<OriginalTransLink>()}
+    val lHeadlines = state{ mutableListOf<OriginalTransLink>()}
     onCommit(statusApp.lang){
         getLTransArticles(lHeadlines,statusApp)
     }
-    Box {
-        val status=statusApp.currentStatus
-        when(status){
-            is AppStatus.Loading-> waiting()
-            is AppStatus.Error->displayError(status.sError)
-            is AppStatus.Idle->{
-                AdapterList(data = lHeadlines.value) {
-                    drawHeadline(it, statusApp)
-                }
-            }
-        }
+    val status=statusApp.currentStatus
+    when(status){
+        is AppStatus.Loading -> waiting()
+        is AppStatus.Error -> displayError(status.sError)
+        is AppStatus.Idle -> drawHeadlines(loriginalTransLink =lHeadlines.value , statusApp =statusApp )
     }
 }
 
@@ -158,26 +153,34 @@ fun headlinesScreen(statusApp: StatusApp) {
 
 
 @Composable
-fun drawHeadline(
-    originalTransLink: OriginalTransLink,
+fun drawHeadlines(
+    loriginalTransLink: MutableList<OriginalTransLink>,
     statusApp: StatusApp
 ) {
-    Card(shape= RoundedCornerShape(8.dp),elevation = 7.dp, modifier = Modifier.fillMaxHeight()+ Modifier.padding(2.dp))
-    {
-        Column() {
-            Clickable(onClick = { }) {
-                Column() {
-                KText2(txt=originalTransLink.kArticle.title,size = statusApp.fontSize)
-                KText2(txt=originalTransLink.translated,size = statusApp.fontSize)
-              }
-            }
-            Row(horizontalArrangement = Arrangement.End,modifier = Modifier.fillMaxWidth() ){
-                 Clickable(onClick = { statusApp.currentScreen=Screens.FullArticle(originalTransLink)  }) {
-                     KTextLink(txt = "-->LINK  ")
+    val original=state{true}
+    AdapterList(data = loriginalTransLink) {
+        Card(shape = RoundedCornerShape(8.dp),elevation = 7.dp, modifier = Modifier.fillMaxHeight() + Modifier.padding(2.dp) ){
+            Column() {
+                val bplaytext=state{false}
+
+                        Clickable(onClick = {original.value=true; bplaytext.value=true  }) {
+                            KText2(txt = it.kArticle.title, size = statusApp.fontSize)
+                        }
+                        Clickable(onClick = {original.value=false; bplaytext.value=true  }) {
+                            KText2(txt = it.translated, size = statusApp.fontSize)
+                        }
+                        Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                            Clickable(onClick = { statusApp.currentScreen = Screens.FullArticle(it) }) {
+                                Icon(vectorResource(id = R.drawable.ic_link_24px),modifier = Modifier.padding(0.dp,0.dp,15.dp,3.dp))
+                            }
+                        }
+                        if(bplaytext.value){
+                            if(original.value) playText(bplaytext,it.kArticle.title,statusApp)
+                            else playText(bplaytext,it.translated,statusApp,original.value)
+                        }
                 }
             }
         }
-    }
 }
 
 
@@ -187,56 +190,63 @@ fun articleScreen(originalTransLink: OriginalTransLink, statusApp: StatusApp) {
     onCommit(statusApp.lang) {
         getTranslationLink(originalTransLink, trans3, statusApp)
     }
-    Box() {
-        when(statusApp.currentStatus){
-            is AppStatus.Loading -> waiting()
-            is AppStatus.Idle->drawListOriginalTranslated(originalTransLink,loriginalTranslate = trans3.value,statusApp = statusApp)
-            is AppStatus.Error-> displayError(sError = (statusApp.currentStatus as AppStatus.Error).sError)
-               /* VerticalScroller() {
-                    Box(border = Border(2.dp, Color.Blue)) {
-                        Text("Error view Link ${(statusApp.currentStatus as AppStatus.Error).sError}")
-                    }
-                }
-            }*/
-        }
+    val status=statusApp.currentStatus
+    when(status){
+        is AppStatus.Loading -> waiting()
+        is AppStatus.Error-> displayError(sError = status.sError)
+        is AppStatus.Idle->drawListOriginalTranslated(originalTransLink,loriginalTranslate = trans3.value,statusApp = statusApp)
     }
-}
+ }
 
 @Composable
 fun drawListOriginalTranslated(originalTransLink: OriginalTransLink,loriginalTranslate:MutableList<OriginalTrans>,statusApp: StatusApp){
-    KWindow() {
+   // KWindow() {
+    val original=state{true}
         AdapterList(data = loriginalTranslate) {
             Card(shape= RoundedCornerShape(8.dp),elevation = 7.dp, modifier = Modifier.fillMaxHeight()+ Modifier.padding(2.dp)+ Modifier.fillMaxWidth()) {
                 Column() {
                     val bplaytext=state{false}
-                    Clickable(onClick ={bplaytext.value=true} ) {
+                    Clickable(onClick ={original.value=true; bplaytext.value=true} ) {
                         KText2(it.original,size = statusApp.fontSize)
                     }
-                    KText2(it.translated,size = statusApp.fontSize)
-                    if(bplaytext.value) playText(bplaytext,it.original,statusApp)
+                    Clickable(onClick ={original.value=false; bplaytext.value=true} ) {
+                        KText2(it.translated, size = statusApp.fontSize)
+                    }
+                    if(bplaytext.value){
+                        if(original.value) playText(bplaytext,it.original,statusApp)
+                        else playText(bplaytext,it.translated,statusApp,original.value)
+                    }
                 }
             }
         }
-    }
+ //   }
 }
 
  @Composable
- fun playText(bplayText:MutableState<Boolean>,txt:String,statusApp: StatusApp){
+ fun playText(bplayText:MutableState<Boolean>,txt:String,statusApp: StatusApp,original:Boolean=true){
      val context = ContextAmbient.current
+     var msg=""
     lateinit var t1:TextToSpeech
+     var lan=""
+     var result=0
+     if(original) lan="ru" else lan=statusApp.lang
      t1 = TextToSpeech(
          context,
          TextToSpeech.OnInitListener { status ->
              if (status != TextToSpeech.ERROR) {
-                 t1.setLanguage(Locale.forLanguageTag("ru"))
+                result= t1.setLanguage(Locale.forLanguageTag(lan))
+                if(result==TextToSpeech.LANG_MISSING_DATA) msg="Missing data"
+                if(result==TextToSpeech.LANG_NOT_SUPPORTED) msg="Lang not supported"
+
              }
          })
      Dialog(onCloseRequest = {t1.shutdown(); bplayText.value=false}){
          //Box(modifier = Modifier.fillMaxWidth(),backgroundColor = Color.Green){
          KWindow() {
-             KText2(txt,size = statusApp.fontSize)
-             Button(onClick = {t1.speak(txt,TextToSpeech.QUEUE_FLUSH,null)}) {
-                 Text("talk")
+             if(result==0) KText2(txt,size = statusApp.fontSize)
+             else    KText2(msg,size = statusApp.fontSize)
+             IconButton(onClick = {t1.speak(txt,TextToSpeech.QUEUE_FLUSH,null,null)}) {
+                 Icon(vectorResource(id = R.drawable.ic_volume_up_24px))
              }
          }
      }
@@ -249,7 +259,7 @@ fun selectLanguage(selectLang: MutableState<Boolean>, statusApp: StatusApp) {
         val localFontSize=state{statusApp.fontSize}
         KWindow() {
             KHeader(txt = "Settings", onClick = {})
-            val radioOptions = listOf("en", "es", "it")
+            val radioOptions = listOf("en", "es", "it","ur")
             val indx=radioOptions.indexOf(statusApp.lang)
             val (selectedOption, onOptionSelected) = state { radioOptions[indx] }
 
@@ -339,7 +349,7 @@ suspend fun getArticle(originalTransLink: OriginalTransLink) = withContext(Dispa
     lt
 }
 
-fun getLTransArticles(tt:MutableState<List<OriginalTransLink>>,statusApp: StatusApp){
+fun getLTransArticles(tt:MutableState<MutableList<OriginalTransLink>>,statusApp: StatusApp){
     statusApp.currentStatus = AppStatus.Loading()
     GlobalScope.launch(Dispatchers.Main) {
         val LA = getArticles()
@@ -350,7 +360,7 @@ fun getLTransArticles(tt:MutableState<List<OriginalTransLink>>,statusApp: Status
         val q=(rt as ResultTranslation.ResultList).Lorigtrans
 
         val JJ=LA.zip(q,{a,c->OriginalTransLink(a,c.translated)})
-        tt.value=JJ
+        tt.value=JJ.toMutableList()
         statusApp.currentStatus = AppStatus.Idle()
     }
 }
