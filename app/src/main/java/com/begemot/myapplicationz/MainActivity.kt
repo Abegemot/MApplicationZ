@@ -12,7 +12,6 @@ import androidx.ui.core.setContent
 import androidx.ui.foundation.*
 import androidx.ui.foundation.shape.corner.RoundedCornerShape
 import androidx.ui.graphics.Color
-import androidx.ui.graphics.vector.VectorAsset
 import androidx.ui.layout.*
 import androidx.ui.material.*
 import androidx.ui.material.icons.Icons
@@ -42,25 +41,25 @@ class MainActivity : AppCompatActivity() {
     }
     override fun onBackPressed() {
         //super.onBackPressed()
-        StatusApp.currentScreen = Screens.ListHeadlines()
+        StatusApp.currentScreen = Screens.ListHeadlines
     }
 }
 
 sealed class Screens {
-    class ListHeadlines : Screens()
+    object ListHeadlines : Screens()
     class FullArticle(val originalTransLink: OriginalTransLink) : Screens()
 }
 
 sealed class AppStatus {
-    class Idle : AppStatus()
-    class Loading : AppStatus()
+    object Idle : AppStatus()
+    object Loading : AppStatus()
     class Error(val sError: String) : AppStatus()
 }
 
 @Model
 object StatusApp {
-    var currentScreen: Screens = Screens.ListHeadlines()
-    var currentStatus: AppStatus = AppStatus.Loading()
+    var currentScreen: Screens = Screens.ListHeadlines
+    var currentStatus: AppStatus = AppStatus.Loading
     var fontSize:Int= prefs.fontSize
    /* get()= prefs.fontSize
     set(value) {
@@ -94,14 +93,13 @@ fun LoginUi() {
                     }
                 }
             )
-            if (selectLang.value) selectLanguage(selectLang, StatusApp)
+            if (selectLang.value) editPreferences(selectLang, StatusApp)
             Surface() {
-                val s = StatusApp.currentScreen
-                when (s) {
+                when (val s = StatusApp.currentScreen) {
                     is Screens.ListHeadlines -> headlinesScreen(StatusApp)
                     is Screens.FullArticle -> articleScreen(s.originalTransLink, StatusApp)
                 }
-            }
+           }
        }
     }
 }
@@ -124,10 +122,11 @@ fun LoginUi() {
 fun headlinesScreen(statusApp: StatusApp) {
     val lHeadlines = state{ mutableListOf<OriginalTransLink>()}
     onCommit(statusApp.lang){
-        getLTransArticles(lHeadlines,statusApp)
+        println("on commit  headlines screen")
+        getLHeadlines(lHeadlines,statusApp)
     }
-    val status=statusApp.currentStatus
-    when(status){
+    //val status=statusApp.currentStatus
+    when(val status=statusApp.currentStatus){
         is AppStatus.Loading -> waiting()
         is AppStatus.Error -> displayError(status.sError)
         is AppStatus.Idle -> drawHeadlines(loriginalTransLink =lHeadlines.value , statusApp =statusApp )
@@ -253,12 +252,12 @@ fun drawListOriginalTranslated(originalTransLink: OriginalTransLink,loriginalTra
  }
 
 @Composable
-fun selectLanguage(selectLang: MutableState<Boolean>, statusApp: StatusApp) {
+fun editPreferences(selectLang: MutableState<Boolean>, statusApp: StatusApp) {
     Dialog(onCloseRequest = { selectLang.value = false }) {
         val localFontSize=state{statusApp.fontSize}
         KWindow() {
             KHeader(txt = "Settings", onClick = {})
-            val radioOptions = listOf("en", "es", "it","ur")
+            val radioOptions = listOf("en", "es", "it","ur","zh")
             val indx=radioOptions.indexOf(statusApp.lang)
             val (selectedOption, onOptionSelected) = state { radioOptions[indx] }
 
@@ -348,8 +347,9 @@ suspend fun getArticle(originalTransLink: OriginalTransLink) = withContext(Dispa
     lt
 }
 
-fun getLTransArticles(tt:MutableState<MutableList<OriginalTransLink>>,statusApp: StatusApp){
-    statusApp.currentStatus = AppStatus.Loading()
+fun getLHeadlines(tt:MutableState<MutableList<OriginalTransLink>>, statusApp: StatusApp){
+    println("getLHeadLines")
+    statusApp.currentStatus = AppStatus.Loading
     GlobalScope.launch(Dispatchers.Main) {
         val LA = getArticles()
 
@@ -360,7 +360,7 @@ fun getLTransArticles(tt:MutableState<MutableList<OriginalTransLink>>,statusApp:
 
         val JJ=LA.zip(q,{a,c->OriginalTransLink(a,c.translated)})
         tt.value=JJ.toMutableList()
-        statusApp.currentStatus = AppStatus.Idle()
+        statusApp.currentStatus = AppStatus.Idle
     }
 }
 
@@ -437,14 +437,14 @@ fun separateParagrafs(text: String): List<String> {
 
 fun getTranslationLink(originalTransLink: OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp) {
     println("--------------------gettranslationlink")
-    statusApp.currentStatus = AppStatus.Loading()
+    statusApp.currentStatus = AppStatus.Loading
     GlobalScope.launch(Dispatchers.Main) {
         val original = getArticle(originalTransLink)
         println("original : $original")
         //val sall = gettranslatedText(original, statusApp.lang)
         val sall = translate(original, statusApp.lang)
         when(sall){
-            is ResultTranslation.ResultList->{trans.value=sall.Lorigtrans; statusApp.currentStatus = AppStatus.Idle() }
+            is ResultTranslation.ResultList->{trans.value=sall.Lorigtrans; statusApp.currentStatus = AppStatus.Idle }
             is ResultTranslation.Error->{statusApp.currentStatus=AppStatus.Error(sall.sError)}
         }
         //trans.value = sall
