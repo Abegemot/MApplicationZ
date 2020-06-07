@@ -1,176 +1,309 @@
-   package com.begemot.myapplicationz
+     package com.begemot.myapplicationz
 
+//import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.*
-//import androidx.test.core.app.ApplicationProvider.getApplicationContext
-import androidx.ui.core.Alignment
-import androidx.ui.core.ContextAmbient
-import androidx.ui.core.Modifier
-import androidx.ui.core.setContent
+import androidx.ui.core.*
 import androidx.ui.foundation.*
 import androidx.ui.foundation.shape.corner.RoundedCornerShape
 import androidx.ui.graphics.Color
+import androidx.ui.graphics.RectangleShape
+import androidx.ui.graphics.Shape
 import androidx.ui.layout.*
 import androidx.ui.material.*
 import androidx.ui.material.icons.Icons
-import androidx.ui.material.icons.filled.Favorite
-import androidx.ui.material.icons.filled.KeyboardArrowDown
-import androidx.ui.material.icons.filled.KeyboardArrowUp
-import androidx.ui.material.icons.filled.Settings
+import androidx.ui.material.icons.filled.*
+import androidx.ui.res.imageResource
 import androidx.ui.res.vectorResource
-import androidx.ui.tooling.preview.Preview
 import androidx.ui.unit.dp
 import com.begemot.kclib.*
-import io.grpc.myproto.Word
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import org.jsoup.Jsoup
-import org.jsoup.nodes.Element
-import java.net.URLEncoder
+
 import java.util.*
+import timber.log.Timber
+import java.io.PrintWriter
+import java.io.StringWriter
 
 class MainActivity : AppCompatActivity() {
+    val sApp=StatusApp(Screens.ListNewsPapers,Screens.ListNewsPapers)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { LoginUi() }
+        if(BuildConfig.DEBUG){
+            Timber.plant(Timber.DebugTree())
+        }
+        //checkWifi(this.applicationContext)
+        //setContent { LoginUi() }
+
+        setContent { newsReaderApp(sApp) }
+
     }
     override fun onBackPressed() {
         //super.onBackPressed()
-        StatusApp.currentScreen = Screens.ListHeadlines
+        sApp.currentScreen = sApp.currentBackScreen//Screens.ListHeadlines
     }
 }
 
 sealed class Screens {
-    object ListHeadlines : Screens()
-    class FullArticle(val originalTransLink: OriginalTransLink) : Screens()
+    object RT_ListHeadlines : Screens()
+    class  RT_FullArticle(val originalTransLink: OriginalTransLink) : Screens()
+    object SZ_ListHeadlines : Screens()
+    class  SZ_FullArticle(val originalTransLink: OriginalTransLink) : Screens ()
+    object ListNewsPapers : Screens()
 }
+
+     inline fun RT_FullArticle(otl:OriginalTransLink):Screens{
+         return Screens.RT_FullArticle(otl)
+     }
+     inline fun SZ_FullArticle(otl:OriginalTransLink):Screens{
+         return Screens.SZ_FullArticle(otl)
+     }
+     //val APOS2 = {otl:OriginalTransLink->Screens.RT_FullArticle(otl)}
 
 sealed class AppStatus {
     object Idle : AppStatus()
     object Loading : AppStatus()
-    class Error(val sError: String) : AppStatus()
+    class Error(val sError: String,val e: Exception?=null) : AppStatus()
 }
 
-@Model
-object StatusApp {
-    var currentScreen: Screens = Screens.ListHeadlines
-    var currentStatus: AppStatus = AppStatus.Loading
-    var fontSize:Int= prefs.fontSize
-   /* get()= prefs.fontSize
-    set(value) {
-        prefs.fontSize=value
-    }*/
-    var lang:String=prefs.kLang
+class StatusApp(
+    currentScreen:Screens,
+    currentBackScreen:Screens,
+    currentStatus: AppStatus=AppStatus.Loading,
+    var fontSize: Int = prefs.fontSize,
+    var lang: String = prefs.kLang
+     )
+{
+         var currentScreen by mutableStateOf(currentScreen)
+         var currentStatus by mutableStateOf(currentStatus)
+         var currentBackScreen by mutableStateOf(currentBackScreen)
+    }
+
+@Composable
+fun newsReaderApp(sApp: StatusApp){
+    val scaffoldState=remember{ScaffoldState()}
+    val kt = state { kTheme.DARK  }
+    val selectLang = state { false }
+    val contactdialog = state { false }
+
+    MaterialTheme(colors = kt.value.theme,typography = appTypography) {
+        Scaffold(
+            scaffoldState = scaffoldState,
+            //  drawerContent = { Text("Drawer content") },
+            topAppBar = {
+                TopAppBar(
+                    title = { title(statusApp = sApp) },
+                    actions = {
+                        IconButton(onClick = { kt.value = kTheme.next(kt.value) }
+                        ) {
+                            Icon(Icons.Filled.Favorite)
+                        }
+                        IconButton(onClick = { selectLang.value = true }) {
+                            Icon(Icons.Filled.Settings)
+                        }
+                    }
+                )
+            },
+            floatingActionButtonPosition = Scaffold.FabPosition.End,
+            floatingActionButton = {
+                if (sApp.currentScreen == Screens.ListNewsPapers)
+                    ExtendedFloatingActionButton(
+                        text = { Text("+") },
+                        onClick = { contactdialog.value=true  }
+
+
+                    )
+            },
+            bodyContent = { modifier ->
+                screenDispatcher(selectLang,contactdialog,sApp)
+
+            }
+        )
+    }
 
 }
 
 @Composable
-fun LoginUi() {
-    val s = Word.newBuilder()
-        .setId(10)
-        .setRomanized("ZZTOPwwwwwy")
-        .build()
-    val kt = state { kTheme.DARK }
-    val selectLang = state { false }
-    MaterialTheme(colors = kt.value.theme) {
-        Column() {
-            TopAppBar(
-                //color = MaterialTheme.colors.primary,
-                modifier = Modifier.fillMaxWidth(),
-                title = {title(StatusApp)} ,
-                actions = {
-                    IconButton(onClick = { kt.value = kTheme.next(kt.value) }
-                    ) {
-                        Icon(Icons.Filled.Favorite)
-                    }
-                    IconButton(onClick = { selectLang.value = true }) {
-                        Icon(Icons.Filled.Settings)
-                    }
-                }
-            )
-            if (selectLang.value) editPreferences(selectLang, StatusApp)
-            Surface() {
-                when (val s = StatusApp.currentScreen) {
-                    is Screens.ListHeadlines -> headlinesScreen(StatusApp)
-                    is Screens.FullArticle -> articleScreen(s.originalTransLink, StatusApp)
-                }
-           }
-       }
+fun contactDialog(contactDialog:MutableState<Boolean>) {
+    val context = ContextAmbient.current
+    val s1 = state { "" }
+    var txt by state { TextFieldValue("") }
+
+    Dialog(onCloseRequest = { contactDialog.value = false }) {
+        KWindow() {
+            KHeader(txt = "Contact us", onClick = { contactDialog.value = false })
+            KField2(txt = "holax", st = s1)
+            //KField("Your Message:", s1)
+            //Box(Modifier.preferredHeight(150.dp).fillMaxWidth(),backgroundColor = Color.Red){
+            // KField(txt = "lane", st = s1)
+            //FilledTextField(modifier = Modifier.fillMaxSize() ,value = txt, onValueChange ={txt=it},label={Text("label")} )
+
+            //      }
+            //}
+            KButtonBar {
+                Button(onClick = {
+                    //sendEmail(context)
+                    sendmail(s1.value)
+                    contactDialog.value = false
+
+                }) { Text(text = "Send") }
+
+            }
+
+        }
+
     }
+
 }
+
+
+@Composable
+fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableState<Boolean>,sApp:StatusApp){
+    if(contactdialog.value) contactDialog(contactdialog)
+    if (selectLang.value) editPreferences(selectLang, sApp)
+    Box() {
+        Surface {
+            when (val s = sApp.currentScreen) {
+                is Screens.ListNewsPapers -> newsPapersScreen2(sApp)
+                //is Screens.RT_ListHeadlines -> RT_headlinesScreen(sApp)
+                is Screens.RT_ListHeadlines -> headlinesScreen(sApp, ::RT_FullArticle,::getRT_Headlines)
+                is Screens.RT_FullArticle -> RT_articleScreen(s.originalTransLink, sApp)
+                //is Screens.SZ_ListHeadlines-> SZ_headlinesScreen(statusApp = sApp)
+                is Screens.SZ_ListHeadlines->headlinesScreen(sApp,::SZ_FullArticle,::getSZ_Headlines)
+
+
+            }
+
+        }
+    }
+
+}
+
 
  @Composable
  fun title(statusApp: StatusApp){
      Column() {
-         Text(text = "RT novesti")
+         Text(text = "News Reader",style = MaterialTheme.typography.h5)
+
+
          val currScreen=statusApp.currentScreen
          val sAux=when(currScreen){
-             is Screens.FullArticle->" Article"
-             is Screens.ListHeadlines->" Headlines"
+             is Screens.RT_FullArticle->" RT Article"
+             is Screens.RT_ListHeadlines->" RT Headlines"
+             is Screens.ListNewsPapers->"News papers"
+             is Screens.SZ_ListHeadlines->"SZ Headlines"
+             is Screens.SZ_FullArticle -> " SZ Article"
          }
-         Text(" $sAux")
+         Text(" $sAux",style = MaterialTheme.typography.subtitle1)
      }
  }
-
+     @Composable
+     fun headlinesScreen(statusApp: StatusApp,afun:(otl:OriginalTransLink)->Screens,getlines:(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp)->Unit) {
+         statusApp.currentBackScreen=Screens.ListNewsPapers
+         Timber.d("->headlines screen")
+         val lHeadlines = state{ mutableListOf<OriginalTransLink>()}
+         onCommit(statusApp.lang){
+             Timber.d("on commit  headlines screen  ${lHeadlines.value.size}")
+             //if(lHeadlines.value.size==0)
+             //getRT_Headlines(lHeadlines.value,statusApp)
+             getlines(lHeadlines.value,statusApp)
+             Timber.d("after commit  headlines screen")
+         }
+         Timber.d("headlines size ${lHeadlines.value.size}")
+         val status=statusApp.currentStatus
+         when(status){
+             is AppStatus.Loading  -> waiting()
+             is AppStatus.Error    -> displayError(status.sError,status.e)
+             is AppStatus.Idle     -> draw_Headlines(loriginalTransLink =lHeadlines.value , statusApp =statusApp,afun=afun)
+         }
+         Timber.d("<-headlines screen ${status.toString()}")
+     }
 
 @Composable
-fun headlinesScreen(statusApp: StatusApp) {
+fun RT_headlinesScreen(statusApp: StatusApp) {
+    statusApp.currentBackScreen=Screens.ListNewsPapers
+    Timber.d("->headlines screen")
     val lHeadlines = state{ mutableListOf<OriginalTransLink>()}
     onCommit(statusApp.lang){
-        println("on commit  headlines screen")
-        getLHeadlines(lHeadlines,statusApp)
+        Timber.d("on commit  headlines screen  ${lHeadlines.value.size}")
+        //if(lHeadlines.value.size==0)
+        getRT_Headlines(lHeadlines.value,statusApp)
+        Timber.d("after commit  headlines screen")
     }
-    //val status=statusApp.currentStatus
-    when(val status=statusApp.currentStatus){
-        is AppStatus.Loading -> waiting()
-        is AppStatus.Error -> displayError(status.sError)
-        is AppStatus.Idle -> drawHeadlines(loriginalTransLink =lHeadlines.value , statusApp =statusApp )
+    Timber.d("headlines size ${lHeadlines.value.size}")
+    val status=statusApp.currentStatus
+    when(status){
+        is AppStatus.Loading  -> waiting()
+        is AppStatus.Error    -> displayError(status.sError,status.e)
+        is AppStatus.Idle     -> draw_Headlines(loriginalTransLink =lHeadlines.value , statusApp =statusApp,afun=::RT_FullArticle)
     }
+    Timber.d("<-headlines screen ${status.toString()}")
 }
 
 @Composable
  fun waiting(){
+    Timber.d("->waiting")
    Box(modifier = Modifier.fillMaxSize(),gravity = Alignment.Center,backgroundColor = Color.Transparent  ) {
        CircularProgressIndicator()
    }
+   Timber.d("<-  waiting")
 }
 
 @Composable
-   fun displayError(sError:String){
-       VerticalScroller() {
-           Box(border = Border(2.dp, Color.Blue)) {
-               Text("Error : $sError}")
-           }
-       }
-   }
+   fun displayError(sError:String,e: Exception?=null) {
+    var msg = "null"
+    val sw = StringWriter()
+    if (e != null) {
+        e.printStackTrace(PrintWriter(sw))
+        msg = sw.toString()
+    }
+    Surface(color = MaterialTheme.colors.error) {
+
+
+        VerticalScroller() {
+
+            Box(border = Border(2.dp, Color.Blue)) {
+                val img = imageResource(id = R.drawable.icons8_black_cat_48)
+                Image(
+                    img, modifier = Modifier.tag(tag = "centerImage")
+                        .height(50.dp)
+                        .width(50.dp)
+                )
+                //Icon(vectorResource(id = R.drawable.icons8_black_cat_48))
+                //Icon(asset = ImageAsset(R.drawable.icons8_black_cat_48 ,20))
+                //ImageAsset(R.drawable.icons8_black_cat_48 ,100)
+                Text("Error : $sError")
+                Text("stackTrace -> $msg")
+                Timber.d("stackTrace -> $msg")
+            }
+        }
+    }
+}
 
 
 
 @Composable
-fun drawHeadlines(
+fun draw_Headlines(
     loriginalTransLink: MutableList<OriginalTransLink>,
-    statusApp: StatusApp
+    statusApp: StatusApp,
+    afun:(otl:OriginalTransLink)->Screens
+
 ) {
     val original=state{true}
     AdapterList(data = loriginalTransLink) {
         Card(shape = RoundedCornerShape(8.dp),elevation = 7.dp, modifier = Modifier.fillMaxHeight() + Modifier.padding(2.dp) )  {
             Column() {
                 val bplaytext=state{false}
-                        Clickable(onClick = {original.value=true; bplaytext.value=true  }) {
+                              Box(modifier = Modifier.clickable(onClick ={original.value=true; bplaytext.value=true  } )){
                             KText2(txt = it.kArticle.title, size = statusApp.fontSize)
                         }
-                        Clickable(onClick = {original.value=false; bplaytext.value=true  }) {
+                        Box(Modifier.clickable(onClick = {original.value=false; bplaytext.value=true  }) ){
                             KText2(txt = it.translated, size = statusApp.fontSize)
                         }
                         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                            Clickable(onClick = { statusApp.currentScreen = Screens.FullArticle(it) }) {
-                                Icon(vectorResource(id = R.drawable.ic_link_24px),modifier = Modifier.padding(0.dp,0.dp,15.dp,3.dp))
-                            }
+                             Icon(vectorResource(id = R.drawable.ic_link_24px),modifier = Modifier.padding(0.dp,0.dp,15.dp,3.dp).clickable(
+                                    onClick = { statusApp.currentScreen = afun(it) }
+                                ))
                         }
                         if(bplaytext.value){
                             if(original.value) playText(bplaytext,it.kArticle.title,statusApp)
@@ -183,21 +316,22 @@ fun drawHeadlines(
 
 
 @Composable
-fun articleScreen(originalTransLink: OriginalTransLink, statusApp: StatusApp) {
+fun RT_articleScreen(originalTransLink: OriginalTransLink, statusApp: StatusApp) {
+    statusApp.currentBackScreen=Screens.RT_ListHeadlines
     val trans3 = state { mutableListOf<OriginalTrans>() }
     onCommit(statusApp.lang) {
-        getTranslationLink(originalTransLink, trans3, statusApp)
+        getTranslatedArticle(originalTransLink, trans3, statusApp)
     }
     val status=statusApp.currentStatus
     when(status){
         is AppStatus.Loading -> waiting()
-        is AppStatus.Error-> displayError(sError = status.sError)
-        is AppStatus.Idle->drawListOriginalTranslated(originalTransLink,loriginalTranslate = trans3.value,statusApp = statusApp)
+        is AppStatus.Error-> displayError(status.sError,status.e)
+        is AppStatus.Idle->drawArticle(originalTransLink,loriginalTranslate = trans3.value,statusApp = statusApp)
     }
  }
 
 @Composable
-fun drawListOriginalTranslated(originalTransLink: OriginalTransLink,loriginalTranslate:MutableList<OriginalTrans>,statusApp: StatusApp){
+fun drawArticle(originalTransLink: OriginalTransLink, loriginalTranslate:MutableList<OriginalTrans>, statusApp: StatusApp){
    // KWindow() {
     val original=state{true}
         AdapterList(data = loriginalTranslate) {
@@ -221,7 +355,7 @@ fun drawListOriginalTranslated(originalTransLink: OriginalTransLink,loriginalTra
 }
 
  @Composable
- fun playText(bplayText:MutableState<Boolean>,txt:String,statusApp: StatusApp,original:Boolean=true){
+ fun playText(bplayText:MutableState<Boolean>, txt:String, statusApp: StatusApp, original:Boolean=true){
      val context = ContextAmbient.current
      var msg=""
     lateinit var t1:TextToSpeech
@@ -304,179 +438,33 @@ data class OriginalTransLink(val kArticle: KArticle,val translated: String)
 data class OriginalTrans(val original:String="",val translated:String="")
 
 
-suspend fun getArticles():List<KArticle> = withContext(Dispatchers.IO) {
-    fun transFigure(el: Element): KArticle {
-        val title = el.select("h3").text()+". "
-        val link = el.select("a[href]").first().attr("abs:href")
-        return KArticle(title, link, "")
-    }
-    fun transSection(el: Element): KArticle {
-        val title = el.select("h3").text()+". "
-       // val desc = el.select("p").text()
-        val link = el.select("h3").select("a[href]").attr("abs:href")
-        return KArticle(title, link, "")
-    }
 
-    val s = "https://russian.rt.com/inotv"
-    val doc = Jsoup.connect(s).get()
-    var art = doc.select("figure")
-    val l1 = art.map { it -> transFigure(it) }
 
-    art = doc.select("section.block-white.materials-preview").select("article")
-    val l2 = art.map { it -> transSection(it) }
-    l1 + l2
+
+
+sealed class KResult<T,R>{
+    class Succes<T,R>(val t:T):KResult<T,R>()
+    class Error<T,R>(val msg:String,val e:Exception?=null):KResult<T,R>()
+    object Empty:KResult<Nothing,Nothing>()
 }
 
-suspend fun getArticle(originalTransLink: OriginalTransLink) = withContext(Dispatchers.IO) {
-    fun transArticleintro(el: Element): String {
-        //println("el $el")
-        return el.text()
-    }
 
-    val doc = Jsoup.connect(originalTransLink.kArticle.link).get()
-    println(originalTransLink.kArticle.link)
-    var art = doc.select("div.article-intro")
-    val l1 = art.map { it -> "${originalTransLink.kArticle.title}"+transArticleintro(it) }
+inline fun <reified T, reified R> exWithException(afun:()->T): KResult<T,R> {
+    return try {
+           val p=afun()
+          KResult.Succes(p)
 
-    println("l1 ${l1.size}  $l1")
-
-    val arts = doc.select("div.article-body")
-    val l2 = arts.map { it -> transArticleintro(it) }
-    println("l2 ${l2.size} $l2")
-    val lt= (l1 + l2).joinToString()
-    lt
-}
-
-fun getLHeadlines(tt:MutableState<MutableList<OriginalTransLink>>, statusApp: StatusApp){
-    println("getLHeadLines")
-    statusApp.currentStatus = AppStatus.Loading
-    GlobalScope.launch(Dispatchers.Main) {
-        val LA = getArticles()
-
-        val sb=StringBuilder()
-        LA.forEach{ sb.append(it.title) }
-        val rt=translate(sb.toString(),statusApp.lang)
-        val q=(rt as ResultTranslation.ResultList).Lorigtrans
-
-        val JJ=LA.zip(q,{a,c->OriginalTransLink(a,c.translated)})
-        tt.value=JJ.toMutableList()
-        statusApp.currentStatus = AppStatus.Idle
+    }catch(e:Exception){
+          KResult.Error("error",e)
     }
 }
 
- sealed class ResultTranslation{
+/* sealed class ResultTranslation{
         class ResultList(val Lorigtrans:MutableList<OriginalTrans>):ResultTranslation()
         class Error(val sError:String):ResultTranslation()
- }
-
-suspend fun translate(text:String,lang:String):ResultTranslation{
-    val lot=mutableListOf<OriginalTrans>()
-    return try {
-        //gettranslatedText(text,lang)
-        val slT=splitLongText(text)
-        slT.forEach {
-            val RT2=gettranslatedText(it,lang)
-            val rl=RT2 as ResultTranslation.ResultList
-            lot.addAll(rl.Lorigtrans)
-        }
-        return ResultTranslation.ResultList(lot)
-
-    } catch (e: Exception) {
-        ResultTranslation.Error("text size ${text.length} ${e.toString()}")
-    }
-}
-
-fun splitLongText(text:String):List<String>{
-    val maxlen=3000
-   val resultList= mutableListOf<String>()
-    var LS = mutableListOf<String>()
-    if(text.length<maxlen) { LS.add(text); return LS}
-    LS= separateParagrafs(text).toMutableList()
-    val bs=StringBuilder()
-    while(LS.size>0){
-        val txt=LS.removeAt(0)
-        if((txt.length+bs.length)<maxlen){
-            bs.append(txt)
-            bs.append(". ")
-        }else{
-            resultList.add(bs.toString())
-            bs.clear()
-            bs.append(txt)
-            if(text[txt.length].equals("."))
-            bs.append("x. ")
-        }
-    }
-    if(bs.length>0) resultList.add(bs.toString())
-    return resultList
-}
+ }*/
 
 
 
-suspend fun gettranslatedText(text: String, lang: String):ResultTranslation = withContext(Dispatchers.IO) {
-   println("get translated text")
-    var url =
-        "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" + "ru" + "&tl=" + "$lang" + "&dt=t&q=" + URLEncoder.encode(
-            text,
-            "utf-8"
-        )
-    val d = Jsoup.connect(url).ignoreContentType(true).get().text()
-    val t = JSONArray(d)
-    val lOriginalTrans= mutableListOf<OriginalTrans>()
-    val qsm = t.getJSONArray(0)
-    for (i in 0 until qsm.length()) {
-        val l = qsm.getJSONArray(i)
-        val originalTrans=OriginalTrans(l.getString(1),l.getString(0))
-        lOriginalTrans.add(originalTrans)
-    }
-    ResultTranslation.ResultList(lOriginalTrans)
-}
-fun separateParagrafs(text: String): List<String> {
-    val sP = text.split(". ")
-    return sP
-}
-
-fun getTranslationLink(originalTransLink: OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp) {
-    println("--------------------gettranslationlink")
-    statusApp.currentStatus = AppStatus.Loading
-    GlobalScope.launch(Dispatchers.Main) {
-        val original = getArticle(originalTransLink)
-        println("original : $original")
-        //val sall = gettranslatedText(original, statusApp.lang)
-        val sall = translate(original, statusApp.lang)
-        when(sall){
-            is ResultTranslation.ResultList->{trans.value=sall.Lorigtrans; statusApp.currentStatus = AppStatus.Idle }
-            is ResultTranslation.Error->{statusApp.currentStatus=AppStatus.Error(sall.sError)}
-        }
-        //trans.value = sall
-        //statusApp.currentStatus = AppStatus.Idle()
-    }
-}
 
 
-@Preview
-@Composable
-fun HolaPanoli(){
-    val radioOptions = listOf("en", "es", "it")
-   // Dialog(onCloseRequest = {}){
- //       Box() {
-Row(verticalGravity =Alignment.CenterVertically ) {
-
-    Box(modifier = Modifier.preferredWidth(110.dp)) {
-        RadioGroup(options = radioOptions, selectedOption = null, onSelectedChange = {}  )
-    }
-
-        Row(modifier = Modifier.padding(4.dp),verticalGravity = Alignment.CenterVertically) {
-            IconButton(onClick = {}) {
-                Icon(Icons.Filled.KeyboardArrowDown)
-            }
-            Text("Text Size")
-            IconButton(onClick = {}) {
-                Icon(Icons.Filled.KeyboardArrowUp)
-            }
-
-        }
-
-}
-
-
-}
