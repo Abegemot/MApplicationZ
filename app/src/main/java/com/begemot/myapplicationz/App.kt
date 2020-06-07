@@ -3,6 +3,9 @@ package com.begemot.myapplicationz
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
+import android.net.ConnectivityManager
+import android.net.NetworkInfo
+import java.util.UUID
 
 class App:Application(){
     companion object {
@@ -12,10 +15,25 @@ class App:Application(){
     override fun onCreate() {
         super.onCreate()
         instance=this
+        //checkWifi(App.instance)
+        if(prefs.userId.equals("")){
+            prefs.userId=UUID.randomUUID().toString()
+        }
     }
 }
 val prefs: Preferences by lazy {
     Preferences(App.instance)
+
+}
+
+
+//pse pse
+fun checkWifi(context: Context){
+    val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val activeNetwork: NetworkInfo? = cm.activeNetworkInfo
+    val isConnected: Boolean = activeNetwork?.isConnectedOrConnecting == true
+    if(isConnected) println("WIFI conected ")
+    else println(" NO WIFI")
 }
 
 class Preferences(context:Context){
@@ -23,6 +41,7 @@ class Preferences(context:Context){
         private const val PREFS_FILENAME ="RTPrefs"
         private const val FONT_SIZE ="fontsize"
         private const val LANG ="language"
+        private const val USERID="userid"
     }
     private val sharedPrefs: SharedPreferences =
         context.getSharedPreferences(PREFS_FILENAME, Context.MODE_PRIVATE)
@@ -34,5 +53,10 @@ class Preferences(context:Context){
     var kLang:String
     get()=sharedPrefs.getString(LANG,"es")
     set(value) = sharedPrefs.edit().putString(LANG,value).apply()
+
+    var userId:String
+    get()=sharedPrefs.getString(USERID,"")
+    set(value) = sharedPrefs.edit().putString(USERID,value).apply()
+
 
 }
