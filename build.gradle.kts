@@ -14,7 +14,7 @@ plugins {
             classpath(Deps.kotlingradleplugin)
             // classpath "com.android.tools.build:gradle:4.0.0-beta01"
             // classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${Deps.kotlinVer}"
-            classpath ("androidx.navigation:navigation-safe-args-gradle-plugin:2.1.0")
+            //classpath ("androidx.navigation:navigation-safe-args-gradle-plugin:2.1.0")
             classpath("com.github.ben-manes:gradle-versions-plugin:${Deps.manes_versions}")
 
             // NOTE: Do not place your application dependencies here; they belong

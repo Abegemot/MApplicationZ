@@ -9,12 +9,12 @@ import org.jsoup.nodes.Element
 import timber.log.Timber
 import kotlin.reflect.KSuspendFunction1
 
- fun getRT_Headlines(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp){
+ fun getRT_Headlines4(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp){
     Timber.d("->getLHeadlines")
     GlobalScope.launch(Dispatchers.Main) {
         statusApp.currentStatus = AppStatus.Loading
         val resp = exWithException<MutableList<OriginalTransLink>, String> {
-            zgetLHeadLines(statusApp)
+            getRTHeadLines(statusApp)
         }
         when(resp) {
             is KResult.Succes -> {
@@ -29,8 +29,8 @@ import kotlin.reflect.KSuspendFunction1
     Timber.d("<-getLHeadlines")
 
 }
- fun getRT_Headlines3(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp){
-     get_HeadLines(lhd,statusApp, ::zgetLHeadLines)
+ fun getRT_Headlines(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp){
+     get_HeadLines(lhd,statusApp, ::getRTHeadLines)
  }
 
 fun get_HeadLines(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp, zgetLines: KSuspendFunction1<StatusApp, MutableList<OriginalTransLink>>) {
@@ -38,8 +38,8 @@ fun get_HeadLines(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp, zget
     GlobalScope.launch(Dispatchers.Main) {
         statusApp.currentStatus = AppStatus.Loading
         val resp = exWithException<MutableList<OriginalTransLink>, String> {
-            zgetLHeadLines(statusApp)
-            //zgetLines(statusApp)
+            //zgetLHeadLines(statusApp)
+            zgetLines(statusApp)
         }
         when(resp) {
             is KResult.Succes -> {
@@ -55,15 +55,19 @@ fun get_HeadLines(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp, zget
 }
 
 
-suspend fun zgetLHeadLines(statusApp: StatusApp):MutableList<OriginalTransLink>{
+suspend fun getRTHeadLines(statusApp: StatusApp):MutableList<OriginalTransLink>{
     Timber.d("->zgetLHeadlines")
    //statusApp.currentStatus = AppStatus.Loading
     // GlobalScope.launch(Dispatchers.Main) {
     val LA = getJSoupHeadlines()   //<-- suspend function runing on IO
 
+    Timber.d("-->after jsoup   ${LA.size}")
+    LA.forEach{Timber.d("->${it.title}<-")}
+    Timber.d("<--after jsoup")
+
     val sb = StringBuilder()
     LA.forEach { sb.append(it.title) }
-    val rt = translate2(sb.toString(), statusApp.lang)    //<-- suspend function runing on IO
+    val rt = translate2(sb.toString(), statusApp.lang,"ru")    //<-- suspend function runing on IO
     //val q = (rt as ResultTranslation.ResultList).Lorigtrans
 
     val JJ = LA.zip(rt, { a, c -> OriginalTransLink(a, c.translated) })

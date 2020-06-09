@@ -165,8 +165,8 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
         Surface {
             when (val s = sApp.currentScreen) {
                 is Screens.ListNewsPapers -> newsPapersScreen2(sApp)
-                //is Screens.RT_ListHeadlines -> RT_headlinesScreen(sApp)
-                is Screens.RT_ListHeadlines -> headlinesScreen(sApp, ::RT_FullArticle,::getRT_Headlines)
+                is Screens.RT_ListHeadlines -> RT_headlinesScreen(sApp)
+               // is Screens.RT_ListHeadlines -> headlinesScreen(sApp, ::RT_FullArticle,::getRT_Headlines)
                 is Screens.RT_FullArticle -> RT_articleScreen(s.originalTransLink, sApp)
                 //is Screens.SZ_ListHeadlines-> SZ_headlinesScreen(statusApp = sApp)
                 is Screens.SZ_ListHeadlines->headlinesScreen(sApp,::SZ_FullArticle,::getSZ_Headlines)

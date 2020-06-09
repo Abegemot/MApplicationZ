@@ -1,19 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
-    <bytecodeTargetLevel>
+    <bytecodeTargetLevel target="1.8">
       <module name="app" target="1.8" />
       <module name="kclib" target="1.8" />
-      <module name="KCLib.buildSrc" target="1.8" />
-      <module name="KCLib.kclib" target="1.8" />
       <module name="KCLib_buildSrc" target="1.8" />
       <module name="KProto3" target="1.8" />
       <module name="kprotolibz" target="1.8" />
       <module name="kprotolibz.buildSrc" target="1.8" />
       <module name="kprotolibz.KProto3" target="1.8" />
       <module name="kprotolibz_buildSrc" target="1.8" />
-      <module name="My_Application_Z.app" target="1.8" />
-      <module name="My_Application_Z.buildSrc" target="1.8" />
       <module name="My_Application_Z_buildSrc" target="1.8" />
     </bytecodeTargetLevel>
   </component>

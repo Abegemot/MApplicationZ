@@ -24,9 +24,13 @@ suspend fun getSZHeadLines(statusApp: StatusApp):MutableList<OriginalTransLink>{
     val L= mutableListOf<OriginalTransLink>(OriginalTransLink(KArticle("hola","link","desc"),"translated1"))
     val LA=getSZJSoupHeadlines()
 
+    Timber.d("-->after jsoup   ${LA.size}")
+    LA.forEach{Timber.d("->${it.title}<-")}
+    Timber.d("<--after jsoup")
+
     val sb = StringBuilder()
     LA.forEach { sb.append(it.title) }
-    val rt = translate2(sb.toString(), statusApp.lang)    //<-- suspend function runing on IO
+    val rt = translate2(sb.toString(), statusApp.lang,"de")    //<-- suspend function runing on IO
     //val q = (rt as ResultTranslation.ResultList).Lorigtrans
 
     val JJ = LA.zip(rt, { a, c -> OriginalTransLink(a, c.translated) })
@@ -34,14 +38,19 @@ suspend fun getSZHeadLines(statusApp: StatusApp):MutableList<OriginalTransLink>{
     lhd.addAll(JJ)
 
 
-    Timber.d(LA.toString())
+    //Timber.d(LA.toString())
     return lhd
 }
 
 suspend fun getSZJSoupHeadlines():List<KArticle> = withContext(Dispatchers.IO) {
     fun transFigure(el: Element): KArticle {
-        val title = el.text()+". "
+        Timber.d(el.html())
+        val title=el.select("h3.sz-teaser__title").text().replace(".",",")+". "
+        val title2 = el.text().replace(".",",")+". "
         val link =  el.attr("href")
+
+       if(el.text().isEmpty()) return KArticle()
+       // else return KArticle(title, link, "")
         return KArticle(title, link, "")
     }
     fun transSection(el: Element): KArticle {
@@ -55,8 +64,8 @@ suspend fun getSZJSoupHeadlines():List<KArticle> = withContext(Dispatchers.IO) {
     val con= Jsoup.connect(s)
     con.timeout(6000)
     val doc = con.get()
-    var art = doc.select("a[href]")
-    val l1 = art.map { it -> transFigure(it) }
+    var art = doc.select("a.sz-teaser[href]")
+    val l1 = art.map { it -> transFigure(it) }.filter { !it.title.isEmpty() }
 
     //art = doc.select("section.block-white.materials-preview").select("article")
     //val l2 = art.map { it -> transSection(it) }

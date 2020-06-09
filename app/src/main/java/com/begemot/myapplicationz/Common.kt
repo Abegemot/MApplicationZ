@@ -6,13 +6,13 @@ import org.json.JSONArray
 import org.jsoup.Jsoup
 import timber.log.Timber
 import java.net.URLEncoder
-suspend fun translate2(text:String,lang:String):MutableList<OriginalTrans>{
-    Timber.d("->translate")
+suspend fun translate2(text:String,tlang:String,olang:String):MutableList<OriginalTrans>{
+    Timber.d("->translate 2")
     val lot=mutableListOf<OriginalTrans>()
     //gettranslatedText(text,lang)
     val slT=splitLongText(text)
     slT.forEach {
-         val RT2=gettranslatedText(it,lang)
+         val RT2=gettranslatedText(it,tlang,olang)
          //val rl=RT2 as ResultTranslation.ResultList
          lot.addAll(RT2)
     }
@@ -66,11 +66,12 @@ fun splitLongText(text:String):List<String>{
     return resultList
 }
 
-suspend fun gettranslatedText(text: String, lang: String):MutableList<OriginalTrans> = withContext(
+suspend fun gettranslatedText(text: String, tlang: String,olang:String):MutableList<OriginalTrans> = withContext(
     Dispatchers.IO) {
     Timber.d("->  gettranslatedText")
+    Timber.d(text)
     var url =
-        "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" + "ru" + "&tl=" + "$lang" + "&dt=t&q=" + URLEncoder.encode(
+        "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" + "$olang" + "&tl=" + "$tlang" + "&dt=t&q=" + URLEncoder.encode(
             text,
             "utf-8"
         )

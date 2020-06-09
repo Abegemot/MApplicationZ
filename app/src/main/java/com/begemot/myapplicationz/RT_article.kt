@@ -24,7 +24,7 @@ suspend fun getTranslatedArticle2(originalTransLink: OriginalTransLink, statusAp
     Timber.d("->gettranslationlink")
     statusApp.currentStatus = AppStatus.Loading
     val original = getArticle(originalTransLink)
-    val sall = translate2(original, statusApp.lang)
+    val sall = translate2(original, statusApp.lang,"ru")
    // val i=1/0
     Timber.d("<-get translated text")
     return sall
