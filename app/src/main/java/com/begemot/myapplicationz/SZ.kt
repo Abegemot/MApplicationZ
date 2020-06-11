@@ -1,6 +1,7 @@
 package com.begemot.myapplicationz
 
 import androidx.compose.Composable
+import androidx.compose.MutableState
 import androidx.ui.foundation.Text
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -8,11 +9,33 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import timber.log.Timber
 
-@Composable
-fun SZ_headlinesScreen(statusApp: StatusApp){
-    statusApp.currentBackScreen=Screens.ListNewsPapers
-    Text("Not Implemented")
+fun getSZArticle(originalTransLink: OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp){
+    get_Article(originalTransLink,trans,statusApp, ::getSZTranslatedArticle  )
 }
+
+suspend fun getSZTranslatedArticle(originalTransLink: OriginalTransLink, statusApp: StatusApp):MutableList<OriginalTrans>  {
+    Timber.d("->gettranslationlink")
+    statusApp.currentStatus = AppStatus.Loading
+    val original = getSZJSoupArticle(originalTransLink)
+    val sall = translate2(original, statusApp.lang,"de")
+    // val i=1/0
+    Timber.d("<-get translated text")
+    return sall
+}
+suspend fun getSZJSoupArticle(originalTransLink: OriginalTransLink) = withContext(Dispatchers.IO) {
+    Timber.d("get Article link= ${originalTransLink.kArticle.link}")
+    fun transArticleintro(el: Element): String {
+        //println("el $el")
+        return el.text()
+    }
+    val doc = Jsoup.connect(originalTransLink.kArticle.link).get()
+    //println(originalTransLink.kArticle.link)
+    var art = doc.select("p.css-0")
+    val l1 = art.map { it -> "${originalTransLink.kArticle.title}"+transArticleintro(it) }
+    l1.joinToString()
+}
+
+
 
 fun getSZ_Headlines(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp){
     get_HeadLines(lhd,statusApp,::getSZHeadLines)

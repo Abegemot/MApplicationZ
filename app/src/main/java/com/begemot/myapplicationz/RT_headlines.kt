@@ -9,7 +9,7 @@ import org.jsoup.nodes.Element
 import timber.log.Timber
 import kotlin.reflect.KSuspendFunction1
 
- fun getRT_Headlines4(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp){
+/*fun getRT_Headlines4(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp){
     Timber.d("->getLHeadlines")
     GlobalScope.launch(Dispatchers.Main) {
         statusApp.currentStatus = AppStatus.Loading
@@ -28,7 +28,7 @@ import kotlin.reflect.KSuspendFunction1
     }
     Timber.d("<-getLHeadlines")
 
-}
+}*/
  fun getRT_Headlines(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp){
      get_HeadLines(lhd,statusApp, ::getRTHeadLines)
  }

@@ -9,8 +9,6 @@ import androidx.ui.core.*
 import androidx.ui.foundation.*
 import androidx.ui.foundation.shape.corner.RoundedCornerShape
 import androidx.ui.graphics.Color
-import androidx.ui.graphics.RectangleShape
-import androidx.ui.graphics.Shape
 import androidx.ui.layout.*
 import androidx.ui.material.*
 import androidx.ui.material.icons.Icons
@@ -52,12 +50,10 @@ sealed class Screens {
     object ListNewsPapers : Screens()
 }
 
-     inline fun RT_FullArticle(otl:OriginalTransLink):Screens{
-         return Screens.RT_FullArticle(otl)
-     }
-     inline fun SZ_FullArticle(otl:OriginalTransLink):Screens{
-         return Screens.SZ_FullArticle(otl)
-     }
+     inline fun RT_FullArticle(otl:OriginalTransLink):Screens{ return Screens.RT_FullArticle(otl) }
+     inline fun SZ_FullArticle(otl:OriginalTransLink):Screens{ return Screens.SZ_FullArticle(otl) }
+     inline fun RT_ListHeadlines():Screens{ return Screens.RT_ListHeadlines}
+     inline fun SZ_ListHeadlines():Screens{ return Screens.SZ_ListHeadlines}
      //val APOS2 = {otl:OriginalTransLink->Screens.RT_FullArticle(otl)}
 
 sealed class AppStatus {
@@ -165,12 +161,21 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
         Surface {
             when (val s = sApp.currentScreen) {
                 is Screens.ListNewsPapers -> newsPapersScreen2(sApp)
-                is Screens.RT_ListHeadlines -> RT_headlinesScreen(sApp)
-               // is Screens.RT_ListHeadlines -> headlinesScreen(sApp, ::RT_FullArticle,::getRT_Headlines)
-                is Screens.RT_FullArticle -> RT_articleScreen(s.originalTransLink, sApp)
-                //is Screens.SZ_ListHeadlines-> SZ_headlinesScreen(statusApp = sApp)
+                is Screens.RT_ListHeadlines -> headlinesScreen(sApp, ::RT_FullArticle,::getRT_Headlines)
                 is Screens.SZ_ListHeadlines->headlinesScreen(sApp,::SZ_FullArticle,::getSZ_Headlines)
-
+                //is Screens.RT_FullArticle -> RT_articleScreen(s.originalTransLink, sApp)
+                is Screens.RT_FullArticle-> articleScreen(
+                    originalTransLink = s.originalTransLink,
+                    statusApp = sApp,
+                    backScreenFun = ::RT_ListHeadlines,
+                    getArticle = ::getRTArticle
+                )
+                is Screens.SZ_FullArticle-> articleScreen(
+                    originalTransLink = s.originalTransLink,
+                    statusApp = sApp,
+                    backScreenFun = ::SZ_ListHeadlines,
+                    getArticle = ::getSZArticle
+                )
 
             }
 
@@ -219,6 +224,7 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
          Timber.d("<-headlines screen ${status.toString()}")
      }
 
+/*
 @Composable
 fun RT_headlinesScreen(statusApp: StatusApp) {
     statusApp.currentBackScreen=Screens.ListNewsPapers
@@ -238,7 +244,7 @@ fun RT_headlinesScreen(statusApp: StatusApp) {
         is AppStatus.Idle     -> draw_Headlines(loriginalTransLink =lHeadlines.value , statusApp =statusApp,afun=::RT_FullArticle)
     }
     Timber.d("<-headlines screen ${status.toString()}")
-}
+}*/
 
 @Composable
  fun waiting(){
@@ -316,11 +322,27 @@ fun draw_Headlines(
 
 
 @Composable
+fun   articleScreen(originalTransLink: OriginalTransLink, statusApp: StatusApp, backScreenFun:()->Screens, getArticle:(originalTransLink:OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp)->Unit){
+    statusApp.currentBackScreen=backScreenFun()
+    val trans3 = state { mutableListOf<OriginalTrans>() }
+    onCommit(statusApp.lang) {
+        getArticle(originalTransLink, trans3, statusApp)    //change name to getTranslatedArticle
+    }
+    val status=statusApp.currentStatus
+    when(status){
+        is AppStatus.Loading -> waiting()
+        is AppStatus.Error-> displayError(status.sError,status.e)
+        is AppStatus.Idle->drawArticle(originalTransLink,loriginalTranslate = trans3.value,statusApp = statusApp)
+    }
+}
+
+/*
+@Composable
 fun RT_articleScreen(originalTransLink: OriginalTransLink, statusApp: StatusApp) {
     statusApp.currentBackScreen=Screens.RT_ListHeadlines
     val trans3 = state { mutableListOf<OriginalTrans>() }
     onCommit(statusApp.lang) {
-        getTranslatedArticle(originalTransLink, trans3, statusApp)
+        getRTArticle(originalTransLink, trans3, statusApp)
     }
     val status=statusApp.currentStatus
     when(status){
@@ -329,6 +351,7 @@ fun RT_articleScreen(originalTransLink: OriginalTransLink, statusApp: StatusApp)
         is AppStatus.Idle->drawArticle(originalTransLink,loriginalTranslate = trans3.value,statusApp = statusApp)
     }
  }
+*/
 
 @Composable
 fun drawArticle(originalTransLink: OriginalTransLink, loriginalTranslate:MutableList<OriginalTrans>, statusApp: StatusApp){
@@ -338,10 +361,10 @@ fun drawArticle(originalTransLink: OriginalTransLink, loriginalTranslate:Mutable
             Card(shape= RoundedCornerShape(8.dp),elevation = 7.dp, modifier = Modifier.fillMaxHeight()+ Modifier.padding(2.dp)+ Modifier.fillMaxWidth()) {
                 Column() {
                     val bplaytext=state{false}
-                    Clickable(onClick ={original.value=true; bplaytext.value=true} ) {
+                    Box(modifier=Modifier.clickable(onClick = {original.value=true; bplaytext.value=true} )) {
                         KText2(it.original,size = statusApp.fontSize)
                     }
-                    Clickable(onClick ={original.value=false; bplaytext.value=true} ) {
+                    Box(modifier=Modifier.clickable(onClick = {original.value=false; bplaytext.value=true} )) {
                         KText2(it.translated, size = statusApp.fontSize)
                     }
                     if(bplaytext.value){

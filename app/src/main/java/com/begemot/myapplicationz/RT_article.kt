@@ -8,11 +8,20 @@ import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import timber.log.Timber
+import kotlin.reflect.KSuspendFunction2
 
-fun getTranslatedArticle(originalTransLink: OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp){
+fun getRTArticle(originalTransLink: OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp){
+    get_Article(originalTransLink,trans,statusApp, ::getRTTranslatedArticle  )
+}
+
+fun get_Article(
+    originalTransLink: OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp,
+    gettransArticle: KSuspendFunction2<OriginalTransLink, StatusApp, MutableList<OriginalTrans>>
+                ){
     GlobalScope.launch (Dispatchers.Main){
         val resp= exWithException<MutableList<OriginalTrans>,String> {
-            getTranslatedArticle2(originalTransLink ,statusApp )
+            //getRTTranslatedArticle(originalTransLink ,statusApp )
+            gettransArticle(originalTransLink,statusApp)
         }
         when(resp){
             is KResult.Succes->{trans.value=resp.t;statusApp.currentStatus = AppStatus.Idle}
@@ -20,35 +29,30 @@ fun getTranslatedArticle(originalTransLink: OriginalTransLink, trans: MutableSta
         }
     }
 }
-suspend fun getTranslatedArticle2(originalTransLink: OriginalTransLink, statusApp: StatusApp):MutableList<OriginalTrans>  {
+
+
+fun getRTArticle2(originalTransLink: OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp){
+    GlobalScope.launch (Dispatchers.Main){
+        val resp= exWithException<MutableList<OriginalTrans>,String> {
+            getRTTranslatedArticle(originalTransLink ,statusApp )
+        }
+        when(resp){
+            is KResult.Succes->{trans.value=resp.t;statusApp.currentStatus = AppStatus.Idle}
+            is KResult.Error->{statusApp.currentStatus=AppStatus.Error(resp.msg,resp.e)}
+        }
+    }
+}
+suspend fun getRTTranslatedArticle(originalTransLink: OriginalTransLink, statusApp: StatusApp):MutableList<OriginalTrans>  {
     Timber.d("->gettranslationlink")
     statusApp.currentStatus = AppStatus.Loading
-    val original = getArticle(originalTransLink)
+    val original = getRTJSoupArticle(originalTransLink)
     val sall = translate2(original, statusApp.lang,"ru")
    // val i=1/0
     Timber.d("<-get translated text")
     return sall
 }
 
-/*fun oldgetTranslatedArticle(originalTransLink: OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp) {
-    Timber.d("->gettranslationlink")
-    statusApp.currentStatus = AppStatus.Loading
-    GlobalScope.launch(Dispatchers.Main) {
-        val original = getArticle(originalTransLink)
-        //  println("original : $original")
-        //val sall = gettranslatedText(original, statusApp.lang)
-        val sall = translate(original, statusApp.lang)
-        Timber.d("<-get translated text")
-        when(sall){
-            is ResultTranslation.ResultList->{trans.value=sall.Lorigtrans; statusApp.currentStatus = AppStatus.Idle }
-            is ResultTranslation.Error->{statusApp.currentStatus=AppStatus.Error(sall.sError,null)}
-        }
-        //trans.value = sall
-        //statusApp.currentStatus = AppStatus.Idle()
-    }
-}*/
-
-suspend fun getArticle(originalTransLink: OriginalTransLink) = withContext(Dispatchers.IO) {
+suspend fun getRTJSoupArticle(originalTransLink: OriginalTransLink) = withContext(Dispatchers.IO) {
     Timber.d("get Article")
     fun transArticleintro(el: Element): String {
         //println("el $el")
