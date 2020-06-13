@@ -69,7 +69,7 @@ fun splitLongText(text:String):List<String>{
 suspend fun gettranslatedText(text: String, tlang: String,olang:String):MutableList<OriginalTrans> = withContext(
     Dispatchers.IO) {
     Timber.d("->  gettranslatedText")
-    Timber.d(text)
+    //Timber.d(text)
     var url =
         "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" + "$olang" + "&tl=" + "$tlang" + "&dt=t&q=" + URLEncoder.encode(
             text,

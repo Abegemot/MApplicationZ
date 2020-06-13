@@ -9,50 +9,11 @@ import org.jsoup.nodes.Element
 import timber.log.Timber
 import kotlin.reflect.KSuspendFunction1
 
-/*fun getRT_Headlines4(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp){
-    Timber.d("->getLHeadlines")
-    GlobalScope.launch(Dispatchers.Main) {
-        statusApp.currentStatus = AppStatus.Loading
-        val resp = exWithException<MutableList<OriginalTransLink>, String> {
-            getRTHeadLines(statusApp)
-        }
-        when(resp) {
-            is KResult.Succes -> {
-                Timber.d("SUCCES")
-                lhd.clear()
-                lhd.addAll(resp.t); statusApp.currentStatus = AppStatus.Idle
-            }
-            is KResult.Error -> { statusApp.currentStatus = AppStatus.Error(resp.msg, resp.e) }
-        }
 
-    }
-    Timber.d("<-getLHeadlines")
-
-}*/
  fun getRT_Headlines(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp){
      get_HeadLines(lhd,statusApp, ::getRTHeadLines)
  }
 
-fun get_HeadLines(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp, zgetLines: KSuspendFunction1<StatusApp, MutableList<OriginalTransLink>>) {
-    Timber.d("->getLHeadlines")
-    GlobalScope.launch(Dispatchers.Main) {
-        statusApp.currentStatus = AppStatus.Loading
-        val resp = exWithException<MutableList<OriginalTransLink>, String> {
-            //zgetLHeadLines(statusApp)
-            zgetLines(statusApp)
-        }
-        when(resp) {
-            is KResult.Succes -> {
-                Timber.d("SUCCES")
-                lhd.clear()
-                lhd.addAll(resp.t); statusApp.currentStatus = AppStatus.Idle
-            }
-            is KResult.Error -> { statusApp.currentStatus = AppStatus.Error(resp.msg, resp.e) }
-        }
-
-    }
-    Timber.d("<-getLHeadlines")
-}
 
 
 suspend fun getRTHeadLines(statusApp: StatusApp):MutableList<OriginalTransLink>{
@@ -61,9 +22,9 @@ suspend fun getRTHeadLines(statusApp: StatusApp):MutableList<OriginalTransLink>{
     // GlobalScope.launch(Dispatchers.Main) {
     val LA = getJSoupHeadlines()   //<-- suspend function runing on IO
 
-    Timber.d("-->after jsoup   ${LA.size}")
-    LA.forEach{Timber.d("->${it.title}<-")}
-    Timber.d("<--after jsoup")
+   // Timber.d("-->after jsoup   ${LA.size}")
+   // LA.forEach{Timber.d("->${it.title}<-")}
+   // Timber.d("<--after jsoup")
 
     val sb = StringBuilder()
     LA.forEach { sb.append(it.title) }

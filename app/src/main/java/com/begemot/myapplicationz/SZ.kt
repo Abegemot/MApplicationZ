@@ -47,9 +47,9 @@ suspend fun getSZHeadLines(statusApp: StatusApp):MutableList<OriginalTransLink>{
     val L= mutableListOf<OriginalTransLink>(OriginalTransLink(KArticle("hola","link","desc"),"translated1"))
     val LA=getSZJSoupHeadlines()
 
-    Timber.d("-->after jsoup   ${LA.size}")
-    LA.forEach{Timber.d("->${it.title}<-")}
-    Timber.d("<--after jsoup")
+   // Timber.d("-->after jsoup   ${LA.size}")
+   // LA.forEach{Timber.d("->${it.title}<-")}
+   // Timber.d("<--after jsoup")
 
     val sb = StringBuilder()
     LA.forEach { sb.append(it.title) }
@@ -67,7 +67,7 @@ suspend fun getSZHeadLines(statusApp: StatusApp):MutableList<OriginalTransLink>{
 
 suspend fun getSZJSoupHeadlines():List<KArticle> = withContext(Dispatchers.IO) {
     fun transFigure(el: Element): KArticle {
-        Timber.d(el.html())
+       // Timber.d(el.html())
         val title=el.select("h3.sz-teaser__title").text().replace(".",",")+". "
         val title2 = el.text().replace(".",",")+". "
         val link =  el.attr("href")
