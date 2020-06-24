@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
+import androidx.ui.text.Locale
+import timber.log.Timber
 import java.util.UUID
 
 class App:Application(){
@@ -15,10 +17,16 @@ class App:Application(){
     override fun onCreate() {
         super.onCreate()
         instance=this
+        if(BuildConfig.DEBUG){
+            Timber.plant(Timber.DebugTree())
+        }
         //checkWifi(App.instance)
         if(prefs.userId.equals("")){
             prefs.userId=UUID.randomUUID().toString()
         }
+        val currentAppLocale = Locale.current.language
+        val cl=java.util.Locale(currentAppLocale).displayLanguage
+        Timber.d("app locale: $cl")
     }
 }
 val prefs: Preferences by lazy {
@@ -51,7 +59,7 @@ class Preferences(context:Context){
     set(value)=sharedPrefs.edit().putInt(FONT_SIZE,value).apply()
 
     var kLang:String
-    get()=sharedPrefs.getString(LANG,"es")
+    get()=sharedPrefs.getString(LANG,Locale.current.language)
     set(value) = sharedPrefs.edit().putString(LANG,value).apply()
 
     var userId:String

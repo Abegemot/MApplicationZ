@@ -1,11 +1,16 @@
 package com.begemot.myapplicationz
 
 import androidx.compose.Composable
+import androidx.compose.state
 import androidx.ui.core.*
 import androidx.ui.foundation.*
+import androidx.ui.foundation.shape.corner.CircleShape
 import androidx.ui.foundation.shape.corner.RoundedCornerShape
+import androidx.ui.graphics.Color
+import androidx.ui.graphics.Shape
 import androidx.ui.layout.*
 import androidx.ui.material.Card
+import androidx.ui.material.Surface
 import androidx.ui.res.vectorResource
 import androidx.ui.unit.dp
 
@@ -13,6 +18,17 @@ data class NewsPapers(val Name:String,val Desc:String,val resid:Int,val screen:S
 
 val lNewsPapers=listOf(NewsPapers("RT Novesti","Russian news",R.drawable.ic_rt_logo_logotyp_us2,Screens.RT_ListHeadlines),
     NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines)
+    /*,   NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
+       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
+       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
+       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
+       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
+       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
+       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
+       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
+       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
+       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
+       NewsPapers("ZZZZZZZZZZZ Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines)*/
 )
 
 @Composable
@@ -23,6 +39,7 @@ fun newsPapersScreen(){
 
 @Composable
 fun newsPapersScreen2(statusApp:StatusApp){
+    val (shape,setShape)=state<Shape>{ CircleShape}
     Column() {
         AdapterList(data = lNewsPapers) {
             Card(
@@ -31,20 +48,22 @@ fun newsPapersScreen2(statusApp:StatusApp){
                 modifier = Modifier.fillMaxWidth().padding(2.dp).clickable(onClick ={statusApp.currentScreen = it.screen} )
             ) {
                 Row(verticalGravity = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.preferredHeight(64.dp).preferredWidth(120.dp)) {
+                    //Box(modifier = Modifier.preferredHeight(64.dp).preferredWidth(120.dp)) {
+                    Surface(color = Color.Transparent  ){
+
+
                         Image(
                             asset = vectorResource(id = it.resid),
                             modifier = Modifier.preferredHeight(64.dp).preferredWidth(120.dp),
+                           // modifier = Modifier.size(225.dp).padding(15.dp).drawShadow(8.dp,shape),
                             contentScale = ContentScale.Fit
                         )
                     }
-                   // Clickable(onClick = {statusApp.currentScreen = Screens.ListHeadlines}) {
                     Column(Modifier.padding(start = 6.dp)) {
-
                             Text(it.Name)
                             Text(it.Desc)
                         }
-                 //   }
+
                 }
             }
         }

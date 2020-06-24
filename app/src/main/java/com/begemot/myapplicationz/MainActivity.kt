@@ -27,9 +27,9 @@ class MainActivity : AppCompatActivity() {
     val sApp=StatusApp(Screens.ListNewsPapers,Screens.ListNewsPapers)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if(BuildConfig.DEBUG){
-            Timber.plant(Timber.DebugTree())
-        }
+       // if(BuildConfig.DEBUG){
+       //     Timber.plant(Timber.DebugTree())
+       // }
         //checkWifi(this.applicationContext)
         //setContent { LoginUi() }
 
@@ -230,7 +230,7 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
 
         VerticalScroller() {
 
-            Box(border = Border(2.dp, Color.Blue)) {
+            Box(border = Border(2.dp, Color.Blue),padding = 10.dp) {
                 val img = imageResource(id = R.drawable.icons8_black_cat_48)
                 Image(
                     img, modifier = Modifier.tag(tag = "centerImage")
@@ -249,44 +249,7 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
 }
 
 
-@Composable
-fun articleScreen(originalTransLink: OriginalTransLink, statusApp: StatusApp, backScreenFun:()->Screens, getArticle:(originalTransLink:OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp)->Unit){
-    statusApp.currentBackScreen=backScreenFun()
-    val trans3 = state { mutableListOf<OriginalTrans>() }
-    onCommit(statusApp.lang) {
-        getArticle(originalTransLink, trans3, statusApp)    //change name to getTranslatedArticle
-    }
-    val status=statusApp.currentStatus
-    when(status){
-        is AppStatus.Loading -> waiting()
-        is AppStatus.Error-> displayError(status.sError,status.e)
-        is AppStatus.Idle->drawArticle(originalTransLink,loriginalTranslate = trans3.value,statusApp = statusApp)
-    }
-}
 
-@Composable
-fun drawArticle(originalTransLink: OriginalTransLink, loriginalTranslate:MutableList<OriginalTrans>, statusApp: StatusApp){
-   // KWindow() {
-    val original=state{true}
-        AdapterList(data = loriginalTranslate) {
-            Card(shape= RoundedCornerShape(8.dp),elevation = 7.dp, modifier = Modifier.fillMaxHeight()+ Modifier.padding(2.dp)+ Modifier.fillMaxWidth()) {
-                Column() {
-                    val bplaytext=state{false}
-                    Box(modifier=Modifier.clickable(onClick = {original.value=true; bplaytext.value=true} )) {
-                        KText2(it.original,size = statusApp.fontSize)
-                    }
-                    Box(modifier=Modifier.clickable(onClick = {original.value=false; bplaytext.value=true} )) {
-                        KText2(it.translated, size = statusApp.fontSize)
-                    }
-                    if(bplaytext.value){
-                        if(original.value) playText(bplaytext,it.original,statusApp)
-                        else playText(bplaytext,it.translated,statusApp,original.value)
-                    }
-                }
-            }
-        }
- //   }
-}
 
  @Composable
  fun playText(bplayText:MutableState<Boolean>, txt:String, statusApp: StatusApp, original:Boolean=true){
@@ -325,7 +288,7 @@ fun editPreferences(selectLang: MutableState<Boolean>, statusApp: StatusApp) {
         val localFontSize=state{statusApp.fontSize}
         KWindow() {
             KHeader(txt = "Settings", onClick = {})
-            val radioOptions = listOf("en", "es", "it","ur","zh")
+            val radioOptions = listOf("en", "es", "it","ur","zh","ca")
             val indx=radioOptions.indexOf(statusApp.lang)
             val (selectedOption, onOptionSelected) = state { radioOptions[indx] }
 
@@ -393,10 +356,6 @@ inline fun <reified T, reified R> exWithException(afun:()->T): KResult<T,R> {
     }
 }
 
-/* sealed class ResultTranslation{
-        class ResultList(val Lorigtrans:MutableList<OriginalTrans>):ResultTranslation()
-        class Error(val sError:String):ResultTranslation()
- }*/
 
 
 

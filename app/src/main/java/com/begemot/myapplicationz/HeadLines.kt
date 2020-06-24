@@ -1,10 +1,7 @@
-package com.begemot.myapplicationz
+  package com.begemot.myapplicationz
 
-import androidx.compose.Composable
+import androidx.compose.*
 import androidx.compose.frames.modelListOf
-import androidx.compose.onCommit
-import androidx.compose.remember
-import androidx.compose.state
 import androidx.ui.core.Modifier
 import androidx.ui.foundation.AdapterList
 import androidx.ui.foundation.Box
@@ -23,7 +20,7 @@ import timber.log.Timber
 import kotlin.reflect.KSuspendFunction1
 
 @Composable
-fun headlinesScreen(statusApp: StatusApp,afun:(otl:OriginalTransLink)->Screens,getlines:(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp)->Unit) {
+fun headlinesScreen(statusApp: StatusApp,afun:(otl:OriginalTransLink)->Screens,getlines:(lhd:MutableState<MutableList<OriginalTransLink>>, statusApp: StatusApp)->Unit) {
     statusApp.currentBackScreen=Screens.ListNewsPapers
     Timber.d("->headlines screen")
     val lHeadlines = state{ mutableListOf<OriginalTransLink>()}
@@ -33,7 +30,7 @@ fun headlinesScreen(statusApp: StatusApp,afun:(otl:OriginalTransLink)->Screens,g
         Timber.d("on commit  headlines screen  ${lHeadlines.value.size}")
         //if(lHeadlines.value.size==0)
         //getRT_Headlines(lHeadlines.value,statusApp)
-        getlines(lHeadlines.value,statusApp)
+        getlines(lHeadlines,statusApp)
         Timber.d("after commit  headlines screen")
     }
     Timber.d("headlines size ${lHeadlines.value.size}")
@@ -84,10 +81,11 @@ fun draw_Headlines(
 
 
 
-fun get_HeadLines(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp, zgetLines: KSuspendFunction1<StatusApp, MutableList<OriginalTransLink>>) {
+fun get_HeadLines(lhd: MutableState<MutableList<OriginalTransLink>>, statusApp: StatusApp, zgetLines: KSuspendFunction1<StatusApp, MutableList<OriginalTransLink>>) {
     Timber.d("->getLHeadlines")
     GlobalScope.launch(Dispatchers.Main) {
         statusApp.currentStatus = AppStatus.Loading
+        statusApp.nItems=0
         val resp = exWithException<MutableList<OriginalTransLink>, String> {
             //zgetLHeadLines(statusApp)
             zgetLines(statusApp)
@@ -95,9 +93,10 @@ fun get_HeadLines(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp, zget
         when(resp) {
             is KResult.Succes -> {
                 Timber.d("SUCCES")
-                lhd.clear()
-                lhd.addAll(resp.t)
-                statusApp.nItems=lhd.size
+                //lhd.clear()
+                //lhd.addAll(resp.t)
+                lhd.value=resp.t
+                statusApp.nItems=lhd.value.size
                 statusApp.currentStatus = AppStatus.Idle
             }
             is KResult.Error -> { statusApp.currentStatus = AppStatus.Error(resp.msg, resp.e) }

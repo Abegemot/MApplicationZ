@@ -12,6 +12,7 @@ suspend fun translate2(text:String,tlang:String,olang:String):MutableList<Origin
     //gettranslatedText(text,lang)
     val slT=splitLongText(text)
     slT.forEach {
+        Timber.d("T2 --> $it")
          val RT2=gettranslatedText(it,tlang,olang)
          //val rl=RT2 as ResultTranslation.ResultList
          lot.addAll(RT2)
@@ -69,8 +70,8 @@ fun splitLongText(text:String):List<String>{
 suspend fun gettranslatedText(text: String, tlang: String,olang:String):MutableList<OriginalTrans> = withContext(
     Dispatchers.IO) {
     Timber.d("->  gettranslatedText")
-    //Timber.d(text)
-    var url =
+    Timber.d(text)
+    val url =
         "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" + "$olang" + "&tl=" + "$tlang" + "&dt=t&q=" + URLEncoder.encode(
             text,
             "utf-8"

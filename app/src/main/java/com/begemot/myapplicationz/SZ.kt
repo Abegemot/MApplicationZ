@@ -1,4 +1,4 @@
-package com.begemot.myapplicationz
+        package com.begemot.myapplicationz
 
 import androidx.compose.Composable
 import androidx.compose.MutableState
@@ -32,12 +32,12 @@ suspend fun getSZJSoupArticle(originalTransLink: OriginalTransLink) = withContex
     //println(originalTransLink.kArticle.link)
     var art = doc.select("p.css-0")
     val l1 = art.map { it -> "${originalTransLink.kArticle.title}"+transArticleintro(it) }
-    l1.joinToString()
+    l1.joinToString(separator = " ")
 }
 
 
 
-fun getSZ_Headlines(lhd:MutableList<OriginalTransLink>, statusApp: StatusApp){
+fun getSZ_Headlines(lhd:MutableState<MutableList<OriginalTransLink>>, statusApp: StatusApp){
     get_HeadLines(lhd,statusApp,::getSZHeadLines)
 
 }
@@ -56,6 +56,7 @@ suspend fun getSZHeadLines(statusApp: StatusApp):MutableList<OriginalTransLink>{
     val rt = translate2(sb.toString(), statusApp.lang,"de")    //<-- suspend function runing on IO
     //val q = (rt as ResultTranslation.ResultList).Lorigtrans
 
+    //if(LA.size!=rt.size) throw Exception("LA.size ${LA.size} !=rt.size ${rt.size}")
     val JJ = LA.zip(rt, { a, c -> OriginalTransLink(a, c.translated) })
     val lhd= mutableListOf<OriginalTransLink>()
     lhd.addAll(JJ)
@@ -74,6 +75,7 @@ suspend fun getSZJSoupHeadlines():List<KArticle> = withContext(Dispatchers.IO) {
 
        if(el.text().isEmpty()) return KArticle()
        // else return KArticle(title, link, "")
+        Timber.d("----->$title")
         return KArticle(title, link, "")
     }
     fun transSection(el: Element): KArticle {
@@ -93,6 +95,7 @@ suspend fun getSZJSoupHeadlines():List<KArticle> = withContext(Dispatchers.IO) {
     //art = doc.select("section.block-white.materials-preview").select("article")
     //val l2 = art.map { it -> transSection(it) }
     //l1 + l2
+
     l1
 }
 
