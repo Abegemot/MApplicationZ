@@ -282,53 +282,6 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
 
  }
 
-@Composable
-fun editPreferences(selectLang: MutableState<Boolean>, statusApp: StatusApp) {
-    Dialog(onCloseRequest = { selectLang.value = false }) {
-        val localFontSize=state{statusApp.fontSize}
-        KWindow() {
-            KHeader(txt = "Settings", onClick = {})
-            val radioOptions = listOf("en", "es", "it","ur","zh","ca")
-            val indx=radioOptions.indexOf(statusApp.lang)
-            val (selectedOption, onOptionSelected) = state { radioOptions[indx] }
-
-
-           // RadioGroup(options = radioOptions,selectedOption = selectedOption,onSelectedChange = onOptionSelected)
-            Row(verticalGravity =Alignment.CenterVertically ) {
-
-                Box(modifier = Modifier.preferredWidth(110.dp)) {
-                    RadioGroup(options = radioOptions,selectedOption = selectedOption,onSelectedChange = onOptionSelected)
-                }
-
-                Row(modifier = Modifier.padding(4.dp),verticalGravity = Alignment.CenterVertically) {
-                    IconButton(onClick = {localFontSize.value=(localFontSize.value)-1}) {
-                        Icon(Icons.Filled.KeyboardArrowDown)
-                    }
-                    KText2("Text Size",size=localFontSize.value)
-                    IconButton(onClick = {localFontSize.value=(localFontSize.value)+1}) {
-                        Icon(Icons.Filled.KeyboardArrowUp)
-                    }
-
-                }
-
-            }
-            KButtonBar {
-                Button(onClick = {
-                   // selectedLang.value = selectedOption
-                    selectLang.value = false
-                    statusApp.lang = selectedOption
-                    statusApp.fontSize = localFontSize.value
-                    prefs.fontSize = localFontSize.value
-                    prefs.kLang = selectedOption
-                }) {
-                    Text("oK")
-                }
-            }
-        }
-    }
-    //  }
-
-}
 
 data class KArticle(val title: String = "", val link: String = "", val desc: String = "")
 data class OriginalTransLink(val kArticle: KArticle,val translated: String)
