@@ -8,6 +8,7 @@ import androidx.ui.core.Modifier
 import androidx.ui.foundation.AdapterList
 import androidx.ui.foundation.Box
 import androidx.ui.foundation.clickable
+import androidx.ui.foundation.lazy.LazyColumnItems
 import androidx.ui.foundation.shape.corner.RoundedCornerShape
 import androidx.ui.layout.Column
 import androidx.ui.layout.fillMaxHeight
@@ -21,7 +22,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlin.reflect.KSuspendFunction2
 @Composable
-fun articleScreen(originalTransLink: OriginalTransLink, statusApp: StatusApp, backScreenFun:()->Screens, getArticle:(originalTransLink:OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp)->Unit){
+fun articleScreen(originalTransLink: OriginalTransLink, statusApp: StatusApp, backScreenFun:()->Screens, getArticle:(originalTransLink:OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp)->Unit,olang: String){
     statusApp.currentBackScreen=backScreenFun()
     val trans3 = state { mutableListOf<OriginalTrans>() }
     onCommit(statusApp.lang) {
@@ -31,15 +32,34 @@ fun articleScreen(originalTransLink: OriginalTransLink, statusApp: StatusApp, ba
     when(status){
         is AppStatus.Loading -> waiting()
         is AppStatus.Error-> displayError(status.sError,status.e)
-        is AppStatus.Idle->drawArticle(originalTransLink,loriginalTranslate = trans3.value,statusApp = statusApp)
+        is AppStatus.Idle->drawArticle(originalTransLink,loriginalTranslate = trans3.value,statusApp = statusApp,olang=olang)
     }
 }
 
 @Composable
-fun drawArticle(originalTransLink: OriginalTransLink, loriginalTranslate:MutableList<OriginalTrans>, statusApp: StatusApp){
+fun articleScreen2(originalTransLink: OriginalTransLink, statusApp: StatusApp){
+    //statusApp.currentBackScreen=backScreenFun()
+    statusApp.currentBackScreen=statusApp.newsProvider.linkToHeadLinesScreen()
+    val trans3 = state { mutableListOf<OriginalTrans>() }
+    onCommit(statusApp.lang) {
+        statusApp.newsProvider.getArticle(originalTransLink,trans3,statusApp)
+       // getArticle(originalTransLink, trans3, statusApp)    //change name to getTranslatedArticle
+    }
+    val status=statusApp.currentStatus
+    when(status){
+        is AppStatus.Loading -> waiting()
+        is AppStatus.Error-> displayError(status.sError,status.e)
+        is AppStatus.Idle->drawArticle(originalTransLink,loriginalTranslate = trans3.value,statusApp = statusApp,olang=statusApp.newsProvider.olang)
+    }
+}
+
+
+
+@Composable
+fun drawArticle(originalTransLink: OriginalTransLink, loriginalTranslate:MutableList<OriginalTrans>, statusApp: StatusApp,olang:String){
     // KWindow() {
     val original= state{true}
-    AdapterList(data = loriginalTranslate) {
+    LazyColumnItems(items = loriginalTranslate, itemContent = {
         Card(shape= RoundedCornerShape(8.dp),elevation = 7.dp, modifier = Modifier.fillMaxHeight()+ Modifier.padding(2.dp)+ Modifier.fillMaxWidth()) {
             Column() {
                 val bplaytext= state{false}
@@ -50,15 +70,15 @@ fun drawArticle(originalTransLink: OriginalTransLink, loriginalTranslate:Mutable
                     KText2(it.translated, size = statusApp.fontSize)
                 }
                 if(bplaytext.value){
-                    if(original.value) playText(bplaytext,it.original,statusApp)
-                    else playText(bplaytext,it.translated,statusApp,original.value)
+                    if(original.value) playText(bplaytext,it.original,statusApp,olang)
+                    else playText(bplaytext,it.translated,statusApp,statusApp.lang  )
                 }
             }
         }
-    }
+    })
     //   }
 }
-fun get_Article(
+fun   get_Article(
     originalTransLink: OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp,
     gettransArticle: KSuspendFunction2<OriginalTransLink, StatusApp, MutableList<OriginalTrans>>
 ){

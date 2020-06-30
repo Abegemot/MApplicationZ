@@ -5,7 +5,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
-import androidx.ui.text.Locale
+import androidx.ui.intl.Locale
+//import androidx.ui.text.Locale
 import timber.log.Timber
 import java.util.UUID
 
@@ -50,6 +51,7 @@ class Preferences(context:Context){
         private const val FONT_SIZE ="fontsize"
         private const val LANG ="language"
         private const val USERID="userid"
+        private const val SELECTEDLANG="selectedlang"
     }
     private val sharedPrefs: SharedPreferences =
         context.getSharedPreferences(PREFS_FILENAME, Context.MODE_PRIVATE)
@@ -59,12 +61,14 @@ class Preferences(context:Context){
     set(value)=sharedPrefs.edit().putInt(FONT_SIZE,value).apply()
 
     var kLang:String
-    get()=sharedPrefs.getString(LANG,Locale.current.language)
+    get()=sharedPrefs.getString(LANG, Locale.current.language)
     set(value) = sharedPrefs.edit().putString(LANG,value).apply()
 
     var userId:String
     get()=sharedPrefs.getString(USERID,"")
     set(value) = sharedPrefs.edit().putString(USERID,value).apply()
 
-
+    var selectedLang:String
+    get()=sharedPrefs.getString(SELECTEDLANG,"")
+    set(value)=sharedPrefs.edit().putString(SELECTEDLANG,value).apply()
 }

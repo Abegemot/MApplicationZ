@@ -15,6 +15,7 @@ import androidx.ui.material.icons.Icons
 import androidx.ui.material.icons.filled.*
 import androidx.ui.res.imageResource
 import androidx.ui.res.vectorResource
+import androidx.ui.text.FirstBaseline
 import androidx.ui.unit.dp
 import com.begemot.kclib.*
 
@@ -25,6 +26,7 @@ import java.io.StringWriter
 
 class MainActivity : AppCompatActivity() {
     val sApp=StatusApp(Screens.ListNewsPapers,Screens.ListNewsPapers)
+    @ExperimentalLayout
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
        // if(BuildConfig.DEBUG){
@@ -33,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         //checkWifi(this.applicationContext)
         //setContent { LoginUi() }
 
-        setContent { newsReaderApp(sApp) }
+        setContent {     newsReaderApp(sApp) }
 
     }
     override fun onBackPressed() {
@@ -42,12 +44,17 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
+
+
 sealed class Screens {
     object RT_ListHeadlines : Screens()
-    class  RT_FullArticle(val originalTransLink: OriginalTransLink) : Screens()
+    open class RT_FullArticle(val originalTransLink: OriginalTransLink) : Screens()
     object SZ_ListHeadlines : Screens()
-    class  SZ_FullArticle(val originalTransLink: OriginalTransLink) : Screens ()
+    class SZ_FullArticle(val originalTransLink: OriginalTransLink) : Screens()
     object ListNewsPapers : Screens()
+    object ListHeadLines:Screens()
+    class FullArticle(val originalTransLink: OriginalTransLink) : Screens()
+   // class PP:Screens()
 }
 
      inline fun RT_FullArticle(otl:OriginalTransLink):Screens{ return Screens.RT_FullArticle(otl) }
@@ -66,7 +73,7 @@ class StatusApp(
     currentScreen:Screens,
     currentBackScreen:Screens,
     currentStatus: AppStatus=AppStatus.Loading,
-    nItems:Int=0,
+   // nItems:Int=0,
     var fontSize: Int = prefs.fontSize,
     var lang: String = prefs.kLang
 
@@ -76,8 +83,10 @@ class StatusApp(
          var currentStatus by mutableStateOf(currentStatus)
          var currentBackScreen by mutableStateOf(currentBackScreen)
          var nItems by mutableStateOf(0)
+         lateinit var   newsProvider:INewsPaper
     }
 
+@ExperimentalLayout
 @Composable
 fun newsReaderApp(sApp: StatusApp){
     val scaffoldState=remember{ScaffoldState()}
@@ -89,7 +98,7 @@ fun newsReaderApp(sApp: StatusApp){
         Scaffold(
             scaffoldState = scaffoldState,
             //  drawerContent = { Text("Drawer content") },
-            topAppBar = {
+            topBar = {
                 TopAppBar(
                     title = { title(statusApp = sApp) },
                     actions = {
@@ -122,6 +131,7 @@ fun newsReaderApp(sApp: StatusApp){
 
 }
 
+@ExperimentalLayout
 @Composable
 fun contactDialog(contactDialog:MutableState<Boolean>) {
     val context = ContextAmbient.current
@@ -156,6 +166,7 @@ fun contactDialog(contactDialog:MutableState<Boolean>) {
 }
 
 
+@ExperimentalLayout
 @Composable
 fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableState<Boolean>,sApp:StatusApp){
     if(contactdialog.value) contactDialog(contactdialog)
@@ -164,21 +175,26 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
         Surface {
             when (val s = sApp.currentScreen) {
                 is Screens.ListNewsPapers -> newsPapersScreen2(sApp)
-                is Screens.RT_ListHeadlines -> headlinesScreen(sApp, ::RT_FullArticle,::getRT_Headlines)
-                is Screens.SZ_ListHeadlines->headlinesScreen(sApp,::SZ_FullArticle,::getSZ_Headlines)
+                is Screens.RT_ListHeadlines -> headlinesScreen(sApp, ::RT_FullArticle,::getRT_Headlines,"ru")
+                is Screens.SZ_ListHeadlines->headlinesScreen(sApp,::SZ_FullArticle,::getSZ_Headlines,"de")
                 //is Screens.RT_FullArticle -> RT_articleScreen(s.originalTransLink, sApp)
                 is Screens.RT_FullArticle-> articleScreen(
                     originalTransLink = s.originalTransLink,
                     statusApp = sApp,
                     backScreenFun = ::RT_ListHeadlines,
-                    getArticle = ::getRTArticle
+                    getArticle = ::getRTArticle,
+                    olang="ru"
+
                 )
                 is Screens.SZ_FullArticle-> articleScreen(
                     originalTransLink = s.originalTransLink,
                     statusApp = sApp,
                     backScreenFun = ::SZ_ListHeadlines,
-                    getArticle = ::getSZArticle
+                    getArticle = ::getSZArticle,
+                    olang="de"
                 )
+                is Screens.ListHeadLines->headlinesScreen2(sApp)
+                is Screens.FullArticle->articleScreen2(s.originalTransLink,sApp)
 
             }
 
@@ -194,7 +210,7 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
          Text(text = "News Reader",style = MaterialTheme.typography.h5)
 
          var s=""
-         if(statusApp.nItems>0) s="(${statusApp.nItems})"
+         if(statusApp.nItems>0) s=" (${statusApp.nItems})"
          val currScreen=statusApp.currentScreen
          val sAux=when(currScreen){
              is Screens.RT_FullArticle->" RT Article"
@@ -202,6 +218,8 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
              is Screens.ListNewsPapers->"News papers"
              is Screens.SZ_ListHeadlines->" SZ Headlines  $s"
              is Screens.SZ_FullArticle -> " SZ Article"
+             is Screens.ListHeadLines -> statusApp.newsProvider.getName(Title.HEADLINES)+s
+             is Screens.FullArticle ->statusApp.newsProvider.getName(Title.ARTICLE)
          }
          Text(" $sAux",style = MaterialTheme.typography.subtitle1)
      }
@@ -252,31 +270,40 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
 
 
  @Composable
- fun playText(bplayText:MutableState<Boolean>, txt:String, statusApp: StatusApp, original:Boolean=true){
+ fun playText(bplayText:MutableState<Boolean>, txt:String, statusApp: StatusApp, lan:String){
      val context = ContextAmbient.current
-     var msg=""
+     var msg by state{""}
     lateinit var t1:TextToSpeech
-     var lan=""
-     var result=0
-     if(original) lan="ru" else lan=statusApp.lang
+
+     var result by state{0}
+     var tstatus by state{""}
+     val l=Locale.forLanguageTag(lan)
      t1 = TextToSpeech(
          context,
          TextToSpeech.OnInitListener { status ->
+             tstatus=status.toString()
+
              if (status != TextToSpeech.ERROR) {
                 result= t1.setLanguage(Locale.forLanguageTag(lan))
                 if(result==TextToSpeech.LANG_MISSING_DATA) msg="Missing data"
                 if(result==TextToSpeech.LANG_NOT_SUPPORTED) msg="Lang not supported"
 
              }
+
          })
+     //pos="voices ${t1.voices.size}"
      Dialog(onCloseRequest = {t1.shutdown(); bplayText.value=false}){
+
+        // t1.setSpeechRate(0.7f)
          //Box(modifier = Modifier.fillMaxWidth(),backgroundColor = Color.Green){
          KWindow() {
-             if(result==0) KText2(txt,size = statusApp.fontSize)
-             else    KText2(msg,size = statusApp.fontSize)
-             IconButton(onClick = {t1.speak(txt,TextToSpeech.QUEUE_FLUSH,null,null)}) {
-                 Icon(vectorResource(id = R.drawable.ic_volume_up_24px))
-             }
+              KText2(txt,size = statusApp.fontSize)
+              Row(verticalGravity = Alignment.CenterVertically) {
+                 IconButton(onClick = { t1.speak(txt, TextToSpeech.QUEUE_FLUSH, null, null) }) {
+                    Icon(vectorResource(id = R.drawable.ic_volume_up_24px))
+                 }
+                 Text("($lan) $msg")
+              }
          }
      }
 

@@ -69,21 +69,21 @@ suspend fun getSZHeadLines(statusApp: StatusApp):MutableList<OriginalTransLink>{
 suspend fun getSZJSoupHeadlines():List<KArticle> = withContext(Dispatchers.IO) {
     fun transFigure(el: Element): KArticle {
        // Timber.d(el.html())
-        val title=el.select("h3.sz-teaser__title").text().replace(".",",")+". "
-        val title2 = el.text().replace(".",",")+". "
+        val title=el.select("h3.sz-teaser__title").text().replace(".",",")//+". "
+        val title2 = el.text().replace(".",",")//+". "
         val link =  el.attr("href")
 
        if(el.text().isEmpty()) return KArticle()
        // else return KArticle(title, link, "")
-        Timber.d("----->$title")
-        return KArticle(title, link, "")
+        //Timber.d("----->$title")
+        return KArticle("["+el.select("h3.sz-teaser__title").text()  +"]. ", link, "")
     }
-    fun transSection(el: Element): KArticle {
-        val title = el.select("h3").text()+". "
+   /* fun transSection(el: Element): KArticle {
+        val title = el.select("h3").text()//+". "
         // val desc = el.select("p").text()
         val link = el.select("h3").select("a[href]").attr("abs:href")
-        return KArticle(title, link, "")
-    }
+        return KArticle("["+title+"]. ", link, "")
+    }*/
 
     val s = "https://www.sueddeutsche.de"
     val con= Jsoup.connect(s)

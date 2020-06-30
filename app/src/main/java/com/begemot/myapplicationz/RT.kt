@@ -80,32 +80,30 @@ suspend fun getRTHeadLines(statusApp: StatusApp):MutableList<OriginalTransLink>{
 }
 suspend fun getJSoupHeadlines():List<KArticle> = withContext(Dispatchers.IO) {
     fun transFigure(el: Element): KArticle {
-        val title1 = el.select("h3").text()
-        val title=title1.replace('«','-')
-            .replace('»','-')
-            .replace('.',',')
+        val title = "["+el.select("h3").text()+"]. "
+        //val title="["+title1.replace('«','-')
+           // .replace('»','-')
+           // .replace('.',',')
            // .replace('—',' ')
-            .replace('?',' ')
+           // .replace('?','?')+"]. "
         val link = el.select("a[href]").first().attr("abs:href")
-        return KArticle(title+". ", link, "")
+        return KArticle(title, link, "")
     }
     fun transSection(el: Element): KArticle {
-        val title1 = el.select("h3").text()
-        val title=title1.replace('«','-')
-            .replace('»','-')
-            .replace('.',',')
+        val title = "["+el.select("h3").text()+"]. "
+        //val title="["+title1.replace('«','-')
+            //.replace('»','-')
+           //.replace('.',',')
            // .replace('—',' ')
-            .replace('?',' ')
+           // .replace('?','?')+"]. "
 
-       // —
-        // val desc = el.select("p").text()
         val link = el.select("h3").select("a[href]").attr("abs:href")
-        return KArticle(title+". ", link, "")
+        return KArticle(title, link, "")
     }
 
     val s = "https://russian.rt.com/inotv"
     val con= Jsoup.connect(s)
-    con.timeout(6000)
+    //con.timeout(6000)
     val doc = con.get()
     var art = doc.select("figure")
     val l1 = art.map { it -> transFigure(it) }
