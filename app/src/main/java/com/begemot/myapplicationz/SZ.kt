@@ -9,19 +9,51 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import timber.log.Timber
 
-fun getSZArticle(originalTransLink: OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp){
-    get_Article(originalTransLink,trans,statusApp, ::getSZTranslatedArticle  )
+object SZ :INewsPaper{
+    override val olang: String
+        get() = "de"
+
+    override fun getName(e: Title): String {
+        return when(e){
+            Title.ARTICLE   ->"SZ Article"
+            Title.HEADLINES ->"SZ Headlines"
+            Title.NAME->"Süddeutsche Zeitung"
+        }
+    }
+
+    override suspend fun getTranslatedArticle(
+        originalTransLink: OriginalTransLink,
+        statusApp: StatusApp
+    ): MutableList<OriginalTrans> {
+        Timber.d("->gettranslationlink")
+        statusApp.currentStatus = AppStatus.Loading
+        val original = getSZJSoupArticle(originalTransLink)
+        val sall = translate2(original, statusApp.lang,"de")
+        // val i=1/0
+        Timber.d("<-get translated text")
+        return sall
+    }
+
+    override suspend fun getHeadLines(statusApp: StatusApp): List<OriginalTransLink> {
+
+        val L= mutableListOf<OriginalTransLink>(OriginalTransLink(KArticle("hola","link","desc"),"translated1"))
+        val LA=getSZJSoupHeadlines()
+
+        val sb = StringBuilder()
+        LA.forEach { sb.append(it.title) }
+        val rt = translate2(sb.toString(), statusApp.lang,"de")    //<-- suspend function runing on IO
+        //val q = (rt as ResultTranslation.ResultList).Lorigtrans
+
+        //if(LA.size!=rt.size) throw Exception("LA.size ${LA.size} !=rt.size ${rt.size}")
+        val JJ = LA.zip(rt, { a, c -> OriginalTransLink(a, c.translated) })
+        val lhd= mutableListOf<OriginalTransLink>()
+        lhd.addAll(JJ)
+        //Timber.d(LA.toString())
+        return lhd
+    }
 }
 
-suspend fun getSZTranslatedArticle(originalTransLink: OriginalTransLink, statusApp: StatusApp):MutableList<OriginalTrans>  {
-    Timber.d("->gettranslationlink")
-    statusApp.currentStatus = AppStatus.Loading
-    val original = getSZJSoupArticle(originalTransLink)
-    val sall = translate2(original, statusApp.lang,"de")
-    // val i=1/0
-    Timber.d("<-get translated text")
-    return sall
-}
+
 suspend fun getSZJSoupArticle(originalTransLink: OriginalTransLink) = withContext(Dispatchers.IO) {
     Timber.d("get Article link= ${originalTransLink.kArticle.link}")
     fun transArticleintro(el: Element): String {
@@ -37,35 +69,6 @@ suspend fun getSZJSoupArticle(originalTransLink: OriginalTransLink) = withContex
 
 
 
-fun getSZ_Headlines(lhd:MutableState<MutableList<OriginalTransLink>>, statusApp: StatusApp){
-    get_HeadLines(lhd,statusApp,::getSZHeadLines)
-
-}
-
-
-suspend fun getSZHeadLines(statusApp: StatusApp):MutableList<OriginalTransLink>{
-    val L= mutableListOf<OriginalTransLink>(OriginalTransLink(KArticle("hola","link","desc"),"translated1"))
-    val LA=getSZJSoupHeadlines()
-
-   // Timber.d("-->after jsoup   ${LA.size}")
-   // LA.forEach{Timber.d("->${it.title}<-")}
-   // Timber.d("<--after jsoup")
-
-    val sb = StringBuilder()
-    LA.forEach { sb.append(it.title) }
-    val rt = translate2(sb.toString(), statusApp.lang,"de")    //<-- suspend function runing on IO
-    //val q = (rt as ResultTranslation.ResultList).Lorigtrans
-
-    //if(LA.size!=rt.size) throw Exception("LA.size ${LA.size} !=rt.size ${rt.size}")
-    val JJ = LA.zip(rt, { a, c -> OriginalTransLink(a, c.translated) })
-    val lhd= mutableListOf<OriginalTransLink>()
-    lhd.addAll(JJ)
-
-
-    //Timber.d(LA.toString())
-    return lhd
-}
-
 suspend fun getSZJSoupHeadlines():List<KArticle> = withContext(Dispatchers.IO) {
     fun transFigure(el: Element): KArticle {
        // Timber.d(el.html())
@@ -76,7 +79,9 @@ suspend fun getSZJSoupHeadlines():List<KArticle> = withContext(Dispatchers.IO) {
        if(el.text().isEmpty()) return KArticle()
        // else return KArticle(title, link, "")
         //Timber.d("----->$title")
-        return KArticle("["+el.select("h3.sz-teaser__title").text()  +"]. ", link, "")
+        return KArticle("["+el.select("h3.sz-teaser__title").text().replace(".",",")  +"]. ", link, "")
+
+//        return KArticle(el.select("h3.sz-teaser__title").text().replace(".",",")  +". ", link, "")
     }
    /* fun transSection(el: Element): KArticle {
         val title = el.select("h3").text()//+". "

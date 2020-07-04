@@ -7,7 +7,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.*
 import androidx.ui.core.*
 import androidx.ui.foundation.*
-import androidx.ui.foundation.shape.corner.RoundedCornerShape
 import androidx.ui.graphics.Color
 import androidx.ui.layout.*
 import androidx.ui.material.*
@@ -15,7 +14,6 @@ import androidx.ui.material.icons.Icons
 import androidx.ui.material.icons.filled.*
 import androidx.ui.res.imageResource
 import androidx.ui.res.vectorResource
-import androidx.ui.text.FirstBaseline
 import androidx.ui.unit.dp
 import com.begemot.kclib.*
 
@@ -29,12 +27,6 @@ class MainActivity : AppCompatActivity() {
     @ExperimentalLayout
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-       // if(BuildConfig.DEBUG){
-       //     Timber.plant(Timber.DebugTree())
-       // }
-        //checkWifi(this.applicationContext)
-        //setContent { LoginUi() }
-
         setContent {     newsReaderApp(sApp) }
 
     }
@@ -47,20 +39,20 @@ class MainActivity : AppCompatActivity() {
 
 
 sealed class Screens {
-    object RT_ListHeadlines : Screens()
-    open class RT_FullArticle(val originalTransLink: OriginalTransLink) : Screens()
-    object SZ_ListHeadlines : Screens()
-    class SZ_FullArticle(val originalTransLink: OriginalTransLink) : Screens()
+    //object RT_ListHeadlines : Screens()
+    //open class RT_FullArticle(val originalTransLink: OriginalTransLink) : Screens()
+    //object SZ_ListHeadlines : Screens()
+    //class SZ_FullArticle(val originalTransLink: OriginalTransLink) : Screens()
     object ListNewsPapers : Screens()
     object ListHeadLines:Screens()
     class FullArticle(val originalTransLink: OriginalTransLink) : Screens()
    // class PP:Screens()
 }
 
-     inline fun RT_FullArticle(otl:OriginalTransLink):Screens{ return Screens.RT_FullArticle(otl) }
-     inline fun SZ_FullArticle(otl:OriginalTransLink):Screens{ return Screens.SZ_FullArticle(otl) }
-     inline fun RT_ListHeadlines():Screens{ return Screens.RT_ListHeadlines}
-     inline fun SZ_ListHeadlines():Screens{ return Screens.SZ_ListHeadlines}
+    // inline fun RT_FullArticle(otl:OriginalTransLink):Screens{ return Screens.RT_FullArticle(otl) }
+    // inline fun SZ_FullArticle(otl:OriginalTransLink):Screens{ return Screens.SZ_FullArticle(otl) }
+    // inline fun RT_ListHeadlines():Screens{ return Screens.RT_ListHeadlines}
+    // inline fun SZ_ListHeadlines():Screens{ return Screens.SZ_ListHeadlines}
      //val APOS2 = {otl:OriginalTransLink->Screens.RT_FullArticle(otl)}
 
 sealed class AppStatus {
@@ -174,30 +166,10 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
     Box() {
         Surface {
             when (val s = sApp.currentScreen) {
-                is Screens.ListNewsPapers -> newsPapersScreen2(sApp)
-                is Screens.RT_ListHeadlines -> headlinesScreen(sApp, ::RT_FullArticle,::getRT_Headlines,"ru")
-                is Screens.SZ_ListHeadlines->headlinesScreen(sApp,::SZ_FullArticle,::getSZ_Headlines,"de")
-                //is Screens.RT_FullArticle -> RT_articleScreen(s.originalTransLink, sApp)
-                is Screens.RT_FullArticle-> articleScreen(
-                    originalTransLink = s.originalTransLink,
-                    statusApp = sApp,
-                    backScreenFun = ::RT_ListHeadlines,
-                    getArticle = ::getRTArticle,
-                    olang="ru"
-
-                )
-                is Screens.SZ_FullArticle-> articleScreen(
-                    originalTransLink = s.originalTransLink,
-                    statusApp = sApp,
-                    backScreenFun = ::SZ_ListHeadlines,
-                    getArticle = ::getSZArticle,
-                    olang="de"
-                )
-                is Screens.ListHeadLines->headlinesScreen2(sApp)
-                is Screens.FullArticle->articleScreen2(s.originalTransLink,sApp)
-
+                is Screens.ListNewsPapers -> newsPapersScreen(sApp)
+                is Screens.ListHeadLines  -> headlinesScreen(sApp)
+                is Screens.FullArticle    -> articleScreen(s.originalTransLink,sApp)
             }
-
         }
     }
 
@@ -213,11 +185,11 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
          if(statusApp.nItems>0) s=" (${statusApp.nItems})"
          val currScreen=statusApp.currentScreen
          val sAux=when(currScreen){
-             is Screens.RT_FullArticle->" RT Article"
-             is Screens.RT_ListHeadlines->" RT Headlines  $s"
+            //is Screens.RT_FullArticle->" RT Article"
+            // is Screens.RT_ListHeadlines->" RT Headlines  $s"
              is Screens.ListNewsPapers->"News papers"
-             is Screens.SZ_ListHeadlines->" SZ Headlines  $s"
-             is Screens.SZ_FullArticle -> " SZ Article"
+             //is Screens.SZ_ListHeadlines->" SZ Headlines  $s"
+             //is Screens.SZ_FullArticle -> " SZ Article"
              is Screens.ListHeadLines -> statusApp.newsProvider.getName(Title.HEADLINES)+s
              is Screens.FullArticle ->statusApp.newsProvider.getName(Title.ARTICLE)
          }
@@ -295,6 +267,7 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
      Dialog(onCloseRequest = {t1.shutdown(); bplayText.value=false}){
 
         // t1.setSpeechRate(0.7f)
+        // t1.setPitch(0.5f)
          //Box(modifier = Modifier.fillMaxWidth(),backgroundColor = Color.Green){
          KWindow() {
               KText2(txt,size = statusApp.fontSize)

@@ -18,33 +18,9 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import kotlin.reflect.KSuspendFunction1
 
+
 @Composable
-fun headlinesScreen(statusApp: StatusApp,afun:(otl:OriginalTransLink)->Screens,getlines:(lhd:MutableState<MutableList<OriginalTransLink>>, statusApp: StatusApp)->Unit,olang:String) {
-    statusApp.currentBackScreen=Screens.ListNewsPapers
-    Timber.d("->headlines screen")
-    val lHeadlines = state{ mutableListOf<OriginalTransLink>()}
-   // remember{ modelListOf<OriginalTransLink> }
-    //val lHeadlines = remember( getlines(mutableListOf<OriginalTransLink>,statusApp))
-    onCommit(statusApp.lang){
-        Timber.d("on commit  headlines screen  ${lHeadlines.value.size}")
-        //if(lHeadlines.value.size==0)
-        //getRT_Headlines(lHeadlines.value,statusApp)
-        getlines(lHeadlines,statusApp)
-        Timber.d("after commit  headlines screen")
-    }
-    Timber.d("headlines size ${lHeadlines.value.size}")
-    val status=statusApp.currentStatus
-    when(status){
-        is AppStatus.Loading  -> waiting()
-        is AppStatus.Error    -> displayError(status.sError,status.e)
-        is AppStatus.Idle     -> draw_Headlines(loriginalTransLink =lHeadlines.value , statusApp =statusApp,afun=afun,olang=olang)
-    }
-    Timber.d("<-headlines screen ${status.toString()}")
-}
-
-
-  @Composable
-  fun headlinesScreen2(statusApp: StatusApp) {
+fun headlinesScreen(statusApp: StatusApp) {
       statusApp.currentBackScreen=Screens.ListNewsPapers
       Timber.d("->headlines screen")
       val lHeadlines = state{ mutableListOf<OriginalTransLink>()}
@@ -66,7 +42,7 @@ fun headlinesScreen(statusApp: StatusApp,afun:(otl:OriginalTransLink)->Screens,g
           is AppStatus.Idle     -> draw_Headlines(loriginalTransLink =lHeadlines.value , statusApp =statusApp,afun=statusApp.newsProvider.linkToArticleScreen(),olang=statusApp.newsProvider.olang)
       }
       Timber.d("<-headlines screen ${status.toString()}")
-  }
+}
 
 
 
@@ -108,12 +84,12 @@ fun draw_Headlines(
 
 
 
-fun get_HeadLines(lhd: MutableState<MutableList<OriginalTransLink>>, statusApp: StatusApp, zgetLines: KSuspendFunction1<StatusApp, MutableList<OriginalTransLink>>) {
+fun get_HeadLines(lhd: MutableState<MutableList<OriginalTransLink>>, statusApp: StatusApp, zgetLines: KSuspendFunction1<StatusApp, List<OriginalTransLink>>) {
     Timber.d("->getLHeadlines")
     GlobalScope.launch(Dispatchers.Main) {
         statusApp.currentStatus = AppStatus.Loading
         statusApp.nItems=0
-        val resp = exWithException<MutableList<OriginalTransLink>, String> {
+        val resp = exWithException<List<OriginalTransLink>, String> {
             //zgetLHeadLines(statusApp)
             zgetLines(statusApp)
         }
@@ -122,7 +98,7 @@ fun get_HeadLines(lhd: MutableState<MutableList<OriginalTransLink>>, statusApp: 
                 Timber.d("SUCCES")
                 //lhd.clear()
                 //lhd.addAll(resp.t)
-                lhd.value=resp.t
+                lhd.value=resp.t.toMutableList()  //to be amended!!
                 statusApp.nItems=lhd.value.size
                 statusApp.currentStatus = AppStatus.Idle
             }

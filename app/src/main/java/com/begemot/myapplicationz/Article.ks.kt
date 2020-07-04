@@ -21,23 +21,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlin.reflect.KSuspendFunction2
-@Composable
-fun articleScreen(originalTransLink: OriginalTransLink, statusApp: StatusApp, backScreenFun:()->Screens, getArticle:(originalTransLink:OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp)->Unit,olang: String){
-    statusApp.currentBackScreen=backScreenFun()
-    val trans3 = state { mutableListOf<OriginalTrans>() }
-    onCommit(statusApp.lang) {
-        getArticle(originalTransLink, trans3, statusApp)    //change name to getTranslatedArticle
-    }
-    val status=statusApp.currentStatus
-    when(status){
-        is AppStatus.Loading -> waiting()
-        is AppStatus.Error-> displayError(status.sError,status.e)
-        is AppStatus.Idle->drawArticle(originalTransLink,loriginalTranslate = trans3.value,statusApp = statusApp,olang=olang)
-    }
-}
 
 @Composable
-fun articleScreen2(originalTransLink: OriginalTransLink, statusApp: StatusApp){
+fun articleScreen(originalTransLink: OriginalTransLink, statusApp: StatusApp){
     //statusApp.currentBackScreen=backScreenFun()
     statusApp.currentBackScreen=statusApp.newsProvider.linkToHeadLinesScreen()
     val trans3 = state { mutableListOf<OriginalTrans>() }

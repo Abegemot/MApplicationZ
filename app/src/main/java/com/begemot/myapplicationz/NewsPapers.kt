@@ -17,31 +17,15 @@ import androidx.ui.unit.dp
 
 data class NewsPapers(val Name:String,val Desc:String,val resid:Int,val screen:Screens,val newsProvider:INewsPaper)
 
-val lNewsPapers=listOf(NewsPapers("RT Novesti","Russian news",R.drawable.ic_rt_logo_logotyp_us2,Screens.RT_ListHeadlines,Guardian),
-    NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines,Guardian),
-    NewsPapers("The Guardian","British News",R.drawable.ic_sz_plus_logo,Screens.ListHeadLines,Guardian)
-
-    /*,   NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
-       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
-       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
-       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
-       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
-       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
-       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
-       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
-       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
-       NewsPapers("Süddeutsche Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines),
-       NewsPapers("ZZZZZZZZZZZ Zeitung","German news",R.drawable.ic_sz_plus_logo,Screens.SZ_ListHeadlines)*/
+val lNewsPapers=listOf(
+    NewsPapers("RT Novesti","Russian News",R.drawable.ic_rt_logo_logotyp_us2,Screens.ListHeadLines,RT),
+    NewsPapers("The Guardian","British News",R.drawable.ic_the_guardian,Screens.ListHeadLines,Guardian),
+    NewsPapers("Süddeutsche Zeitung","German News",R.drawable.ic_sz_plus_logo,Screens.ListHeadLines,SZ)
 )
 
-@Composable
-fun newsPapersScreen(){
-    Text("new paper screen")
-}
-
 
 @Composable
-fun newsPapersScreen2(statusApp:StatusApp){
+fun newsPapersScreen(statusApp:StatusApp){
     val (shape,setShape)=state<Shape>{ CircleShape}
     Column() {
         LazyColumnItems(items = lNewsPapers, itemContent = {
@@ -53,8 +37,6 @@ fun newsPapersScreen2(statusApp:StatusApp){
                 Row(verticalGravity = Alignment.CenterVertically) {
                     //Box(modifier = Modifier.preferredHeight(64.dp).preferredWidth(120.dp)) {
                     Surface(color = Color.Transparent  ){
-
-
                         Image(
                             asset = vectorResource(id = it.resid),
                             modifier = Modifier.preferredHeight(64.dp).preferredWidth(120.dp),

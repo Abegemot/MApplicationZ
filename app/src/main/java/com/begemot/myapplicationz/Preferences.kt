@@ -214,7 +214,7 @@ fun localesDlg(selectLocales:MutableState<Boolean>,statusApp: StatusApp){
         val lKLocale = getLocales()
         KWindow(size=220) {
             KHeader(txt = "Select languages", onClick ={selectLocales.value=false} )
-            //Box(Modifier.preferredHeight(300.dp),border= Border(2.dp, Color.Black)) {
+            Box(Modifier.preferredHeight(300.dp),border= Border(2.dp, Color.Black)) {
                 /*Text("Locales size: ${lKLocale.size}")
                 Button(onClick = {
                     Timber.d("sopa  ${lKLocale[0].checked}")
@@ -240,7 +240,7 @@ fun localesDlg(selectLocales:MutableState<Boolean>,statusApp: StatusApp){
                         }
                     }
                 }
-            //}
+            }
             KButtonBar {
                 Button(onClick = {scr.scrollTo(200f)}) { Text("HolaX")}
                 Button(onClick = {Ok();selectLocales.value=false}) { Text("Ok")}
