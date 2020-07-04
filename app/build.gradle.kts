@@ -69,7 +69,7 @@ dependencies {
     implementation(Deps.jsoup)
     implementation(Deps.sunmail1)
     implementation(Deps.sunmail2)
-
+    implementation("com.google.code.gson:gson:2.8.6")
 
     //jcompose
 

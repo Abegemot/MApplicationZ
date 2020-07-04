@@ -8,6 +8,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import timber.log.Timber
 import java.net.URLEncoder
+import com.google.gson.Gson
 
 const val kTock="<TN>."//""<TM>." //" <TM> "//"~"//"(tm)"//"(©)"
 
@@ -37,6 +38,29 @@ suspend fun translateListKArticles33(lKAOriginal:List<KArticle>,tlang:String,ola
     //return l_KA
 }
 
+data class jsonReq(
+    val q:List<String>,
+    val source:String,
+    val target:String
+)
+
+
+fun articlesToJson(la:List<KArticle>,olang:String,tlang:String):String{
+    if(la.size==0) return "NOP"
+    //var gson=Gson()
+    var rq=Gson().toJson(jsonReq(la.map{it.title},olang,tlang) )
+    Timber.d("  gSON-->$rq")
+    URLEncoder.encode(rq,"UTF-8")
+    return rq
+    /*val sb=StringBuilder()
+    sb.append("{ \"q\": [")
+    val l=la.subList(0,3).map{it->it.title}.joinToString { it->"\"${it}\"" }
+    Timber.d("add->$l")
+    sb.append(l)
+    sb.append("],\"source\":\"$olang\",\"target\": \"$tlang\" }")
+    return sb.toString()*/
+}
+
 
 suspend fun getWebPage(sUrl:String): Document =
     withContext(Dispatchers.IO) {
@@ -54,19 +78,51 @@ suspend fun getWebPagePOST(sUrl:String,sjason:String): String =
 
 suspend fun getWebPagePOSTJS(sUrl:String,sjason:String): String =
     withContext(Dispatchers.IO) {
+        Timber.d("URL: $sUrl")
+        Timber.d("json: $sjason")
         val cr= Jsoup.connect(sUrl)
             .header("Content-Type","application/json")
             .header("Accept","application/json")
-            .header("Authorization","Bearer auth application-default print-access-token ")
-            .followRedirects(true)
+            //.header("Authorization","Bearer auth application-default print-access-token ")
+            //.followRedirects(true)
             .ignoreContentType(true)
             .ignoreHttpErrors(true)
-            .data("key","AIzaSyBP1dsYp-jPF6PfVetJWcguNLiFouZ3mjo")
+           // .data("key","AIzaSyBP1dsYp-jPF6PfVetJWcguNLiFouZ3mjo")
             .method(Connection.Method.POST)
             .requestBody(sjason)
             .execute()
         cr.body()
     }
+
+suspend fun translateJson(sjason:String): String =
+    withContext(Dispatchers.IO) {
+        val apikey="AIzaSyBP1dsYp-jPF6PfVetJWcguNLiFouZ3mjo"
+        val sUrl="https://www.googleapis.com/language/translate/v2?key=$apikey"
+        Timber.d("URL: $sUrl")
+        Timber.d("json: $sjason")
+        val cr= Jsoup.connect(sUrl)
+            .header("Content-Type","application/json")
+            .header("Accept","application/json")
+            //.header("Authorization","Bearer auth application-default print-access-token ")
+            //.followRedirects(true)
+            .ignoreContentType(true)
+            .ignoreHttpErrors(true)
+            // .data("key","AIzaSyBP1dsYp-jPF6PfVetJWcguNLiFouZ3mjo")
+            .method(Connection.Method.POST)
+            .requestBody(sjason)
+            .execute()
+        cr.body()
+    }
+
+data class Data ( val translations : List<Translations> )
+data class Translations ( val translatedText : String )
+data class Json4Kotlin_Base ( val data : Data )
+
+fun JsonToListStrings(json:String):List<Translations>{
+    val ls= mutableListOf<String>()
+    val topic = Gson().fromJson(json, Json4Kotlin_Base::class.java)
+    return topic.data.translations
+}
 
 suspend fun translate33(text:String,tlang:String,olang:String):List<String>{
     Timber.d("->translate 33")
