@@ -1,18 +1,21 @@
 package com.begemot.myapplicationz
 
+//import androidx.ui.text.Locale
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.ui.intl.Locale
-//import androidx.ui.text.Locale
 import timber.log.Timber
-import java.util.UUID
+import java.util.*
+
 
 class App:Application(){
     companion object {
         lateinit var instance:App
+        lateinit var lcontext:Context
     }
 
     override fun onCreate() {
@@ -21,6 +24,7 @@ class App:Application(){
         if(BuildConfig.DEBUG){
             Timber.plant(Timber.DebugTree())
         }
+        lcontext=App.instance
         //checkWifi(App.instance)
         if(prefs.userId.equals("")){
             prefs.userId=UUID.randomUUID().toString()
@@ -44,6 +48,22 @@ fun checkWifi(context: Context){
     if(isConnected) println("WIFI conected ")
     else println(" NO WIFI")
 }
+fun checkInternet():Boolean{
+   /* val connectivityManager =
+        getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
+
+    //Means that we are connected to a network (mobile or wi-fi)
+
+    //Means that we are connected to a network (mobile or wi-fi)
+    val connected = connectivityManager!!.getNetworkInfo(ConnectivityManager.TYPE_MOBILE)
+        .state == NetworkInfo.State.CONNECTED ||
+            connectivityManager!!.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
+                .state == NetworkInfo.State.CONNECTED
+
+    return connected*/
+    return true
+}
+
 
 class Preferences(context:Context){
     companion object{

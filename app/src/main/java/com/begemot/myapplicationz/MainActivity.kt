@@ -21,6 +21,7 @@ import java.util.*
 import timber.log.Timber
 import java.io.PrintWriter
 import java.io.StringWriter
+import kotlinx.serialization.*
 
 class MainActivity : AppCompatActivity() {
     val sApp=StatusApp(Screens.ListNewsPapers,Screens.ListNewsPapers)
@@ -127,6 +128,7 @@ fun newsReaderApp(sApp: StatusApp){
 @Composable
 fun contactDialog(contactDialog:MutableState<Boolean>) {
     val context = ContextAmbient.current
+
     val s1 = state { "" }
     var txt by state { TextFieldValue("") }
 
@@ -286,7 +288,7 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
 data class KArticle(val title: String = "", val link: String = "", val desc: String = "")
 data class OriginalTransLink(val kArticle: KArticle,val translated: String)
 data class OriginalTrans(val original:String="",val translated:String="")
-
+inline class ListOriginalTransList(val lOT:List<OriginalTransLink>)
 
 
 

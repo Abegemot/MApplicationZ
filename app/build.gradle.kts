@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.config.KotlinCompilerVersion
      id("com.android.application")
      kotlin("android")
      kotlin("android.extensions")
+     kotlin("plugin.serialization") version "1.3.70"
     // id("androidx.navigation.safeargs")
  }
 android {
@@ -70,6 +71,7 @@ dependencies {
     implementation(Deps.sunmail1)
     implementation(Deps.sunmail2)
     implementation("com.google.code.gson:gson:2.8.6")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0")
 
     //jcompose
 

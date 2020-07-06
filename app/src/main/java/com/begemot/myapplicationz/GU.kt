@@ -1,16 +1,9 @@
 package com.begemot.myapplicationz
 
-import android.os.StrictMode
 import androidx.compose.MutableState
 import com.begemot.myapplicationz.Screens.FullArticle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.jsoup.Jsoup
-import org.jsoup.nodes.Element
-import timber.log.Timber
-import java.io.IOException
-import java.net.URLDecoder
-import java.net.URLEncoder
 
 enum class Title{
     HEADLINES,ARTICLE,NAME
@@ -18,6 +11,7 @@ enum class Title{
 
 interface INewsPaper{
     val olang:String
+    val nameFile:String
     suspend fun getTranslatedArticle(originalTransLink: OriginalTransLink, statusApp: StatusApp):MutableList<OriginalTrans>
     suspend fun getHeadLines(statusApp: StatusApp):List<OriginalTransLink>
     fun getlines(lhd: MutableState<MutableList<OriginalTransLink>>, statusApp: StatusApp):Unit=get_HeadLines(lhd,statusApp, ::getHeadLines)
@@ -31,6 +25,8 @@ interface INewsPaper{
   object Guardian:INewsPaper{
       override val olang: String
           get() = "en"
+      override val nameFile: String
+          get() = "guardian.ks"
 
       override fun getName(e:Title): String {
           return when(e){
@@ -40,45 +36,32 @@ interface INewsPaper{
           }
       }
 
+
+
       override suspend fun getHeadLines(statusApp: StatusApp): List<OriginalTransLink> {
-          val l=getHeadLines()
+         /* val l=getHeadLines()
           val sl=l.subList(1,4)
+          return  getTranslatedHeadlines(sl, olang,statusApp.lang)
 
-          val jqwery=articlesToJson(sl,olang,statusApp.lang)
-          val la= translateJson(jqwery)
-          val lT= JsonToListStrings(la)
+          */
+          //return fakeLoadHeadLines()
+          //return KProvider.getHL(nameFile,::fakeLoadHeadLines)
+          return KProvider.getHL(nameFile,olang,statusApp.lang,::getHeadLinesL)
 
-          val result=sl.zip(lT,{a,c->OriginalTransLink(a,URLDecoder.decode(c.translatedText,"UTF-8"))})
-          return result
-          //Timber.d("json->$js")
-          //Timber.d("translated json->$la")
-          //lT.forEach{
-          //    Timber.d("jt->${it.translatedText}")
-          //}
-         // pos1()
-          //val lj=emptyList<OriginalTransLink>()
-          //return lj
-          //return translateListKArticles(l,statusApp.lang,olang )
-         /* val lhd= mutableListOf<OriginalTransLink>()
-          lhd.add(OriginalTransLink(KArticle("guardian1","link","desc"),"trans guardian1"))
-          lhd.add(OriginalTransLink(KArticle("guardian2","link","desc"),"trans guardian2"))
-          return lhd*/
-
+         /* val olt=KCache.findInCache(App.lcontext,nameFile)
+          if(olt.isNotEmpty()) return olt
+          val nolt= fakeLoadHeadLines()
+          KCache.storeInCache(App.lcontext,nameFile,nolt)
+          return nolt*/
       }
-      suspend fun pos1(){
-          val apikey="AIzaSyBP1dsYp-jPF6PfVetJWcguNLiFouZ3mjo"
-          Timber.d("POS1 A TOPE")
-         var sUrl="https://www.googleapis.com/language/translate/v2?key=$apikey&q="+URLEncoder.encode("the mother","utf-8")+
-                 "&source=en&target=ca"
 
-          sUrl="https://www.googleapis.com/language/translate/v2?key=$apikey"//?key=$apikey"
-          sUrl="https://translation.googleapis.com/language/translate/v2?key=$apikey"
-          val sJ="{ \"q\": [\"Hello Kitty\", \"My tailor is rich\"], \"source\":\"en\",\"target\": \"de\" }"
-
-            val s=getWebPagePOSTJS(sUrl,sJ)
-          Timber.d("OOOOOHHHH--->${s.toString()}")
-
+     suspend fun fakeLoadHeadLines():List<OriginalTransLink>{
+          val otl= mutableListOf<OriginalTransLink>()
+          otl.add(OriginalTransLink(KArticle("ZZtitle 1","link 1","desc1"),"translated 1"))
+          otl.add(OriginalTransLink(KArticle("QQtitle 2","link 2","desc2"),"translated 2"))
+          return otl
       }
+
       override suspend fun getTranslatedArticle(
           originalTransLink: OriginalTransLink,
           statusApp: StatusApp
@@ -103,27 +86,10 @@ suspend fun getGUArticle(originalTransLink: OriginalTransLink):String = withCont
      l1.joinToString(separator = " ")
 }
 
-suspend fun getHeadLines(): List<KArticle> = withContext(Dispatchers.Default){
-    fun trans(el: Element):KArticle{
-          //val txt="["+el.text().replace(";",",").replace("?","")+"]. "
-        val txt="<p> "+el.text().replace(".",",")
-            .replace("?","")
-            .replace("!","")
-            .replace(";",",")+" «T». "
-         // return KArticle(el.text()+kTock,el.attr("href"))
-        return KArticle(el.text(),el.attr("href"))
-    }
-       //val sURL="http://translate.google.com/translate?hl=es&sl=auto&tl=es&u=https%3A%2F%2Fwww.theguardian.com%2Finternational"
-        val sURL="https://www.theguardian.com/international"
-        val doc= getWebPage(sURL)
-        val u=doc.select("a.u-faux-block-link__overlay.js-headline-text")
-        val l=u.map{it->trans(it)}//.subList(7,40)
-        /*Timber.d("GET HEAD LINES GET HEADLINES")
-        Timber.d(doc.html())
-        l.forEach{
-             Timber.d(it.title)
-        }*/
-        l
-
+suspend fun getHeadLinesL(): List<KArticle> = withContext(Dispatchers.Default){
+    val sURL="https://www.theguardian.com/international"
+    val doc= getWebPage(sURL)
+    val u=doc.select("a.u-faux-block-link__overlay.js-headline-text")
+    return@withContext u.map{ it->KArticle(it.text(),it.attr("href"))}//.subList(7,40)
 }
 

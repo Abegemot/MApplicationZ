@@ -12,6 +12,8 @@ import timber.log.Timber
 object SZ :INewsPaper{
     override val olang: String
         get() = "de"
+    override val nameFile: String
+        get() = "suddeutche.ks"
 
     override fun getName(e: Title): String {
         return when(e){

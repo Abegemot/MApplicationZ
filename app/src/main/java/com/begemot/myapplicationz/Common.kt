@@ -1,5 +1,7 @@
 package com.begemot.myapplicationz
 
+import androidx.core.text.HtmlCompat
+import androidx.core.text.htmlEncode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -9,89 +11,36 @@ import org.jsoup.nodes.Document
 import timber.log.Timber
 import java.net.URLEncoder
 import com.google.gson.Gson
+import java.nio.charset.Charset
 
-const val kTock="<TN>."//""<TM>." //" <TM> "//"~"//"(tm)"//"(©)"
+suspend fun getTranslatedHeadlines(lKA:List<KArticle>,olang:String,tlang:String):List<OriginalTransLink>{
 
-suspend fun translateListKArticles(lKAOriginal:List<KArticle>,tlang:String,olang:String):List<OriginalTransLink>{
-    val sb = StringBuilder()
-    lKAOriginal.forEach { sb.append(it.title) }
-    val lTranslated = translate33(sb.toString(), tlang,olang)
-    Timber.d("ltranslated-->${lTranslated[1]}")
-    val l_KA=lKAOriginal.zip(lTranslated,{a,c->OriginalTransLink(KArticle(a.title,""),c)})
-    Timber.d("translateListKArticles lTranslated size = ${lTranslated.size}  lKAOriginal size = ${lKAOriginal.size}")
-    return l_KA
-}
-
-suspend fun translateListKArticles33(lKAOriginal:List<KArticle>,tlang:String,olang:String):List<OriginalTransLink>{
-   // val sb = StringBuilder()
-    val l= mutableListOf<OriginalTransLink>()
-    lKAOriginal.forEach {
-       // sb.append(it.title)
-        val lTranslated = translate33(it.title, tlang, olang)
-        l.add(OriginalTransLink(it,lTranslated.toString()))
-    }
-    return l
-
-   // Timber.d("ltranslated-->${lTranslated[1]}")
-   // val l_KA=lKAOriginal.zip(lTranslated,{a,c->OriginalTransLink(KArticle(a.title,""),c)})
-   // Timber.d("translateListKArticles lTranslated size = ${lTranslated.size}  lKAOriginal size = ${lKAOriginal.size}")
-    //return l_KA
+    val jqwery=articlesToJson(lKA, olang,tlang)
+    val la= translateJson(jqwery)
+    val lT= JsonToListStrings(la)
+    val result=lKA.zip(lT,{a,c->OriginalTransLink(a,c.translatedText)})
+    return result
 }
 
 data class jsonReq(
     val q:List<String>,
     val source:String,
-    val target:String
+    val target:String,
+    val format:String = "text"
 )
 
-
-fun articlesToJson(la:List<KArticle>,olang:String,tlang:String):String{
+private fun articlesToJson(la:List<KArticle>,olang:String,tlang:String):String{
     if(la.size==0) return "NOP"
-    //var gson=Gson()
+    var gson=Gson()
+    gson.htmlSafe()
     var rq=Gson().toJson(jsonReq(la.map{it.title},olang,tlang) )
     Timber.d("  gSON-->$rq")
-    URLEncoder.encode(rq,"UTF-8")
     return rq
-    /*val sb=StringBuilder()
-    sb.append("{ \"q\": [")
-    val l=la.subList(0,3).map{it->it.title}.joinToString { it->"\"${it}\"" }
-    Timber.d("add->$l")
-    sb.append(l)
-    sb.append("],\"source\":\"$olang\",\"target\": \"$tlang\" }")
-    return sb.toString()*/
 }
-
 
 suspend fun getWebPage(sUrl:String): Document =
     withContext(Dispatchers.IO) {
         Jsoup.connect(sUrl).get()
-    }
-
-suspend fun getWebPagePOST(sUrl:String,sjason:String): String =
-    withContext(Dispatchers.IO) {
-       val cr= Jsoup.connect(sUrl)
-            .method(Connection.Method.POST)
-           .ignoreContentType(true)
-            .execute()
-        cr.body()
-    }
-
-suspend fun getWebPagePOSTJS(sUrl:String,sjason:String): String =
-    withContext(Dispatchers.IO) {
-        Timber.d("URL: $sUrl")
-        Timber.d("json: $sjason")
-        val cr= Jsoup.connect(sUrl)
-            .header("Content-Type","application/json")
-            .header("Accept","application/json")
-            //.header("Authorization","Bearer auth application-default print-access-token ")
-            //.followRedirects(true)
-            .ignoreContentType(true)
-            .ignoreHttpErrors(true)
-           // .data("key","AIzaSyBP1dsYp-jPF6PfVetJWcguNLiFouZ3mjo")
-            .method(Connection.Method.POST)
-            .requestBody(sjason)
-            .execute()
-        cr.body()
     }
 
 suspend fun translateJson(sjason:String): String =
@@ -103,11 +52,9 @@ suspend fun translateJson(sjason:String): String =
         val cr= Jsoup.connect(sUrl)
             .header("Content-Type","application/json")
             .header("Accept","application/json")
-            //.header("Authorization","Bearer auth application-default print-access-token ")
             //.followRedirects(true)
             .ignoreContentType(true)
             .ignoreHttpErrors(true)
-            // .data("key","AIzaSyBP1dsYp-jPF6PfVetJWcguNLiFouZ3mjo")
             .method(Connection.Method.POST)
             .requestBody(sjason)
             .execute()
@@ -118,32 +65,11 @@ data class Data ( val translations : List<Translations> )
 data class Translations ( val translatedText : String )
 data class Json4Kotlin_Base ( val data : Data )
 
-fun JsonToListStrings(json:String):List<Translations>{
+private fun JsonToListStrings(json:String):List<Translations>{
     val ls= mutableListOf<String>()
     val topic = Gson().fromJson(json, Json4Kotlin_Base::class.java)
     return topic.data.translations
 }
-
-suspend fun translate33(text:String,tlang:String,olang:String):List<String>{
-    Timber.d("->translate 33")
-    val lot=mutableListOf<String>()
-    //gettranslatedText(text,lang)
-    val slT=splitLongText33(text)
-    var n=0
-    slT.forEach {
-
-       // if(n==0){
-           // Timber.d("T33 --> $it")
-           val RT2=gettranslatedText33(it,tlang,olang)
-           lot.addAll(RT2)
-            n++
-     //   }
-
-    }
-    Timber.d("<-translate ok")
-    return lot
-}
-
 
 suspend fun translate2(text:String,tlang:String,olang:String):MutableList<OriginalTrans>{
     Timber.d("->translate 2")
@@ -159,31 +85,6 @@ suspend fun translate2(text:String,tlang:String,olang:String):MutableList<Origin
     Timber.d("<-translate ok")
     return lot
 }
-
-fun splitLongText33(text:String):List<String>{
-    val maxlen=3000
-    val resultList= mutableListOf<String>()
-    var LS = mutableListOf<String>()
-    if(text.length<maxlen) { LS.add(text); return LS}
-    LS= separateParagrafs33(text).toMutableList()
-    val bs=StringBuilder()
-    while(LS.size>0){
-        val txt=LS.removeAt(0)
-        if((txt.length+bs.length)<maxlen){
-            bs.append(txt)
-            bs.append(kTock)
-        }else{
-            resultList.add(bs.toString())
-            bs.clear()
-            bs.append(txt)
-            //if(text[txt.length].equals("."))
-                bs.append(kTock)
-        }
-    }
-    if(bs.length>0) resultList.add(bs.toString()+ kTock)
-    return resultList
-}
-
 
 fun splitLongText(text:String):List<String>{
     val maxlen=3000
@@ -209,53 +110,6 @@ fun splitLongText(text:String):List<String>{
     return resultList
 }
 
-suspend fun gettranslatedText33(text: String, tlang: String,olang:String):List<String> = withContext(
-    Dispatchers.IO) {
-    Timber.d("->  gettranslatedText33")
-    Timber.d(text)
-    val url =
-        "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" + "$olang" + "&tl=" + "$tlang" + "&dt=t&q=" + URLEncoder.encode(
-            text,
-            "utf-8"
-        )
-    val d = Jsoup.connect(url).ignoreContentType(true).get().text()
-    Timber.d(" size google response = ${d.length}")
-    val t = JSONArray(d)
-    //val lOriginalTrans= mutableListOf<OriginalTrans>()
-    val qsm = t.getJSONArray(0)
-
-    val sbOriginal=StringBuilder(20000)
-    val sbTranslated=StringBuilder(20000)
-    for (i in 0 until qsm.length()) {
-        val l = qsm.getJSONArray(i)
-        val so=l.getString(1)
-        val st=l.getString(0)
-        sbOriginal.append(so)
-        sbTranslated.append(st)
-       // lOriginalTrans.add(originalTrans)
-    }
-    val LO=sbOriginal.split(kTock.toRegex())
-    val LT=sbTranslated.split(kTock.toRegex())
-    Timber.d("j")
-    Timber.d("sbO=$sbOriginal")
-    Timber.d("sbT=$sbTranslated")
-   /* Timber.d("LO ${LO.size}->$LO")
-
-    LO.forEach{
-        Timber.d("->$it")
-    }
-    Timber.d("LT ${LT.size}->$LT")
-    LT.forEach{
-        Timber.d("->$it")
-    }*/
-    if(LO.size==LT.size) Timber.d(" ---------------------SSSSSSSSSSSSSIIIIIIIIIII-----lo-${LO.size}--lt-${LT.size}----")
-    else Timber.d("----------------------CACA-------------------lo--${LO.size}--lt-${LT.size}-----------------------------")
-    Timber.d("<-  gettranslatedText")
-    LT
-   // lOriginalTrans
-}
-
-
 suspend fun gettranslatedText(text: String, tlang: String,olang:String):MutableList<OriginalTrans> = withContext(
     Dispatchers.IO) {
     Timber.d("->  gettranslatedText")
@@ -279,9 +133,5 @@ suspend fun gettranslatedText(text: String, tlang: String,olang:String):MutableL
 }
 fun separateParagrafs(text: String): List<String> {
     val sP = text.split(". ")
-    return sP
-}
-fun separateParagrafs33(text: String): List<String> {
-    val sP = text.split(kTock)
     return sP
 }

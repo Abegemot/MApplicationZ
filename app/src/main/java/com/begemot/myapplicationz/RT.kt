@@ -13,6 +13,8 @@ import kotlin.reflect.KSuspendFunction1
    object RT :INewsPaper{
        override val olang: String
            get() = "ru"
+       override val nameFile: String
+           get() = "russiatoday"
 
        override fun getName(e: Title): String {
            return when(e){
