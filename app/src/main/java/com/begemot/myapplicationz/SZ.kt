@@ -1,8 +1,9 @@
         package com.begemot.myapplicationz
 
-import androidx.compose.Composable
-import androidx.compose.MutableState
-import androidx.ui.foundation.Text
+
+import com.begemot.knewscommon.KArticle
+import com.begemot.knewscommon.OriginalTrans
+import com.begemot.knewscommon.OriginalTransLink
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
@@ -38,11 +39,11 @@ object SZ :INewsPaper{
 
     override suspend fun getHeadLines(statusApp: StatusApp): List<OriginalTransLink> {
 
-        val L= mutableListOf<OriginalTransLink>(OriginalTransLink(KArticle("hola","link","desc"),"translated1"))
+        val L= mutableListOf<OriginalTransLink>(OriginalTransLink(KArticle("hola","link"),"translated1"))
         val LA=getSZJSoupHeadlines()
 
         val sb = StringBuilder()
-        LA.forEach { sb.append(it.title) }
+        LA.subList(0,2).forEach { sb.append(it.title) }
         val rt = translate2(sb.toString(), statusApp.lang,"de")    //<-- suspend function runing on IO
         //val q = (rt as ResultTranslation.ResultList).Lorigtrans
 
@@ -81,7 +82,7 @@ suspend fun getSZJSoupHeadlines():List<KArticle> = withContext(Dispatchers.IO) {
        if(el.text().isEmpty()) return KArticle()
        // else return KArticle(title, link, "")
         //Timber.d("----->$title")
-        return KArticle("["+el.select("h3.sz-teaser__title").text().replace(".",",")  +"]. ", link, "")
+        return KArticle("["+el.select("h3.sz-teaser__title").text().replace(".",",")  +"]. ", link)
 
 //        return KArticle(el.select("h3.sz-teaser__title").text().replace(".",",")  +". ", link, "")
     }

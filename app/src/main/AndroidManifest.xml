@@ -22,14 +22,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".posActivity"
-            android:label="ZARANDONGA"
-            android:parentActivityName=".MainActivity"
 
-            >
-
-        </activity>
     </application>
 
 </manifest>

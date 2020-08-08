@@ -1,17 +1,23 @@
   package com.begemot.myapplicationz
 
 import androidx.compose.*
-import androidx.ui.core.Modifier
-import androidx.ui.foundation.Box
-import androidx.ui.foundation.Icon
-import androidx.ui.foundation.clickable
-import androidx.ui.foundation.lazy.LazyColumnItems
-import androidx.ui.foundation.shape.corner.RoundedCornerShape
-import androidx.ui.layout.*
-import androidx.ui.material.Card
-import androidx.ui.res.vectorResource
-import androidx.ui.unit.dp
+import androidx.compose.foundation.Box
+import androidx.compose.foundation.Icon
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumnItems
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Card
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.onCommit
+import androidx.compose.runtime.state
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.unit.dp
+
 import com.begemot.kclib.KText2
+import com.begemot.knewscommon.OriginalTransLink
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch

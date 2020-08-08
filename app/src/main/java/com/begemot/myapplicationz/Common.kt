@@ -2,6 +2,9 @@ package com.begemot.myapplicationz
 
 import androidx.core.text.HtmlCompat
 import androidx.core.text.htmlEncode
+import com.begemot.knewscommon.KArticle
+import com.begemot.knewscommon.OriginalTrans
+import com.begemot.knewscommon.OriginalTransLink
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -10,15 +13,15 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import timber.log.Timber
 import java.net.URLEncoder
-import com.google.gson.Gson
+//import com.google.gson.Gson
 import java.nio.charset.Charset
 
-suspend fun getTranslatedHeadlines(lKA:List<KArticle>,olang:String,tlang:String):List<OriginalTransLink>{
+suspend fun   getTranslatedHeadlines(lKA:List<KArticle>, olang:String, tlang:String):List<OriginalTransLink>{
 
     val jqwery=articlesToJson(lKA, olang,tlang)
     val la= translateJson(jqwery)
     val lT= JsonToListStrings(la)
-    val result=lKA.zip(lT,{a,c->OriginalTransLink(a,c.translatedText)})
+    val result=lKA.zip(lT,{a,c-> OriginalTransLink(a,c.translatedText) })
     return result
 }
 
@@ -31,11 +34,11 @@ data class jsonReq(
 
 private fun articlesToJson(la:List<KArticle>,olang:String,tlang:String):String{
     if(la.size==0) return "NOP"
-    var gson=Gson()
-    gson.htmlSafe()
-    var rq=Gson().toJson(jsonReq(la.map{it.title},olang,tlang) )
-    Timber.d("  gSON-->$rq")
-    return rq
+    //var gson=Gson()
+    //gson.htmlSafe()
+    //var rq=Gson().toJson(jsonReq(la.map{it.title},olang,tlang) )
+    //Timber.d("  gSON-->$rq")
+    return "rq"
 }
 
 suspend fun getWebPage(sUrl:String): Document =
@@ -67,8 +70,9 @@ data class Json4Kotlin_Base ( val data : Data )
 
 private fun JsonToListStrings(json:String):List<Translations>{
     val ls= mutableListOf<String>()
-    val topic = Gson().fromJson(json, Json4Kotlin_Base::class.java)
-    return topic.data.translations
+   // val topic = Gson().fromJson(json, Json4Kotlin_Base::class.java)
+   // return topic.data.translations
+    return emptyList()
 }
 
 suspend fun translate2(text:String,tlang:String,olang:String):MutableList<OriginalTrans>{

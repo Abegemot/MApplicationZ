@@ -2,25 +2,30 @@ package com.begemot.myapplicationz
 
 import android.widget.Toast
 import androidx.compose.*
-import androidx.ui.core.Alignment
-import androidx.ui.core.ContextAmbient
-import androidx.ui.core.Modifier
-import androidx.ui.foundation.*
-import androidx.ui.graphics.Color
-import androidx.ui.intl.Locale
-import androidx.ui.layout.*
-import androidx.ui.material.*
-import androidx.ui.material.icons.Icons
-import androidx.ui.material.icons.filled.KeyboardArrowDown
-import androidx.ui.material.icons.filled.KeyboardArrowUp
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.state
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ContextAmbient
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+
+
 import androidx.ui.tooling.preview.Preview
 //import androidx.ui.text.Locale
-import androidx.ui.unit.dp
+
 import com.begemot.kclib.KButtonBar
 import com.begemot.kclib.KHeader
 import com.begemot.kclib.KText2
 import com.begemot.kclib.KWindow
 import timber.log.Timber
+import java.util.*
+import kotlin.collections.HashMap
 
 @ExperimentalLayout
 @Composable
@@ -43,10 +48,10 @@ fun editPreferences(selectLang: MutableState<Boolean>, statusApp: StatusApp) {
             RadioGroup(options = radioOptions,selectedOption = selectedOption,onSelectedChange = onOptionSelected)
 
             KText2("Text Size",size=localFontSize.value)
-            var sliderPosition by state{statusApp.fontSize.toFloat()}
+            var sliderPosition = state {statusApp.fontSize.toFloat()}
             Slider(
-                value=sliderPosition,
-                onValueChange={sliderPosition=it;localFontSize.value=it.toInt()},
+                value=sliderPosition.value,
+                onValueChange={sliderPosition.value=it;localFontSize.value=it.toInt()},
                 valueRange = 10f..35f
             //    color=Color.Black
             )
@@ -74,24 +79,24 @@ fun editPreferences(selectLang: MutableState<Boolean>, statusApp: StatusApp) {
 @Composable
 fun atos(){
     Dialog(onCloseRequest = {  }) {
-        var state by state { 0 }
+        var state = state { 0 }
         val titles = listOf("TAB 1", "TAB 2", "TAB 3 WITH LOTS OF TEXT")
         Column {
-            TabRow(items = titles, selectedIndex = state) { index, text ->
+            TabRow(items = titles, selectedIndex = state.value) { index, text ->
                 Tab(
                     text = { Text(text) },
-                    selected = state == index,
-                    onSelected = { state = index })
+                    selected = state.value == index,
+                    onSelected = { state.value = index })
 
 
             }
-            when (state) {
+            when (state.value) {
                 0 -> tab1()
                 1 -> Text("poma")
             }
             Text(
                 modifier = Modifier.gravity(Alignment.CenterHorizontally),
-                text = "Text tab ${state + 1} selected",
+                text = "Text tab ${state.value + 1} selected",
                 style = MaterialTheme.typography.body1
             )
         }
@@ -115,20 +120,20 @@ fun dlgLocale(statusApp: StatusApp){
    // setSelectedLang()
    KWindow(size = 220){
        KHeader(txt = "Select languages", onClick ={} )
-       Box(Modifier.preferredHeight(300.dp), border=Border(2.dp, Color.Black)) {
+       Box(Modifier.preferredHeight(300.dp), border= Border(2.dp, Color.Black)) {
            VerticalScroller(scrollerPosition = scr) {
                getLocales().forEach {
                    Row() {
-                       var checked by state { false }
+                       var checked = state { false }
                        Checkbox(
-                           checked = checked,
+                           checked = checked.value,
                            onCheckedChange = {
 
                                c -> it.checked = c
-                               checked = !checked
+                               checked.value = !checked.value
                                if(it.acronim.equals(statusApp.lang) ){
                                     it.checked = true
-                                   checked = true
+                                   checked.value = true
                                }
                            }
                        )
@@ -170,11 +175,12 @@ and checks=true all prefs in AllLocales
 fun getSelectedLang():MyHashMap<String,String>{
     val lS= mutableListOf<KLocale>()
     val lAllLocales= getLocales()
-    val kLocale = lAllLocales.find { it->it.acronim.equals(Locale.current.language) }
+    val r=Locale.getDefault()
+    val kLocale = lAllLocales.find { it->it.acronim.equals(Locale.getDefault().language) }
     kLocale?.checked=true
     val lSelected=prefs.selectedLang.split(",")  //"ca,en" ...
 
-    if(lSelected.find {it->it.equals(Locale.current.language) }==null){
+    if(lSelected.find {it->it.equals(Locale.getDefault().language) }==null){
             lS.add(kLocale!!)
         }
        lSelected.forEach{
@@ -223,15 +229,15 @@ fun localesDlg(selectLocales:MutableState<Boolean>,statusApp: StatusApp){
                     Button(onClick = {scr.scrollTo(200f)}) { Text("Hola2")}
                     lKLocale.forEach {
                         Row(){
-                            var checked by state{ it.checked }
+                            var checked = state{ it.checked }
                                 Checkbox(
-                                    checked = checked,
+                                    checked = checked.value,
                                     onCheckedChange = { c ->
                                          it.checked = c
-                                         checked=!checked
+                                         checked.value=!checked.value
                                         if(it.acronim.equals(statusApp.lang) ){
                                             it.checked = true
-                                            checked = true
+                                            checked.value = true
                                             Toast.makeText(context,"You can't remove current selected language",Toast.LENGTH_LONG).show()
                                         }
                                     }

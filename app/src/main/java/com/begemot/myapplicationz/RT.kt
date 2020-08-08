@@ -1,6 +1,10 @@
-   package com.begemot.myapplicationz
+package com.begemot.myapplicationz
 
-import androidx.compose.MutableState
+
+import com.begemot.knewsclient.KNews
+import com.begemot.knewscommon.KArticle
+import com.begemot.knewscommon.OriginalTrans
+import com.begemot.knewscommon.OriginalTransLink
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -38,6 +42,13 @@ import kotlin.reflect.KSuspendFunction1
        }
 
        override suspend fun getHeadLines(statusApp: StatusApp): List<OriginalTransLink> {
+          val k=KNews().getNewsPapers()
+           k.forEach{
+               Timber.d("DEU EXISTEIX")
+               Timber.d(it.handler)
+           }
+           val z=KNews().getHeadLines("RT",statusApp.lang)
+           return z
            Timber.d("->zgetLHeadlines")
            //statusApp.currentStatus = AppStatus.Loading
            // GlobalScope.launch(Dispatchers.Main) {
@@ -98,7 +109,7 @@ suspend fun getJSoupHeadlines():List<KArticle> = withContext(Dispatchers.IO) {
            // .replace('—',' ')
            // .replace('?','?')+"]. "
         val link = el.select("a[href]").first().attr("abs:href")
-        return KArticle(title, link, "")
+        return KArticle(title, link)
     }
     fun transSection(el: Element): KArticle {
         val title = "["+el.select("h3").text()+"]. "
@@ -109,7 +120,7 @@ suspend fun getJSoupHeadlines():List<KArticle> = withContext(Dispatchers.IO) {
            // .replace('?','?')+"]. "
 
         val link = el.select("h3").select("a[href]").attr("abs:href")
-        return KArticle(title, link, "")
+        return KArticle(title, link)
     }
 
     val s = "https://russian.rt.com/inotv"

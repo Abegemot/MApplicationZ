@@ -1,19 +1,24 @@
-package com.begemot.myapplicationz
+  package com.begemot.myapplicationz
 
-import androidx.compose.Composable
-import androidx.compose.state
-import androidx.ui.core.*
-import androidx.ui.foundation.*
-import androidx.ui.foundation.lazy.LazyColumnItems
-import androidx.ui.foundation.shape.corner.CircleShape
-import androidx.ui.foundation.shape.corner.RoundedCornerShape
-import androidx.ui.graphics.Color
-import androidx.ui.graphics.Shape
-import androidx.ui.layout.*
-import androidx.ui.material.Card
-import androidx.ui.material.Surface
-import androidx.ui.res.vectorResource
-import androidx.ui.unit.dp
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.Text
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumnFor
+import androidx.compose.foundation.lazy.LazyColumnItems
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Card
+import androidx.compose.material.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.state
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.unit.dp
 
 data class NewsPapers(val Name:String,val Desc:String,val resid:Int,val screen:Screens,val newsProvider:INewsPaper)
 
@@ -28,11 +33,12 @@ val lNewsPapers=listOf(
 fun newsPapersScreen(statusApp:StatusApp){
     val (shape,setShape)=state<Shape>{ CircleShape}
     Column() {
-        LazyColumnItems(items = lNewsPapers, itemContent = {
+        LazyColumnFor(items = lNewsPapers, itemContent = {
             Card(
                 shape = RoundedCornerShape(8.dp),
                 elevation = 7.dp,
-                modifier = Modifier.fillMaxWidth().padding(2.dp).clickable(onClick ={statusApp.currentScreen = it.screen; statusApp.newsProvider=it.newsProvider} )
+                modifier = Modifier.fillParentMaxWidth()
+                    .padding(2.dp).clickable(onClick ={statusApp.currentScreen = it.screen; statusApp.newsProvider=it.newsProvider} )
             ) {
                 Row(verticalGravity = Alignment.CenterVertically) {
                     //Box(modifier = Modifier.preferredHeight(64.dp).preferredWidth(120.dp)) {

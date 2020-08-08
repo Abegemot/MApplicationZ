@@ -1,6 +1,10 @@
 package com.begemot.myapplicationz
 
-import androidx.compose.MutableState
+
+import androidx.compose.runtime.MutableState
+import com.begemot.knewscommon.KArticle
+import com.begemot.knewscommon.OriginalTrans
+import com.begemot.knewscommon.OriginalTransLink
 import com.begemot.myapplicationz.Screens.FullArticle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,11 +18,11 @@ interface INewsPaper{
     val nameFile:String
     suspend fun getTranslatedArticle(originalTransLink: OriginalTransLink, statusApp: StatusApp):MutableList<OriginalTrans>
     suspend fun getHeadLines(statusApp: StatusApp):List<OriginalTransLink>
-    fun getlines(lhd: MutableState<MutableList<OriginalTransLink>>, statusApp: StatusApp):Unit=get_HeadLines(lhd,statusApp, ::getHeadLines)
+    fun getlines(lhd: MutableState<MutableList<OriginalTransLink>>, statusApp: StatusApp):Unit=get_HeadLines(lhd,statusApp, ::  getHeadLines)
     fun getName(e:Title):String
     fun linkToArticleScreen():(otl:OriginalTransLink)->Screens=::FullArticle
     fun linkToHeadLinesScreen():Screens=Screens.ListHeadLines
-    fun getArticle(originalTransLink:OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp)= get_Article(originalTransLink,trans,statusApp,::getTranslatedArticle)
+    fun  getArticle(originalTransLink:OriginalTransLink, trans: MutableState<MutableList<OriginalTrans>>, statusApp: StatusApp)= get_Article(originalTransLink,trans,statusApp,::getTranslatedArticle)
 }
 
 
@@ -44,8 +48,9 @@ interface INewsPaper{
           return  getTranslatedHeadlines(sl, olang,statusApp.lang)
 
           */
+          KCache.listFiles()
           //return fakeLoadHeadLines()
-          //return KProvider.getHL(nameFile,::fakeLoadHeadLines)
+          //return KProvider.getHL(nameFile,olang,statusApp.lang,::fakeLoadHeadLines)
           return KProvider.getHL(nameFile,olang,statusApp.lang,::getHeadLinesL)
 
          /* val olt=KCache.findInCache(App.lcontext,nameFile)
@@ -57,8 +62,8 @@ interface INewsPaper{
 
      suspend fun fakeLoadHeadLines():List<OriginalTransLink>{
           val otl= mutableListOf<OriginalTransLink>()
-          otl.add(OriginalTransLink(KArticle("ZZtitle 1","link 1","desc1"),"translated 1"))
-          otl.add(OriginalTransLink(KArticle("QQtitle 2","link 2","desc2"),"translated 2"))
+          otl.add(OriginalTransLink(KArticle("ZZtitle 1","link 1"),"translated 1"))
+          otl.add(OriginalTransLink(KArticle("QQtitle 2","link 2"),"translated 2"))
           return otl
       }
 
