@@ -1,76 +1,75 @@
-package com.begemot.myapplicationz
+ package com.begemot.myapplicationz
 
-//import androidx.compose.Composable
-//import androidx.compose.MutableState
 import androidx.compose.foundation.Box
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumnItems
+import androidx.compose.foundation.lazy.LazyColumnFor
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
-//import androidx.compose.onCommit
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.onCommit
-import androidx.compose.runtime.state
-//import androidx.compose.state
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-/*import androidx.ui.core.Modifier
-import androidx.ui.foundation.AdapterList
-import androidx.ui.foundation.Box
-import androidx.ui.foundation.clickable
-import androidx.ui.foundation.lazy.LazyColumnItems
-import androidx.ui.foundation.shape.corner.RoundedCornerShape
-import androidx.ui.layout.Column
-import androidx.ui.layout.fillMaxHeight
-import androidx.ui.layout.fillMaxWidth
-import androidx.ui.layout.padding
-import androidx.ui.material.Card
-import androidx.ui.unit.dp*/
 import com.begemot.kclib.KText2
+import com.begemot.knewsclient.KNews
+import com.begemot.knewscommon.KResult
 import com.begemot.knewscommon.OriginalTrans
 import com.begemot.knewscommon.OriginalTransLink
+import com.begemot.knewscommon.exWithException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import kotlin.reflect.KSuspendFunction2
 
-@Composable
+ @Composable
 fun articleScreen(originalTransLink: OriginalTransLink, statusApp: StatusApp){
     //statusApp.currentBackScreen=backScreenFun()
-    statusApp.currentBackScreen=statusApp.newsProvider.linkToHeadLinesScreen()
-    val trans3 = state { mutableListOf<OriginalTrans>() }
-    onCommit(statusApp.lang) {
-        statusApp.newsProvider.getArticle(originalTransLink,trans3,statusApp)
-       // getArticle(originalTransLink, trans3, statusApp)    //change name to getTranslatedArticle
+    Timber.d("${originalTransLink.kArticle.link}")
+    statusApp.currentBackScreen=Screens.ListHeadLines
+    val trans3 = remember { mutableStateOf<List<OriginalTrans>>(emptyList()) }
+    launchInComposition(statusApp.lang){
+        trans3.value=getTransArt(statusApp,originalTransLink)
     }
+
     val status=statusApp.currentStatus
     when(status){
         is AppStatus.Loading -> waiting()
-        is AppStatus.Error-> displayError(status.sError,status.e)
-        is AppStatus.Idle->drawArticle(originalTransLink,loriginalTranslate = trans3.value,statusApp = statusApp,olang=statusApp.newsProvider.olang)
+        is AppStatus.Error-> displayError(status.sError,status.e,statusApp)
+        is AppStatus.Idle->drawArticle(originalTransLink,loriginalTranslate = trans3.value,statusApp = statusApp,olang=statusApp.currentNewsPaper.olang)
     }
 }
 
+suspend fun getTransArt(statusApp: StatusApp,otl:OriginalTransLink):List<OriginalTrans>{
+    Timber.d("getTransArt ${statusApp.currentNewsPaper.handler}  ${statusApp.lang}")
+    val resp= exWithException<List<OriginalTrans>,String> {
+        statusApp.currentStatus=AppStatus.Loading
+        KNews().getArticle(statusApp.currentNewsPaper.handler,statusApp.lang,otl.kArticle.link)
+    }
+    when(resp){
+        is KResult.Success->{statusApp.currentStatus=AppStatus.Idle; return resp.t}
+        is KResult.Error->{statusApp.currentStatus=AppStatus.Error(resp.msg,resp.e)}
+    }
+    //statusApp.currentStatus=AppStatus.Loading
+    //val ls=KNews().getArticle(statusApp.currentNewsPaper.handler,statusApp.lang,otl.kArticle.link)
+    //statusApp.currentStatus=AppStatus.Idle
+    return emptyList()
+}
 
 
 @Composable
-fun drawArticle(originalTransLink: OriginalTransLink, loriginalTranslate:MutableList<OriginalTrans>, statusApp: StatusApp,olang:String){
+fun drawArticle(originalTransLink: OriginalTransLink, loriginalTranslate:List<OriginalTrans>, statusApp: StatusApp,olang:String){
     // KWindow() {
     val original= state{true}
-    LazyColumnItems(items = loriginalTranslate, itemContent = {
-        Card(shape= RoundedCornerShape(8.dp),elevation = 7.dp, modifier = Modifier.fillMaxHeight()+ Modifier.padding(2.dp)+ Modifier.fillMaxWidth()) {
+    LazyColumnFor(items = loriginalTranslate, itemContent = {
+        Card(shape= RoundedCornerShape(8.dp),elevation = 7.dp, modifier = Modifier.padding(2.dp).fillParentMaxWidth()) {
             Column() {
                 val bplaytext= state{false}
                 Box(modifier= Modifier.clickable(onClick = {original.value=true; bplaytext.value=true} )) {
-                    KText2(it.original,size = statusApp.fontSize)
+                    KText2(it.original,size = statusApp.fontSize.value)
                 }
                 Box(modifier= Modifier.clickable(onClick = {original.value=false; bplaytext.value=true} )) {
-                    KText2(it.translated, size = statusApp.fontSize)
+                    KText2(it.translated, size = statusApp.fontSize.value)
                 }
                 if(bplaytext.value){
                     if(original.value) playText(bplaytext,it.original,statusApp,olang)
@@ -91,7 +90,7 @@ fun   get_Article(
             gettransArticle(originalTransLink,statusApp)
         }
         when(resp){
-            is KResult.Succes->{trans.value=resp.t;statusApp.currentStatus = AppStatus.Idle}
+            is KResult.Success->{trans.value=resp.t;statusApp.currentStatus = AppStatus.Idle}
             is KResult.Error->{statusApp.currentStatus=AppStatus.Error(resp.msg,resp.e)}
         }
     }

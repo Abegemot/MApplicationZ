@@ -1,17 +1,74 @@
 package com.begemot.myapplicationz
 
-import android.content.Context
-import com.begemot.knewscommon.KArticle
-import com.begemot.knewscommon.OriginalTransLink
 //import com.google.gson.Gson
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import com.begemot.knewscommon.Found
+import com.begemot.knewscommon.OriginalTransLink
+import com.begemot.knewscommon.THeadLines
+import com.begemot.knewscommon.fromStrToTHeadLines
 import timber.log.Timber
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.nio.charset.Charset
 import java.text.SimpleDateFormat
-import kotlin.reflect.KSuspendFunction0
-
 
 
 object KCache{
+    fun findInCache2(path:String): String{
+        val ctx=App.lcontext
+        val  sf="${ctx.filesDir.absolutePath}$path"
+        println("findincache path  :$path")
+        println("findincache sf    :$sf")
+        val file=File(sf)
+        var txt=""
+        var thd:THeadLines
+        try {
+            var fis:FileInputStream  =  FileInputStream (File(sf))
+            fis.bufferedReader(charset = Charset.defaultCharset()).use {
+                txt=it.readText()
+            }
+            fis.close()
+            Timber.d("readed txt $txt")
+            Timber.d("END  read txt   <------")
+        } catch (e: Exception) {
+            Timber.d("exception $e")
+            txt=""
+        }
+        //ctx.openFileInput(path).use{
+        //    txt=it.bufferedReader().use{
+        //        it.readText()
+        //    }
+            //thd= fromStrToTHeadLines(txt)
+        //}
+
+        return txt
+    }
+    fun storeInCache3(sNameFile: String, scontent: String){
+        val ctx=App.lcontext
+        val  sf="${ctx.filesDir.absolutePath}$sNameFile"
+        Timber.d("STORE IN CACHE $scontent")
+        Timber.d(sf)
+
+        val fos:FileOutputStream= FileOutputStream(File(sf),false)
+        fos.write(scontent.toByteArray())
+        fos.close()
+        //fos.bufferedWriter().use{
+        //    it.write(scontent)
+        //}
+
+        //ctx.openFileOutput(sNameFile, Context.MODE_PRIVATE).use{
+        //    it.write(scontent.toByteArray())
+        //}
+        //File(sNameFile).writeText(jasonData)
+
+    }
+
+
+
+
     fun findInCache(ctx: Context, sNameFile: String):List<OriginalTransLink>{
        // val otl= mutableListOf<OriginalTransLink>()
       // return otl
@@ -54,8 +111,9 @@ object KCache{
     }
 
 
-    fun storeImageInCache(ctx: Context, sNameFile: String, zimage: ByteArray){
-        Timber.d("STORE IMAGE IN CACHE")
+    fun storeImageInCache(sNameFile: String, zimage: ByteArray){
+        val ctx=App.lcontext
+        Timber.d("STORE IMAGE IN CACHE $sNameFile   with size ${zimage.size}")
         val  sf=ctx.filesDir.absolutePath + "/Images/$sNameFile"
         //ctx.openFileOutput(sNameFile,Context.MODE_PRIVATE).use{
         //    it.write(zimage)
@@ -64,8 +122,18 @@ object KCache{
         file.writeBytes(zimage)
         Timber.d("end write $sf size ${zimage.size}")
     }
-    fun makeImagesDir(ctx: Context){
-        val  sf=ctx.filesDir.absolutePath + "/Images"
+
+    fun setUp(){
+        if(checkImagesDir()) return
+        makeDir("Images")
+        makeDir("Headlines")
+        makeDir("Articles")
+    }
+
+
+    fun makeDir(nameDir:String){
+        val ctx=App.lcontext
+        val  sf=ctx.filesDir.absolutePath + "/$nameDir"
         val file=File(sf)
         if(file.mkdir()){
             Timber.d("directory Images created")
@@ -73,23 +141,43 @@ object KCache{
             Timber.d("directory Images not created")
         }
     }
+    fun checkImagesDir():Boolean{
+        val  sf=App.lcontext.filesDir.absolutePath + "/Images"
+        val file=File(sf)
+        return file.exists()
+    }
 
     fun findImageInCache(ctx: Context, sNameFile: String):ByteArray{
-        makeImagesDir(ctx)
+       // Timber.d(sNameFile)
+       // makeImagesDir(ctx)
         lateinit var zimage:ByteArray
         try {
             val  sf=ctx.filesDir.absolutePath + "/Images/${sNameFile}"
 
             val file=File(sf)
-            zimage=file.readBytes()
-            //ctx.openFileInput(sNameFile).use{
-             //   zimage=it.readBytes()
+         //   Timber.d("$sf ${file.length()}  ${file.exists()}")
+           // zimage=file.readBytes()
+            val fis = FileInputStream(file)
+            zimage=fis.readBytes()
+            fis.close()
+
+            //ctx.openFileInput("/Images/$sNameFile").use{
+            //    zimage=it.readBytes()
             //}
+           // Timber.d("read image size for $sf is ${zimage.size}")
+
         } catch (e: Exception) {
-            Timber.d("cache exception $e")
+            Timber.d("cache exception finding $sNameFile $e")
             return  ByteArray(0)
         }
         return  zimage
+    }
+
+    fun getBitmapImage(sNameImg: String): Bitmap {
+        val l=findImageInCache(App.lcontext, sNameImg)
+        //Timber.d("$sNameImg    size ${l.size}")
+        val s= BitmapFactory.decodeByteArray(l, 0, l.size)
+        return s
     }
 
     fun storeInCache(ctx: Context, sNameFile: String, lOtl: List<OriginalTransLink>){
@@ -106,12 +194,19 @@ object KCache{
 
     }
 
-    fun fileExists(ctx: Context, sNameFile: String,sDirectory:String):Boolean{
+    fun fileExists(ctx: Context, sNameFile: String, sDirectory: String):Boolean{
         val  sf=ctx.filesDir.absolutePath +"$sDirectory/$sNameFile"
         return File(sf).exists()
     }
 
-    fun storeInCache2(ctx: Context, sNameFile: String,scontent:String){
+    fun fileExists(sNameFile: String, sDirectory: String):Boolean{
+        val ctx=App.lcontext
+        val  sf=ctx.filesDir.absolutePath +"$sDirectory/$sNameFile"
+        return File(sf).exists()
+    }
+
+    fun storeInCache2(sNameFile: String, scontent: String){
+        val ctx=App.lcontext
         Timber.d("STORE IN CACHE $scontent")
         ctx.openFileOutput(sNameFile, Context.MODE_PRIVATE).use{
             it.write(scontent.toByteArray())
@@ -120,7 +215,18 @@ object KCache{
 
     }
 
-    fun listFiles(){
+    fun loadFromCache(sNameFile: String):String{
+        val ctx=App.lcontext
+        var txt:String=""
+        ctx.openFileInput(sNameFile).use{
+            txt=it.bufferedReader().use{
+                it.readText()
+            }
+        }
+        return txt
+    }
+
+    fun listFiles():List<String>{
         /*App.lcontext.fileList().forEach {
 
             val  sf=App.lcontext.filesDir.absolutePath + "/${it}"
@@ -132,21 +238,36 @@ object KCache{
 
         }*/
         val lf= mutableListOf<String>()
-        listRecursive(File(App.lcontext.filesDir.absolutePath),lf)
-        lf.forEach {
-            Timber.d(it)
-        }
+        listRecursive(File(App.lcontext.filesDir.absolutePath), lf)
+        return lf
+        //lf.forEach {
+        //    Timber.d(it)
+       // }
 
     }
-    fun listRecursive(fileOrDirectory: File,lf:MutableList<String>) {
-        val sdf=SimpleDateFormat("dd/MM/yyyy hh:mm:ss SSS")
-        if (fileOrDirectory.isDirectory) for (child in fileOrDirectory.listFiles()) listRecursive(child,lf)
-        lf.add("name:${fileOrDirectory.name} size ${fileOrDirectory.length()} last changed ${sdf.format(fileOrDirectory.lastModified())}")
+    fun listRecursive(fileOrDirectory: File, lf: MutableList<String>) {
+
+        val sdf=SimpleDateFormat("dd/MM/yyyy hh:mm:ss")
+        if (fileOrDirectory.isDirectory) for (child in fileOrDirectory.listFiles()) listRecursive(
+            child,
+            lf
+        )
+        var d=""
+        if(fileOrDirectory.isDirectory) d="(D)"
+        lf.add(
+            "$d ${fileOrDirectory.name} size ${fileOrDirectory.length()} ${
+                sdf.format(
+                    fileOrDirectory.lastModified()
+                )
+            }"
+        )
     }
 
 
     fun deleteRecursive(fileOrDirectory: File) {
-        if (fileOrDirectory.isDirectory) for (child in fileOrDirectory.listFiles()) deleteRecursive(child)
+        if (fileOrDirectory.isDirectory) for (child in fileOrDirectory.listFiles()) deleteRecursive(
+            child
+        )
         fileOrDirectory.delete()
     }
 

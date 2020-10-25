@@ -2,13 +2,17 @@ package com.begemot.myapplicationz
 
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.view.Gravity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.text.FirstBaseline
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.FabPosition.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,22 +22,25 @@ import androidx.compose.ui.platform.ContextAmbient
 import androidx.compose.ui.platform.setContent
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.begemot.kclib.*
+import com.begemot.knewscommon.NewsPaper
 import com.begemot.knewscommon.OriginalTransLink
+import com.begemot.knewscommon.strfromdateasLong
 import timber.log.Timber
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.*
-import kotlin.system.exitProcess
 
 
 class MainActivity : AppCompatActivity() {
     //val sApp=StatusApp(Screens.ListNewsPapers,Screens.ListNewsPapers)
     val sApp=StatusApp(Screens.StartUpScreen,Screens.QuitScreen)
 
+    @ExperimentalMaterialApi
     @ExperimentalLayout
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,23 +79,28 @@ class StatusApp(
     currentBackScreen:Screens,
     currentStatus: AppStatus=AppStatus.Loading,
    // nItems:Int=0,
-    var fontSize: Int = prefs.fontSize,
-    var lang: String = prefs.kLang
+    //var fontSize: Int = prefs.fontSize,
+    //var lang: String = prefs.kLang
 
      )
 {
+         var fontSize = mutableStateOf(prefs.fontSize)
+         var lang by mutableStateOf(prefs.kLang)
          var currentScreen by mutableStateOf(currentScreen)
          var currentStatus by mutableStateOf(currentStatus)
          var currentBackScreen by mutableStateOf(currentBackScreen)
          var nItems by mutableStateOf(0)
-         lateinit var   newsProvider:INewsPaper
+         var dataHeadlines by mutableStateOf(0L)
+        // lateinit var   newsProvider:INewsPaper
+         lateinit var   currentNewsPaper:NewsPaper
     }
 
+@ExperimentalMaterialApi
 @ExperimentalLayout
 @Composable
 fun newsReaderApp(sApp: StatusApp){
     val ds=DrawerState(initialValue = DrawerValue.Closed, AnimationClockAmbient.current)
-    val scaffoldState=remember{ ScaffoldState(ds ) }
+    val scaffoldState=remember{ ScaffoldState(ds, SnackbarHostState() ) }
     val kt = state { kTheme.values()[prefs.ktheme]  }
     val selectLang = state { false }
     val contactdialog = state { false }
@@ -99,6 +111,7 @@ fun newsReaderApp(sApp: StatusApp){
             //  drawerContent = { Text("Drawer content") },
             topBar = {
                 TopAppBar(
+                    modifier = Modifier.height(80.dp),
                     title = { title(statusApp = sApp) },
                     actions = {
                         IconButton(onClick = { kt.value = kTheme.next(kt.value); prefs.ktheme=kt.value.ordinal }
@@ -111,7 +124,8 @@ fun newsReaderApp(sApp: StatusApp){
                     }
                 )
             },
-            floatingActionButtonPosition = Scaffold.FabPosition.End,
+            // floatingActionButtonPosition = Scaffold.FabPosition.End,
+            floatingActionButtonPosition = End,
             floatingActionButton = {
                 if (sApp.currentScreen == Screens.ListNewsPapers)
                     ExtendedFloatingActionButton(
@@ -138,7 +152,7 @@ fun contactDialog(contactDialog: MutableState<Boolean>) {
     val s1 = state { "" }
     var txt by state { TextFieldValue("") }
 
-    Dialog(onCloseRequest = { contactDialog.value = false }) {
+    Dialog(onDismissRequest =  { contactDialog.value = false }) {
         KWindow() {
             KHeader(txt = "Contact us", onClick = { contactDialog.value = false })
             KField2(txt = "holax", st = s1)
@@ -188,18 +202,22 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
  @Composable
  fun title(statusApp: StatusApp){
      Column() {
-         Text(text = "News Reader",style = MaterialTheme.typography.h5)
+         Row() {
+             Text(text = "INews Reader", style = MaterialTheme.typography.h5,modifier = Modifier.alignWithSiblings(alignmentLine = FirstBaseline),fontWeight = FontWeight.Bold)
+             Text(text = "  (${statusApp.lang})", style = MaterialTheme.typography.caption,modifier = Modifier.alignWithSiblings(alignmentLine = FirstBaseline),fontWeight = FontWeight.Bold)
+         }
          var s=""
+         val date= strfromdateasLong(statusApp.dataHeadlines)
          if(statusApp.nItems>0) s=" (${statusApp.nItems})"
          val currScreen=statusApp.currentScreen
          val sAux=when(currScreen){
              is Screens.ListNewsPapers->"News papers"
-             is Screens.ListHeadLines -> statusApp.newsProvider.getName(Title.HEADLINES)+s
-             is Screens.FullArticle ->statusApp.newsProvider.getName(Title.ARTICLE)
+             is Screens.ListHeadLines -> "${statusApp.currentNewsPaper.handler} HeadLines  $s  $date"
+             is Screens.FullArticle ->statusApp.currentNewsPaper.handler+" Article"
              is Screens.StartUpScreen ->"Start up"
              is Screens.QuitScreen->""
          }
-         Text(" $sAux",style = MaterialTheme.typography.subtitle1)
+         Text(" $sAux",style = MaterialTheme.typography.subtitle1,fontWeight = FontWeight.Bold)
      }
  }
 
@@ -214,7 +232,7 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
 }
 
 @Composable
-   fun displayError(sError:String,e: Exception?=null) {
+   fun displayError(sError:String,e: Exception?=null,sApp: StatusApp) {
     var msg = "null"
     val sw = StringWriter()
     if (e != null) {
@@ -222,23 +240,21 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
         msg = sw.toString()
     }
     Surface(color = MaterialTheme.colors.error) {
+        Box(border = BorderStroke(2.dp, Color.Blue),padding = 10.dp) {
+            val img = imageResource(id = R.drawable.icons8_black_cat_48)
+            Image(
+                img, modifier = Modifier.height(50.dp).padding(10.dp)
+                    .width(50.dp)
+                //Modifier.tag(tag = "centerImage")
+            )
 
-
-        VerticalScroller() {
-
-            Box(border = Border(2.dp, Color.Blue),padding = 10.dp) {
-                val img = imageResource(id = R.drawable.icons8_black_cat_48)
-                Image(
-                    img, modifier =Modifier.height(50.dp)
-                        .width(50.dp)
-                            //Modifier.tag(tag = "centerImage")
-                )
-                //Icon(vectorResource(id = R.drawable.icons8_black_cat_48))
-                //Icon(asset = ImageAsset(R.drawable.icons8_black_cat_48 ,20))
-                //ImageAsset(R.drawable.icons8_black_cat_48 ,100)
-                Text("Error : $sError")
-                Text("stackTrace -> $msg")
-                Timber.d("stackTrace -> $msg")
+            ScrollableColumn() {
+                //Box(border = BorderStroke(2.dp, Color.Blue), padding = 10.dp) {
+                    Text("sApp.lang ${sApp.lang}")
+                    Text("Error : $sError")
+                    Text("stackTrace -> $msg")
+                    Timber.d("stackTrace -> $msg")
+               // }
             }
         }
     }
@@ -270,51 +286,29 @@ fun screenDispatcher(selectLang: MutableState<Boolean>,contactdialog:MutableStat
 
          })
      //pos="voices ${t1.voices.size}"
-     Dialog(onCloseRequest = {t1.shutdown(); bplayText.value=false}){
+     Dialog(onDismissRequest =  {t1.shutdown(); bplayText.value=false}){
 
         // t1.setSpeechRate(0.7f)
-        // t1.setPitch(0.5f)
+         if(prefs.speechrate!=1f) t1.setSpeechRate(prefs.speechrate)
+         if(prefs.pitch!=1f) t1.setPitch(prefs.pitch)
+         // t1.setPitch(0.5f)
          //Box(modifier = Modifier.fillMaxWidth(),backgroundColor = Color.Green){
          KWindow() {
-              KText2(txt,size = statusApp.fontSize)
-              Row(verticalGravity = Alignment.CenterVertically) {
-                 IconButton(onClick = { t1.speak(txt, TextToSpeech.QUEUE_FLUSH, null, null) }) {
-                    Icon(vectorResource(id = R.drawable.ic_volume_up_24px))
+             Box(border = BorderStroke(1 .dp, MaterialTheme.colors.onSurface) ){
+
+
+                 KText2(txt, size = statusApp.fontSize.value)
+                 Row(verticalAlignment = Alignment.CenterVertically) {
+                     IconButton(onClick = { t1.speak(txt, TextToSpeech.QUEUE_FLUSH, null, null) }) {
+                         Icon(vectorResource(id = R.drawable.ic_volume_up_24px))
+                     }
+                     Text("($lan) $msg")
                  }
-                 Text("($lan) $msg")
-              }
+             }
          }
      }
 
  }
-
-
-//data class KArticle(val title: String = "", val link: String = "", val desc: String = "")
-//data class OriginalTransLink(val kArticle: KArticle,val translated: String)
-//data class OriginalTrans(val original:String="",val translated:String="")
-inline class ListOriginalTransList(val lOT:List<OriginalTransLink>)
-
-
-
-
-
-sealed class KResult<T,R>{
-    class Succes<T,R>(val t:T):KResult<T,R>()
-    class Error<T,R>(val msg:String,val e:Exception?=null):KResult<T,R>()
-    object Empty:KResult<Nothing,Nothing>()
-}
-
-
-inline fun <reified T, reified R> exWithException(afun:()->T): KResult<T,R> {
-    return try {
-           val p=afun()
-          KResult.Succes(p)
-
-    }catch(e:Exception){
-          KResult.Error("error",e)
-    }
-}
-
 
 
 

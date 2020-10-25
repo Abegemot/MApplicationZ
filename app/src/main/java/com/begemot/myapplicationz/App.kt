@@ -1,4 +1,4 @@
-package com.begemot.myapplicationz
+ package com.begemot.myapplicationz
 
 //import androidx.ui.text.Locale
 import android.app.Application
@@ -74,12 +74,16 @@ fun isOnline(context: Context): Boolean {
 
 class Preferences(context:Context){
     companion object{
-        private const val PREFS_FILENAME ="RTPrefs"
-        private const val FONT_SIZE ="fontsize"
-        private const val LANG ="language"
-        private const val USERID="userid"
-        private const val SELECTEDLANG="selectedlang"
-        private const val KTHEME="ktheme"
+        private const val PREFS_FILENAME = "RTPrefs"
+        private const val FONT_SIZE = "fontsize"
+        private const val LANG = "language"
+        private const val USERID = "userid"
+        private const val SELECTEDLANG = "selectedlang"
+        private const val KTHEME = "ktheme"
+        private const val PREFTAB = "preftab"
+        private const val PITCH = "pitch"
+        private const val SPEECHRATE = "speechrate"
+        private const val INSTALLEDVER = "installedver"
     }
     private val sharedPrefs: SharedPreferences =
         context.getSharedPreferences(PREFS_FILENAME, Context.MODE_PRIVATE)
@@ -88,9 +92,21 @@ class Preferences(context:Context){
     get()=sharedPrefs.getInt(FONT_SIZE,20)
     set(value)=sharedPrefs.edit().putInt(FONT_SIZE,value).apply()
 
+    var pitch:Float
+        get()= sharedPrefs.getFloat(PITCH,1.0f)
+        set(value)=sharedPrefs.edit().putFloat(PITCH,value).apply()
+
+    var speechrate:Float
+        get()= sharedPrefs.getFloat(SPEECHRATE,1.0f)
+        set(value)=sharedPrefs.edit().putFloat(SPEECHRATE,value).apply()
+
     var ktheme:Int
         get()=sharedPrefs.getInt(KTHEME,2)
         set(value)=sharedPrefs.edit().putInt(KTHEME,value).apply()
+
+    var preftab:Int
+        get()=sharedPrefs.getInt(PREFTAB,0)
+        set(value)=sharedPrefs.edit().putInt(PREFTAB,value).apply()
 
     var kLang:String
     get()=""+sharedPrefs.getString(LANG, Locale.getDefault().language)
@@ -101,6 +117,11 @@ class Preferences(context:Context){
     set(value) = sharedPrefs.edit().putString(USERID,value).apply()
 
     var selectedLang:String
-    get()=""+sharedPrefs.getString(SELECTEDLANG,"")
+    get()=""+sharedPrefs.getString(SELECTEDLANG,Locale.getDefault().language)
     set(value)=sharedPrefs.edit().putString(SELECTEDLANG,value).apply()
+
+    var installedver:Int
+        get() = sharedPrefs.getInt(INSTALLEDVER,0)
+        set(value) = sharedPrefs.edit().putInt(INSTALLEDVER,value).apply()
+
 }

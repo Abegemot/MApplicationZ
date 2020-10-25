@@ -8,13 +8,13 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
     // id("androidx.navigation.safeargs")
  }
 android {
-    compileSdkVersion(29)
+    compileSdkVersion(30)
  //   buildToolsVersion("29.0.2")
 
     defaultConfig {
         applicationId="com.begemot.myapplicationz"
         minSdkVersion(23)
-        targetSdkVersion(29)
+        targetSdkVersion(30)
         versionCode= 1
         versionName= "1.0"
 
@@ -43,13 +43,14 @@ android {
         //kotlinCompilerVersion = "1.3.61-dev-withExperimentalGoogleExtensions-20200129"
         // kotlinCompilerVersion = "1.3.70-dev-withExperimentalGoogleExtensions-20200424"
         //kotlinCompilerVersion="1.4.0-dev-withExperimentalGoogleExtensions-20200720"
-        kotlinCompilerVersion="1.4.0-rc"
-        kotlinCompilerExtensionVersion = "0.1.0-dev16"
+        kotlinCompilerVersion="1.4.10"
+        kotlinCompilerExtensionVersion = "1.0.0-alpha05"
     }
 
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
+        //freeCompilerArgs= listOf("-P","plugin:androidx.compose.plugins.idea:liveLiterals=false")
     }
 }
  tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>{

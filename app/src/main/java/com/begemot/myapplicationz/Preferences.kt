@@ -1,164 +1,250 @@
-package com.begemot.myapplicationz
+  package com.begemot.myapplicationz
 
+
+//import androidx.ui.text.Locale
+
+import android.content.Context
 import android.widget.Toast
-import androidx.compose.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.lazy.LazyColumnFor
+//import androidx.compose.foundation.layout.ColumnScope.gravity
+import androidx.compose.foundation.selection.ToggleableState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.state
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.Center
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.VerticalAlignmentLine
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ContextAmbient
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
-
 import androidx.ui.tooling.preview.Preview
-//import androidx.ui.text.Locale
-
 import com.begemot.kclib.KButtonBar
 import com.begemot.kclib.KHeader
 import com.begemot.kclib.KText2
 import com.begemot.kclib.KWindow
+
 import timber.log.Timber
 import java.util.*
 import kotlin.collections.HashMap
 
-@ExperimentalLayout
+
+
+class PrefsParams{
+    val localFontSize:MutableState<Int> = mutableStateOf(prefs.fontSize)
+    val tabstate:MutableState<Int> = mutableStateOf(prefs.preftab)
+    val localPitch:MutableState<Float> = mutableStateOf(prefs.pitch)
+    val localSpeechrate:MutableState<Float> = mutableStateOf(prefs.speechrate)
+    val selectLocales:MutableState<Boolean> = mutableStateOf(false)
+    val localCurrentLang:MutableState<String> = mutableStateOf(prefs.kLang)
+    val localSelectedLang:MutableState<String> = mutableStateOf(prefs.selectedLang)
+}
+
+  fun printStat(msg:String,prefParams: PrefsParams,statusApp: StatusApp){
+      Timber.d("printStat : $msg")
+      Timber.d("localCurrentLang ${prefParams.localCurrentLang.value}")
+      Timber.d("localSelectedLang ${prefParams.localSelectedLang.value}")
+      Timber.d("statusApp.lang  ${statusApp.lang}")
+  }
+
+
+  @ExperimentalLayout
+  @Composable
+  fun editPreferences(selectLang: MutableState<Boolean>, statusApp: StatusApp){
+      val prefParams=remember{PrefsParams()}
+      printStat("On Enter editPreferences ",prefParams,statusApp)
+      Dialog(onDismissRequest = {selectLang.value=false}) {
+          KWindow() {
+              KHeader(txt = "Settings", onClick = {selectLang.value=false})
+              tabPreferences(statusApp,prefParams)
+              KButtonBar {
+                  Button(onClick = {
+                      //statusApp.fontSize.value = prefParams.localFontSize.value
+                      //prefs.fontSize = prefParams.localFontSize.value
+                      prefs.fontSize=statusApp.fontSize.value
+                      prefs.pitch = prefParams.localPitch.value
+                      prefs.speechrate =prefParams.localSpeechrate.value
+                      selectLang.value=false
+                      prefs.kLang=prefParams.localCurrentLang.value
+                      statusApp.lang= prefs.kLang
+                      printStat("After OK edit Preferences ",prefParams,statusApp)
+
+                  }) {
+                      Text("Ok")
+                  }
+                  if(prefParams.tabstate.value==0){
+                      Button(onClick = {prefParams.selectLocales.value=true}){ Text("+ Languages") }
+                  }
+                  if(prefParams.tabstate.value==2) {
+                      Button(onClick = {
+                          if (prefParams.tabstate.value == 2) {
+                              prefParams.localPitch.value = 1.0f
+                              prefParams.localSpeechrate.value = 1.0f
+                              prefs.speechrate = 1.0f
+                              prefs.pitch = 1.0f
+                          }
+                      }) {
+                          Text("default")
+                      }
+                  }
+              }
+          }
+      }
+  }
+
+
+
+  @ExperimentalLayout
 @Composable
-fun editPreferences(selectLang: MutableState<Boolean>, statusApp: StatusApp) {
-    val selectLocales = state { false }
-    if(selectLocales.value) localesDlg(selectLocales,statusApp)
-    val getOptions= getSelectedLang()
-    Timber.d("getOptions size ${getOptions.size}")
-    Dialog(onCloseRequest = { selectLang.value = false }) {
-        val localFontSize= state{statusApp.fontSize}
-        KWindow() {
-            KHeader(txt = "Settings", onClick = {selectLang.value = false})
-            //val radioOptions = listOf("en", "es", "it","ur","zh","ca","zh-TW")
-            val radioOptions= getOptions.map{it->it.value}.sorted()
-              var indx=radioOptions.indexOf(getOptions[statusApp.lang])
-
-            Timber.d("indx $indx   statusApp.lang=${statusApp.lang}  getOptions= $getOptions")
-            if(indx==-1) indx=0
-            val (selectedOption, onOptionSelected) = state { radioOptions[indx] }
-            RadioGroup(options = radioOptions,selectedOption = selectedOption,onSelectedChange = onOptionSelected)
-
-            KText2("Text Size",size=localFontSize.value)
-            var sliderPosition = state {statusApp.fontSize.toFloat()}
-            Slider(
-                value=sliderPosition.value,
-                onValueChange={sliderPosition.value=it;localFontSize.value=it.toInt()},
-                valueRange = 10f..35f
-            //    color=Color.Black
-            )
-
-
-            KButtonBar {
-                Button(onClick = {selectLocales.value=true}){ Text("+ Languages") }
-                Button(onClick = {
-                    // selectedLang.value = selectedOption
-                    selectLang.value = false
-                    statusApp.lang = getOptions.getKey(selectedOption).toString()
-                    statusApp.fontSize = localFontSize.value
-                    prefs.fontSize = localFontSize.value
-                    prefs.kLang =  getOptions.getKey(selectedOption).toString()
-                }) {
-                    Text("oK")
+fun tabPreferences (statusApp: StatusApp, prefParams:PrefsParams){
+        val titles = listOf("Language", "Text", "Sound")
+        Column {
+            TabRow(selectedTabIndex = prefParams.tabstate.value) {
+                titles.forEachIndexed { index, title ->
+                    Tab(
+                        selected = prefParams.tabstate.value == index,
+                        content = { Text(title) },
+                        onClick = {
+                            prefParams.tabstate.value = index
+                            prefs.preftab =prefParams.tabstate.value
+                        }
+                    )
                 }
             }
+            Box(modifier = Modifier.preferredHeight(210.dp).fillMaxWidth().padding(10.dp),gravity = Alignment.Center) {
+                when (prefParams.tabstate.value) {
+                    0 -> tabLanguage(statusApp,prefParams)
+                    1 -> tabText(statusApp, prefParams.localFontSize)
+                    2 -> tabSound(prefParams)
+                }
+             }
         }
-    }
-    //  }
-
-}
-@Preview
-@Composable
-fun atos(){
-    Dialog(onCloseRequest = {  }) {
-        var state = state { 0 }
-        val titles = listOf("TAB 1", "TAB 2", "TAB 3 WITH LOTS OF TEXT")
-        Column {
-            TabRow(items = titles, selectedIndex = state.value) { index, text ->
-                Tab(
-                    text = { Text(text) },
-                    selected = state.value == index,
-                    onSelected = { state.value = index })
-
-
-            }
-            when (state.value) {
-                0 -> tab1()
-                1 -> Text("poma")
-            }
-            Text(
-                modifier = Modifier.gravity(Alignment.CenterHorizontally),
-                text = "Text tab ${state.value + 1} selected",
-                style = MaterialTheme.typography.body1
-            )
-        }
-    }
-}
-
-
-@Composable
-fun tab1(){
-    Box(backgroundColor = Color.Green,modifier = Modifier.preferredSize(100.dp)){
-        Text("patata"); Text("gos")
-    }
 }
 
 
 @ExperimentalLayout
-
 @Composable
-fun dlgLocale(statusApp: StatusApp){
-    val scr= ScrollerPosition()
-   // setSelectedLang()
-   KWindow(size = 220){
-       KHeader(txt = "Select languages", onClick ={} )
-       Box(Modifier.preferredHeight(300.dp), border= Border(2.dp, Color.Black)) {
-           VerticalScroller(scrollerPosition = scr) {
-               getLocales().forEach {
-                   Row() {
-                       var checked = state { false }
-                       Checkbox(
-                           checked = checked.value,
-                           onCheckedChange = {
+fun tabLanguage(statusApp: StatusApp,prefParams: PrefsParams){
+    //val selectLocales = state { false }
+    val context = ContextAmbient.current
+    if(prefParams.selectLocales.value) localesDlg(prefParams,statusApp)
+    val getOptions= getSelectedLang()
+    //Timber.d("getOptions size ${getOptions.size}  content: $getOptions")
 
-                               c -> it.checked = c
-                               checked.value = !checked.value
-                               if(it.acronim.equals(statusApp.lang) ){
-                                    it.checked = true
-                                   checked.value = true
-                               }
-                           }
-                       )
-                       Text(it.toString())
-                   }
-               }
-           }
-       }
-       KButtonBar {
-          Button(onClick = {scr.scrollTo(200f)}) { Text("Hola")}
-          Button(onClick = {Ok()}) { Text("Ok")}
-       }
-   }
-}
+       // val localFontSize= state{statusApp.fontSize}
 
-fun Ok(){
-    val lSelectedLocales=getLocales().filter{ it->it.checked}
+            //val radioOptions = listOf("en", "es", "it","ur","zh","ca","zh-TW")
+            val radioOptions = getOptions.map { it -> "${it.value}  (${it.key})" }.sorted()
+            //val r= lKLocales.find { it.acronim==statusApp.lang }
+            //var indx=radioOptions.indexOf("${r?.displayName}  (${r?.acronim})")
+            //Timber.d("tab language ${statusApp.lang}  ${getOptions[statusApp.lang]}")
+            val v=getOptions[statusApp.lang]
+            val z=getOptions.getKey(v!!)
+            val comb="$v  ($z)"
+            var indx = radioOptions.indexOf(comb)
+
+
+             //Timber.d("indx $indx   statusApp.lang=${statusApp.lang}  getOptions= $getOptions")
+             //Timber.d("${getOptions[statusApp.lang]} $comb")
+            if (indx == -1) indx = 0
+    //        val (selectedOption, onOptionSelected) = state { radioOptions[indx] }
+            var selectedOption by remember{ mutableStateOf(radioOptions[indx])}
+            val onSelectedChange={text:String->selectedOption=text
+                printStat("before on change current lang",prefParams,statusApp)
+                prefParams.localCurrentLang.value=text.substringAfterLast("(").substringBefore(")")
+                printStat("after on change current lang",prefParams,statusApp)
+            }
+
+            Column {
+                radioOptions.forEach { text ->
+                    Row(Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = (text == selectedOption),
+                            onClick = { onSelectedChange(text) }
+                        )
+                        .padding(horizontal = 8.dp)
+                    ) {
+                        RadioButton(
+                            selected = (text == selectedOption),
+                            onClick = { onSelectedChange(text) }
+                        )
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.body1.merge(),
+                            modifier = Modifier.padding(start = 26.dp)
+                        )
+                    }
+                }
+            }
+
+        }
+  @Composable
+  fun tabText(statusApp: StatusApp, localFontSize: MutableState<Int>){
+          KText2("Text Size",size=statusApp.fontSize.value)
+          var sliderPosition = state {statusApp.fontSize.value.toFloat()}
+          Slider(
+              value=sliderPosition.value,
+              //onValueChange={sliderPosition.value=it;localFontSize.value=it.toInt()},
+              onValueChange={sliderPosition.value=it;statusApp.fontSize.value=it.toInt()},
+              valueRange = 10f..35f
+              //    color=Color.Black
+          )
+  }
+  @Composable
+  fun tabSound(prefParams: PrefsParams){
+      val sliderPitch: MutableState<Float> = mutableStateOf(prefParams.localPitch.value)
+      val sliderRate: MutableState<Float> = mutableStateOf(prefParams.localSpeechrate.value)
+      Column(modifier =Modifier.padding(1.dp),verticalArrangement = Arrangement.Center){
+          Text("Pitch")
+          Slider(
+              value = sliderPitch.value,
+              onValueChange = { sliderPitch.value = it;prefParams.localPitch.value = it },
+              valueRange = 0.1f..2.0f
+          )
+          Text("Speech Rate")
+          Slider(
+              value = sliderRate.value,
+              onValueChange = { sliderRate.value = it;prefParams.localSpeechrate.value = it },
+              valueRange = 0.1f..2.0f
+          )
+      }
+  }
+
+  @ExperimentalLayout
+  @Preview
+  @Composable
+  fun tps(){
+      val selectLang:MutableState<Boolean> = mutableStateOf(true)
+      editPreferences(selectLang = selectLang,statusApp = StatusApp(Screens.StartUpScreen,Screens.QuitScreen) )
+  }
+
+
+fun Ok(prefParams: PrefsParams,statusApp: StatusApp){
+    printStat("Enter OK select langs ",prefParams,statusApp)
+    val lSelectedLocales=getLocalesZ().filter{ it->it.checked}
     val lnames=lSelectedLocales.map{it.acronim}
     val s=lnames.joinToString (",")
     prefs.selectedLang=lnames.joinToString(",")
-    Timber.d("selectedLang : ${prefs.selectedLang}")
+    prefParams.selectLocales.value = false
+    statusApp.lang=prefParams.localCurrentLang.value
+    printStat("Leaving OK select langs ",prefParams,statusApp)
+  //  Timber.d("selectedLang : ${prefs.selectedLang}")
 }
 
 fun setSelectedLang(){
-    val lAllLocales= getLocales()
+    val lAllLocales= getLocalesZ()
     prefs.selectedLang.split(",").forEach{
         lAllLocales.find { lang->it.equals(lang.acronim) }?.checked=true
     }
@@ -172,17 +258,18 @@ if prefs doesen't contain Local it add it's to the map and selects it at AllLoca
 and checks=true all prefs in AllLocales
  */
 
-fun getSelectedLang():MyHashMap<String,String>{
+fun getSelectedLang():BiHashMap<String,String>{
     val lS= mutableListOf<KLocale>()
-    val lAllLocales= getLocales()
-    val r=Locale.getDefault()
-    val kLocale = lAllLocales.find { it->it.acronim.equals(Locale.getDefault().language) }
-    kLocale?.checked=true
+    val lAllLocales= getLocalesZ()
+
+  //  val r=Locale.getDefault()
+  //  val kLocale = lAllLocales.find { it->it.acronim.equals(Locale.getDefault().language) }
+  //  kLocale?.checked=true
     val lSelected=prefs.selectedLang.split(",")  //"ca,en" ...
 
-    if(lSelected.find {it->it.equals(Locale.getDefault().language) }==null){
-            lS.add(kLocale!!)
-        }
+    //if(lSelected.find {it->it.equals(Locale.getDefault().language) }==null){
+    //        lS.add(kLocale!!)
+    //    }
        lSelected.forEach{
           val l=lAllLocales.find { kloc->it.equals(kloc.acronim) }
            if(l!=null){
@@ -201,78 +288,118 @@ fun getSelectedLang():MyHashMap<String,String>{
     if(lS.find{a->a.acronim.equals(Locale.current.language)}==null){
         lS.add(lAllLocales.find{a->a.acronim.equals(Locale.current.language)}!!)
     }*/
-    val map:MyHashMap<String,String> = MyHashMap()
+    val map:BiHashMap<String,String> = BiHashMap()
     lS.forEach{
         map.put(it.acronim,it.displayName)
     }
+    Timber.d("getSelectedLang $map")
     return map
    // return lS
 }
 
-
+/*enum class ToggleableState{
+    All,Selected,UnSelected
+}*/
 
 @ExperimentalLayout
 @Composable
-fun localesDlg(selectLocales:MutableState<Boolean>,statusApp: StatusApp){
+fun localesDlg(prefParams: PrefsParams,statusApp: StatusApp){
     val context = ContextAmbient.current
-    val scr= ScrollerPosition()
-    Dialog(onCloseRequest = {selectLocales.value=false}) {
-        val lKLocale = getLocales()
-        KWindow(size=220) {
-            KHeader(txt = "Select languages", onClick ={selectLocales.value=false} )
-            Box(Modifier.preferredHeight(300.dp),border= Border(2.dp, Color.Black)) {
-                /*Text("Locales size: ${lKLocale.size}")
-                Button(onClick = {
-                    Timber.d("sopa  ${lKLocale[0].checked}")
-                }){ Text("boolaZ") }*/
-                VerticalScroller(scrollerPosition = scr) {
-                    Button(onClick = {scr.scrollTo(200f)}) { Text("Hola2")}
-                    lKLocale.forEach {
-                        Row(){
-                            var checked = state{ it.checked }
-                                Checkbox(
-                                    checked = checked.value,
-                                    onCheckedChange = { c ->
-                                         it.checked = c
-                                         checked.value=!checked.value
-                                        if(it.acronim.equals(statusApp.lang) ){
-                                            it.checked = true
-                                            checked.value = true
-                                            Toast.makeText(context,"You can't remove current selected language",Toast.LENGTH_LONG).show()
-                                        }
-                                    }
-                                )
-                            Text(it.toString())
+    //var lselected by remember {mutableStateOf(true)}
+    var lselected by mutableStateOf(false)
+    printStat("Enter localesDlg",prefParams ,statusApp)
+    Dialog(onDismissRequest =  {prefParams.selectLocales.value=false}) {
+        val lKLocale = getLocalesZ2()
+        KWindow(size=265) {
+            KHeader(txt = "Select languages", onClick ={prefParams.selectLocales.value=false} )
+            //,border= BorderStroke(2.dp, Color.Black)
+            Column(Modifier.preferredHeight(300.dp).fillMaxWidth(1f)) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+
+
+                //Box(backgroundColor = MaterialTheme.colors.secondaryVariant,modifier = Modifier.fillMaxWidth(1f)) {
+                    Row(Modifier.padding(5.dp)) {
+
+                        Text("Unselected")
+                        Switch(checked = lselected, onCheckedChange = { lselected = it},Modifier.padding(horizontal = 10.dp) )
+                        //Checkbox(checked = lselected, onCheckedChange = { lselected = !lselected} )
+                        Text("Selected")
+                    }
+
+                }
+                //ScrollableColumn() {
+                    LazyColumnFor(items = lKLocale,itemContent =  {
+                        if(lselected && it.checked) {
+                            rowlang(it = it, statusApp = statusApp, context =context,prefParams  )
+
+                        }
+                        if(!lselected && !it.checked){
+                            rowlang(it = it, statusApp = statusApp, context =context ,prefParams )
+                        }
+                    })
+                //}
+                /*lKLocale.forEach {
+                        if(lselected && it.checked) {
+                            rowlang(it = it, statusApp = statusApp, context =context,prefParams  )
+
+                        }
+                        if(!lselected && !it.checked){
+                            rowlang(it = it, statusApp = statusApp, context =context ,prefParams )
                         }
                     }
-                }
+                }*/
             }
             KButtonBar {
-                Button(onClick = {scr.scrollTo(200f)}) { Text("HolaX")}
-                Button(onClick = {Ok();selectLocales.value=false}) { Text("Ok")}
+                //Button(onClick = {/*scr.scrollTo(200f)*/}) { Text("HolaX")}
+                Button(onClick = {Ok(prefParams,statusApp)/*;prefParams.selectLocales.value=false*/}) { Text("Ok")}
             }
         }
 
     }
 }
 
-
-fun getLocales():List<KLocale>{
-    return lKLocales
+@Composable
+fun rowlang(it:KLocale,statusApp: StatusApp,context: Context,prefParams: PrefsParams){
+    Row(Modifier.padding(start = 10.dp,top=5.dp).fillMaxWidth(1.0f)) {
+        var checked = mutableStateOf(it.checked)
+        Checkbox(
+            checked = checked.value,
+            onCheckedChange = { c ->
+                val count = lKLocales.count { it.checked }
+                if (count == 8 && c) {
+                    Toast.makeText(
+                        context,
+                        "Max number of selected languages reached",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    it.checked = c
+                    checked.value = !checked.value
+                    Timber.d("on checkchange ${prefParams.localCurrentLang.value}")
+                    //if (it.acronim.equals(statusApp.lang)) {
+                    if (it.acronim.equals(prefParams.localCurrentLang.value)) {
+                        it.checked = true
+                        checked.value = true
+                        Toast.makeText(
+                            context,
+                            "You can't remove current selected language (${it.acronim})",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        )
+        Text(it.toString(),Modifier.padding(start = 3.dp))
+    }
 }
 
-class MyHashMap<K,V>:HashMap<K,V>(){
-    private var rMap:MutableMap<V,K> = HashMap()
-    override fun put(key:K,value:V):V?{
-        rMap[value]=key
-        return super.put(key, value)
-    }
-    fun getKey(target:V):K ?{
-        return rMap[target]
+
+data class KLocale(val displayName: String ="", val acronim:String="", var checked:Boolean=false){
+    override fun toString(): String {
+        return "$displayName ($acronim)"
     }
 }
-
-private  val lKLocales= listOf(
+private val lKLocales = listOf(
     KLocale("Afrikaans","af"),
     KLocale("Albanian","sq"),
     KLocale("Amharic","am"),
@@ -381,11 +508,39 @@ private  val lKLocales= listOf(
     KLocale("Yiddish","yi"),
     KLocale("Yoruba","yo"),
     KLocale("Zulu","zu")
-    )
+)
 
-
-data class KLocale(val displayName: String ="", val acronim:String="", var checked:Boolean=false){
-    override fun toString(): String {
-        return displayName+" "+acronim
+class BiHashMap<K,V>:HashMap<K,V>(){
+    private var rMap:MutableMap<V,K> = HashMap()
+    override fun put(key:K,value:V):V?{
+        rMap[value]=key
+        return super.put(key, value)
+    }
+    fun getKey(target:V):K ?{
+        return rMap[target]
     }
 }
+fun getLocalesZ():List<KLocale>{
+    return lKLocales
+}
+
+  fun getLocalesZ2():List<KLocale>{
+      lKLocales.forEach { it.checked=false }
+     // val kLocale = lKLocales.find { it->it.acronim.equals(Locale.getDefault().language) }
+     // kLocale?.checked=true
+      val lSelected=prefs.selectedLang.split(",")  //"ca,en" ...
+
+      //if(lSelected.find {it->it.equals(Locale.getDefault().language) }==null){
+      //    lS.add(kLocale!!)
+      //}
+      lSelected.forEach{
+          val l= lKLocales.find { kloc->it.equals(kloc.acronim) }
+          if(l!=null){
+              l.checked=true
+
+          }
+      }
+      return lKLocales
+  }
+
+
