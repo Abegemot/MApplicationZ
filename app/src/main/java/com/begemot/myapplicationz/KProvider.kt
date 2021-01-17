@@ -1,83 +1,81 @@
-  package com.begemot.myapplicationz
+package com.begemot.myapplicationz
 
+import androidx.compose.runtime.MutableState
+import androidx.core.util.Preconditions
 import com.begemot.knewsclient.KNews
 import com.begemot.knewscommon.*
+import io.ktor.util.*
 import kotlinx.coroutines.*
 import timber.log.Timber
-import kotlin.reflect.KSuspendFunction0
 
-object KProvider{
-    suspend fun getHL(
-        nameFile: String,
-        olang: String,
-        tlang: String,
-        getOriginalHDLines: KSuspendFunction0<List<KArticle>>
-    ):List<OriginalTransLink>{
-        val olt=KCache.findInCache(App.lcontext, nameFile + tlang)
-        if(olt.isNotEmpty()) return olt
-        val nolt= getOriginalHDLines()
-        Timber.d("nolt  ${nolt.size}")
+object KProvider {
 
+    fun getNewsPapers(): NewsPaperVersion = fromStrToNewsPaperV(KCache.loadFromCache("knews.json"))
 
-        val lt=getTranslatedHeadlines(nolt, olang, tlang)
-        KCache.storeInCache(App.lcontext, nameFile + tlang, lt)
-        return lt
-    }
-}
-
-
-object KProvider2{
-    private  var lNP:List<NewsPaper> = emptyList()
-    fun getNewsPapers(mlNewsPapers: MutableList<NewsPaper>):List<NewsPaper>{
-
-        mlNewsPapers.clear()
-        mlNewsPapers.addAll(lNP)
-        return mlNewsPapers
-        //return lNP
-    }
-    fun setNewsPapers(tl:List<NewsPaper>){
-        lNP=tl
-    }
-    suspend fun getHeadLines(statusApp: StatusApp):THeadLines{
-        Timber.d("getHeadLines ${statusApp.currentNewsPaper.handler}")
-        val getHeadLines=GetHeadLines(statusApp.currentNewsPaper.handler,statusApp.lang,0L)
-        val nameFile="/Headlines/${statusApp.currentNewsPaper.handler}${statusApp.lang}"
-        val sthl=KCache.findInCache2(nameFile)
-        if(sthl.length==0){ //No existeix headline
-            Timber.d("No existeix headlines")
-            val thl2=KNews().getHeadLines(getHeadLines)
-            KCache.storeInCache3(nameFile, toStrFromTHeadlines(thl2))
-            return thl2
-
-        }else{
-            Timber.d("FROM CACHE!!! ")
-            val thdl=fromStrToTHeadLines(sthl)
-            val getHeadLines=GetHeadLines(statusApp.currentNewsPaper.handler,statusApp.lang,thdl.datal)
-            checkUpdates(getHeadLines,thdl)
-            Timber.d("BEFORE RETURN GETHEADLINES")
-            return thdl
+    @KtorExperimentalAPI
+    suspend fun getNewsPapersUpdates(currentver: Int): NewsPaperVersion {
+        //Preconditions.checkArgument(1==1)
+        //throw(Exception("Error geting news papers updates"))
+        val nP = KNews().getNewsPapersWithVersion(currentver)
+        if (nP.version == 0) {  //no updates
+            Timber.d("no updates current version ${currentver}")
+            return nP
+        } else {
+            Timber.d("news papers updates found")
+            checkImages(nP.newspaper)
+            KCache.storeInCache2("knews.json", nP.toStr())
+            return nP
         }
     }
 
-    suspend fun checkUpdates(ghl:GetHeadLines,thl:THeadLines){
-        val nameFile="/Headlines/${ghl.handler}${ghl.tlang}"
-        val scope= CoroutineScope(Job()+Dispatchers.IO )
-        scope.launch {
-            Timber.d("start check updates")
-            val thl2=KNews().getHeadLines(ghl)
-            if(thl2.datal!=0L) {
-                KCache.storeInCache3(nameFile, toStrFromTHeadlines(thl2))
-                //thl=thl2
-                thl.datal=thl2.datal
-                thl.lhl=thl2.lhl
-                Timber.d("HEADLINES HAVE CHANGED")
-            }else{
-                Timber.d("HEADLINES HAVEN'T CHANGED")
+    suspend fun checkImages(lnp: List<NewsPaper>) {
+        lnp.forEach {
+            if (!KCache.fileExists(it.logoName, "/Images")) {
+                val ba = KNews().getImage("Images/${it.logoName}")
+                KCache.storeImageInCache(it.logoName, ba.bresult)
+
             }
-            //delay(2000L)
-            Timber.d("end check updates")
+
         }
     }
 
 
+    suspend fun getHeadLines(getHeadLines: GetHeadLines): THeadLines = withContext(Dispatchers.IO) {
+        val nameFile = "/Headlines/${getHeadLines.handler}${getHeadLines.tlang}"
+        //delay(1000)
+        val sthl = KCache.findInCache2(nameFile)
+        //throw(Exception("patata"))
+        if (sthl.length == 0) { //No existeix headline
+            Timber.d("No existeix headlines en cache")
+            val thl2 = KNews().getHeadLines(getHeadLines)
+            Timber.d("patata->${thl2.lhl}")
+            KCache.storeInCache3(nameFile, thl2.toStr())
+            return@withContext thl2
+        } else {
+            Timber.d("existeix en Cache  ${sthl.length}")
+            val thdl = fromStrToTHeadLines(sthl)
+            Timber.d("RETURN FROM CACHE!!! OK ->size hl ${thdl.lhl.size} ")
+            return@withContext thdl
+        }
+    }
+
+    suspend fun checkUpdates2(ghl:GetHeadLines):THeadLines = withContext(Dispatchers.IO) {
+        val nameFile = "/Headlines/${ghl.handler}${ghl.tlang}"
+        try {
+            val thl2 = KNews().getHeadLines(ghl)
+            // throw(Exception("patata 1"))
+            if (thl2.datal != 0L) {
+                KCache.removeHeadLinesOf(ghl.handler)
+                KCache.storeInCache3(nameFile, toStrFromTHeadlines(thl2))
+                Timber.d("end HEADLINES HAVE CHANGED data original  ${ghl.datal}  new data ${thl2.datal}")
+                thl2
+            } else {
+                Timber.d("end HEADLINES HAVEN'T CHANGED checkUpdates2 data original  ${ghl.datal}  new data ${thl2.datal}")
+                THeadLines()
+            }
+
+        } catch (e: Exception) {
+            throw(Exception("${e}  "))
+        }
+    }
 }

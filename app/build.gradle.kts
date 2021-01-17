@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  plugins {
      id("com.android.application")
      kotlin("android")
-     kotlin("android.extensions")
+     //kotlin("android.extensions")
     // kotlin("plugin.serialization") version "1.3.72"
     // id("androidx.navigation.safeargs")
  }
@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId="com.begemot.myapplicationz"
-        minSdkVersion(23)
+        minSdkVersion(24)
         targetSdkVersion(30)
         versionCode= 1
         versionName= "1.0"
@@ -30,9 +30,9 @@ android {
         }
     }
     packagingOptions {
-        exclude("project.properties")
-        exclude("META-INF/*.kotlin_module")
-        pickFirst("META-INF/LICENSE.txt")
+        //exclude("project.properties")
+        //exclude("META-INF/*.kotlin_module")
+        //pickFirst("META-INF/LICENSE.txt")
     }
 
     compileOptions {
@@ -43,8 +43,8 @@ android {
         //kotlinCompilerVersion = "1.3.61-dev-withExperimentalGoogleExtensions-20200129"
         // kotlinCompilerVersion = "1.3.70-dev-withExperimentalGoogleExtensions-20200424"
         //kotlinCompilerVersion="1.4.0-dev-withExperimentalGoogleExtensions-20200720"
-        kotlinCompilerVersion="1.4.10"
-        kotlinCompilerExtensionVersion = "1.0.0-alpha05"
+        kotlinCompilerVersion="1.4.21"
+        kotlinCompilerExtensionVersion = "1.0.0-alpha09"
     }
 
 
@@ -62,9 +62,9 @@ android {
  }
 
 
- androidExtensions{
-     isExperimental=true
- }
+ //androidExtensions{
+ //    isExperimental=true
+// }
 
  repositories{
      maven {
@@ -91,12 +91,15 @@ dependencies {
 
     implementation("androidx.core:core-ktx")
     implementation("androidx.appcompat:appcompat")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx")
+    //implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.2.0")
     implementation("com.google.android.material:material")
     //implementation ("androidx.constraintlayout:constraintlayout:1.1.3")
     //implementation ("androidx.navigation:navigation-fragment-ktx:2.1.0")
     //implementation ("androidx.navigation:navigation-ui-ktx:2.1.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android")
+    //implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.3.6")
     implementation("org.jsoup:jsoup")
     implementation("com.sun.mail:android-mail")
     implementation("com.sun.mail:android-activation")

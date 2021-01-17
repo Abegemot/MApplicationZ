@@ -15,13 +15,16 @@ import java.io.FileOutputStream
 import java.nio.charset.Charset
 import java.text.SimpleDateFormat
 
+private val DD=false
+
 
 object KCache{
     fun findInCache2(path:String): String{
+        //throw Exception("ñññññfindincache2")
         val ctx=App.lcontext
         val  sf="${ctx.filesDir.absolutePath}$path"
-        println("findincache path  :$path")
-        println("findincache sf    :$sf")
+//        Timber.d("findincache path  :$path")
+        Timber.d("findincache sf    :$sf")
         val file=File(sf)
         var txt=""
         var thd:THeadLines
@@ -31,8 +34,8 @@ object KCache{
                 txt=it.readText()
             }
             fis.close()
-            Timber.d("readed txt $txt")
-            Timber.d("END  read txt   <------")
+            if(DD) Timber.d("readed txt $txt")
+            if(DD) Timber.d("END  read txt   <------")
         } catch (e: Exception) {
             Timber.d("exception $e")
             txt=""
@@ -175,7 +178,7 @@ object KCache{
 
     fun getBitmapImage(sNameImg: String): Bitmap {
         val l=findImageInCache(App.lcontext, sNameImg)
-        //Timber.d("$sNameImg    size ${l.size}")
+        Timber.d("$sNameImg    size ${l.size}")
         val s= BitmapFactory.decodeByteArray(l, 0, l.size)
         return s
     }
@@ -219,32 +222,36 @@ object KCache{
         val ctx=App.lcontext
         var txt:String=""
         ctx.openFileInput(sNameFile).use{
+
+            // if(it.fd.valid()) Timber.d("valid  $sNameFile ${it.fd.toString()} ")
+            // else Timber.d("No Valid $sNameFile ")
             txt=it.bufferedReader().use{
                 it.readText()
             }
         }
+        Timber.d("File $sNameFile\n$txt")
         return txt
     }
 
     fun listFiles():List<String>{
-        /*App.lcontext.fileList().forEach {
-
-            val  sf=App.lcontext.filesDir.absolutePath + "/${it}"
-            val file=File(sf)
-            val size=file.length() ///1024
-            val sdf=SimpleDateFormat("dd/MM/yyyy hh:mm:ss SSS")
-            var ds=sdf.format(file.lastModified())
-            Timber.d("Name $it   Data  $ds  Size $size (B)")
-
-        }*/
         val lf= mutableListOf<String>()
         listRecursive(File(App.lcontext.filesDir.absolutePath), lf)
+        lf.forEach {
+            Timber.d(it)
+        }
         return lf
-        //lf.forEach {
-        //    Timber.d(it)
-       // }
-
     }
+    fun removeHeadLinesOf(handler:String){
+        val F=File(App.lcontext.filesDir.absolutePath+"/Headlines")
+        F.listFiles().filter { it.name.substring(0,handler.length).equals(handler) }
+            .forEach{
+                Timber.d(it.name)
+                it.delete()
+            }
+    }
+
+
+
     fun listRecursive(fileOrDirectory: File, lf: MutableList<String>) {
 
         val sdf=SimpleDateFormat("dd/MM/yyyy hh:mm:ss")

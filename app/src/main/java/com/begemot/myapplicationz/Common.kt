@@ -1,7 +1,17 @@
 package com.begemot.myapplicationz
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.text.HtmlCompat
 import androidx.core.text.htmlEncode
+import androidx.compose.ui.unit.dp
 import com.begemot.knewscommon.KArticle
 import com.begemot.knewscommon.OriginalTrans
 import com.begemot.knewscommon.OriginalTransLink
@@ -16,6 +26,67 @@ import java.net.URLEncoder
 //import com.google.gson.Gson
 import java.nio.charset.Charset
 
+
+
+
+@Composable
+fun resfreshWraper2(loading: Boolean, children: @Composable() () -> Unit) {
+    //Timber.d("Z  Loading $loading")
+    Box(contentAlignment = Alignment.BottomEnd) {
+        Box(
+            Modifier.fillMaxWidth().background(Color.Transparent)
+        ) {
+            Column() {
+                children()
+            }
+        }
+        if (loading)
+            Box(
+                Modifier.fillMaxWidth().background(Color.Transparent)
+            ) {
+                CircularProgressIndicator(Modifier.align(Alignment.BottomEnd).padding(2.dp))
+            }
+    }
+}
+
+@Composable
+fun resfreshWraper(loading: Boolean, children: @Composable() () -> Unit) {
+    //Timber.d("Z  Loading $loading")
+    Box() {
+        Box(
+            Modifier.fillMaxSize().background(Color.Transparent)
+        ) {
+            Column() {
+                children()
+            }
+        }
+        if (loading)
+            Box(
+                Modifier.fillMaxSize().background(Color.Transparent)
+            ) {
+                CircularProgressIndicator(Modifier.align(Alignment.Center))
+            }
+    }
+}
+
+@Preview
+@Composable
+fun bb() {
+    resfreshWraper(true) {
+        Text("Hola     aa")
+        Text("Hola     bb")
+        Text("Hola     cc")
+        Text("Hola     dd")
+        Text("Hola     ee")
+        Text("Hola     ff")
+    }
+}
+
+
+
+
+
+/*
 suspend fun   getTranslatedHeadlines(lKA:List<KArticle>, olang:String, tlang:String):List<OriginalTransLink>{
 
     val jqwery=articlesToJson(lKA, olang,tlang)
@@ -135,7 +206,10 @@ suspend fun gettranslatedText(text: String, tlang: String,olang:String):MutableL
     Timber.d("<-  gettranslatedText")
     lOriginalTrans
 }
+
+
 fun separateParagrafs(text: String): List<String> {
     val sP = text.split(". ")
     return sP
 }
+*/

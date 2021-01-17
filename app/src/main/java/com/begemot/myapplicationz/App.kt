@@ -6,12 +6,10 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.net.NetworkInfo
-import androidx.compose.ui.text.intl.Locale.Companion.current
-import androidx.core.content.ContextCompat.getSystemService
+import androidx.lifecycle.viewModelScope
 //import androidx.ui.intl.Locale
-import androidx.compose.ui.text.intl.Locale.*
-import androidx.compose.ui.text.intl.LocaleList.Companion.current
+import com.begemot.myapplicationz.App.Companion.sApp
+import kotlinx.coroutines.*
 
 import timber.log.Timber
 import java.util.*
@@ -25,26 +23,36 @@ class App:Application(){
     companion object {
         lateinit var instance:App
         lateinit var lcontext:Context
+        val sApp by lazy { StatusApp(Screens.NewsPapersScreen,Screens.QuitScreen) }
     }
 
     override fun onCreate() {
         super.onCreate()
         instance=this
+        //SystemClock.sleep(4000)
         if(BuildConfig.DEBUG){
             Timber.plant(LineNumberDebugTree())
         }
+        Timber.d("appstart  ${sApp.status()}")
         lcontext=App.instance
         //checkWifi(App.instance)
         if(prefs.userId.equals("")){
+            Timber.d("User ID not set")
             prefs.userId=UUID.randomUUID().toString()
         }
+
+
+
         val currentAppLocale =    java.util.Locale.getDefault().language
         val cl=java.util.Locale(currentAppLocale).displayLanguage
-        Timber.d("app locale: $cl")
+  //      Timber.d("User ID = ${prefs.userId}  app locale: $cl")
+        startUp()
+        Timber.d("end  ${sApp.status()}")
+
     }
 }
 val prefs: Preferences by lazy {
-    Preferences(App.instance)
+      Preferences(App.instance)
 
 }
 
@@ -83,7 +91,7 @@ class Preferences(context:Context){
         private const val PREFTAB = "preftab"
         private const val PITCH = "pitch"
         private const val SPEECHRATE = "speechrate"
-        private const val INSTALLEDVER = "installedver"
+        private const val ROMANIZE = "romanize"
     }
     private val sharedPrefs: SharedPreferences =
         context.getSharedPreferences(PREFS_FILENAME, Context.MODE_PRIVATE)
@@ -120,8 +128,51 @@ class Preferences(context:Context){
     get()=""+sharedPrefs.getString(SELECTEDLANG,Locale.getDefault().language)
     set(value)=sharedPrefs.edit().putString(SELECTEDLANG,value).apply()
 
-    var installedver:Int
-        get() = sharedPrefs.getInt(INSTALLEDVER,0)
-        set(value) = sharedPrefs.edit().putInt(INSTALLEDVER,value).apply()
-
+    var romanize:Int
+        get() = sharedPrefs.getInt(ROMANIZE,2)
+        set(value) = sharedPrefs.edit().putInt(ROMANIZE,value).apply()
 }
+
+ fun startUp(){
+     if(isInstalled()){
+          //Timber.d("INSTALLED")
+           val scope=sApp.vm.viewModelScope+Dispatchers.IO
+           scope.launch {
+               sApp.vm.checkNPUpdates(sApp) //sApp.vm.msg.setMsg(sApp,"No News Papers Updates")
+               //sApp.vm.msg.setMsg(sApp,"News Papers Updates")
+
+               //Timber.d("END CHECK UPDATES")
+           }
+           //Timber.d("END INSTALLED")
+     }
+     else{
+        //Timber.d("NOT INSTALLED")
+         Timber.d("new instalation")
+         KCache.setUp()
+         runBlocking {
+             sApp.vm.checkNPUpdates(sApp)
+         }
+         sApp.currentStatus.value = AppStatus.Idle
+         sApp.currentScreen.value = Screens.NewsPapersScreen
+
+
+     }
+
+
+ }
+
+
+ fun isInstalled():Boolean{
+     //KCache.deleteFiles()
+     //KCache.setUp()
+     if(KCache.fileExists("knews.json","")){
+         try{
+             sApp.vm.getNewsPapers(sApp)
+         }catch (e:Exception){
+             return false
+         }
+         return true
+     }
+     return false
+ }
+

@@ -1,132 +1,210 @@
-  package com.begemot.myapplicationz
+package com.begemot.myapplicationz
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Box
-import androidx.compose.foundation.Icon
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
+//import androidx.compose.foundation.Box
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumnFor
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Card
+import androidx.compose.material.*
+import androidx.compose.material.Icon
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 
 import com.begemot.kclib.KText2
-import com.begemot.knewsclient.KNews
-import com.begemot.knewscommon.KResult
-import com.begemot.knewscommon.OriginalTransLink
-import com.begemot.knewscommon.THeadLines
-import com.begemot.knewscommon.exWithException
-import io.ktor.util.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import com.begemot.kclib.Kline
+import com.begemot.knewscommon.ListPinyin
 import timber.log.Timber
-import kotlin.reflect.KSuspendFunction1
 
 
+@ExperimentalLayout
 @Composable
 fun headlinesScreen(statusApp: StatusApp) {
-      statusApp.currentBackScreen=Screens.ListNewsPapers
-      Timber.d("->headlines screen Composable")
-      val lHeadlines = remember{ mutableStateOf<List<OriginalTransLink>>(emptyList()) }
-    LaunchedTask(statusApp.lang) {
-        lHeadlines.value = getLines(statusApp).lhl
+    statusApp.currentBackScreen = Screens.NewsPapersScreen
+    Timber.d("->${statusApp.status()}")
+    LaunchedEffect(statusApp.lang) {
+        statusApp.vm.getLines(statusApp)
     }
-    Timber.d("headlines size ${lHeadlines.value.size} status app   ${statusApp.currentStatus}")
-      val status=statusApp.currentStatus
-      when(status){
-          is AppStatus.Loading  -> waiting()
-          is AppStatus.Error    -> displayError(status.sError,status.e,statusApp)
-          is AppStatus.Idle     -> draw_Headlines(loriginalTransLink =lHeadlines.value , statusApp =statusApp,olang=statusApp.currentNewsPaper.olang)
-      }
-      Timber.d("<-headlines screen ${status.toString()}")
-}
-
-@KtorExperimentalAPI
-suspend fun getLines(statusApp: StatusApp):THeadLines{
-      Timber.d("getLines ${statusApp.currentNewsPaper.handler} olang  ${statusApp.currentNewsPaper.olang}  trans lang ${statusApp.lang}")
-      //l.clear()
-      val resp= exWithException<THeadLines,String> {
-          //l.clear()
-          statusApp.currentStatus=AppStatus.Loading
-          KProvider2.getHeadLines(statusApp)
-          //KNews().getHeadLines(namepaper = statusApp.currentNewsPaper.handler,statusApp.lang)
-      }
-      when(resp){
-          is KResult.Success->{
-              Timber.d("KProvider2.getHeadLines Success! Size resp ${resp.t.lhl.size}")
-              statusApp.currentStatus = AppStatus.Idle
-              statusApp.nItems=resp.t.lhl.size
-              statusApp.dataHeadlines=resp.t.datal
-              return resp.t
-          }
-          is KResult.Error->{statusApp.currentStatus=AppStatus.Error(resp.msg,resp.e)}
-      }
-      return THeadLines()
+    val status = statusApp.currentStatus.value
+    when (status) {
+        is AppStatus.Loading -> draw_Headlines(statusApp)
+        is AppStatus.Error -> displayError(status.sError, status.e, statusApp)
+        is AppStatus.Idle -> draw_Headlines(statusApp)
+        is AppStatus.Refreshing -> {
+            //    draw_Headlines(statusApp =statusApp,olang=statusApp.currentNewsPaper.olang)
+            //LaunchedTask(){getLines3(statusApp,lTHeadLines,true)}
+            //waiting()
+        }
+    }
+    Timber.d("<- ${status.toString()}")
 }
 
 
+@ExperimentalLayout
 @Composable
-fun draw_Headlines(
-    loriginalTransLink: List<OriginalTransLink>,
-    statusApp: StatusApp,
-    olang:String
-) {
-    val original= state{true}
-    LazyColumnFor(items = loriginalTransLink, itemContent = {
-        Card(shape = RoundedCornerShape(8.dp),elevation = 7.dp, modifier = Modifier.padding(2.dp))  {
-            Column() {
-                val bplaytext= state{false}
-                Box(modifier = Modifier.clickable(onClick ={original.value=true; bplaytext.value=true  } )){
-                    KText2(txt = it.kArticle.title, size = statusApp.fontSize.value)
-                }
-                if(it.translated.length>0){
-                Box(Modifier.clickable(onClick = {original.value=false; bplaytext.value=true  }) ){
-                    KText2(txt = it.translated, size = statusApp.fontSize.value)
-                }
-                 }
-                if(it.kArticle.link.isNotEmpty()){
-                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillParentMaxWidth()) {
-                    Icon(
-                        vectorResource(id = R.drawable.ic_link_24px),modifier = Modifier.padding(0.dp,0.dp,15.dp,3.dp).clickable(
-                            onClick = { statusApp.currentScreen = Screens.FullArticle(it) }
-                        ))
-                }}
-                if(bplaytext.value){
-                    if(original.value) playText(bplaytext,it.kArticle.title,statusApp,olang)
-                    else   playText(bplaytext,it.translated,statusApp,statusApp.lang)
+fun draw_Headlines(statusApp: StatusApp) {
+    val olang = statusApp.currentNewsPaper
+    val lstate = rememberLazyListState(statusApp.vm.scrollposHL)
+
+    Timber.d("${statusApp.status()}  NItems ${statusApp.vm.listHL.size}")
+    //if(statusApp.currentStatus==AppStatus.Loading) return
+    val original = remember { mutableStateOf(true) }
+    resfreshWraper(statusApp.currentStatus.value == AppStatus.Loading || statusApp.currentStatus.value == AppStatus.Refreshing) {
+        LazyColumn(state = lstate) {
+            itemsIndexed(statusApp.vm.listHL) { index, it ->
+                Card(
+                    shape = RoundedCornerShape(8.dp),
+                    elevation = 7.dp,
+                    modifier = Modifier.padding(2.dp)
+                ) {
+
+                    Column() {
+                        val bplaytext = remember { mutableStateOf(false) }
+                        Column(modifier = Modifier.clickable(onClick = {
+                            Timber.d("CLICKED!!!!!!!")
+                            original.value = true; bplaytext.value = true
+                        })) {
+                            //KText2(txt = it.kArticle.title, size = statusApp.fontSize.value)
+                            DrawText(text = it.kArticle.title, lPy =it.romanizedo , sApp =statusApp )
+                            //DrawPinyn(translated = it.kArticle.title, sApp =statusApp , lPy =it.romanizedo )
+                        }
+                        if (it.translated.length > 0) {
+                            Box(Modifier.clickable(onClick = {
+                                original.value = false; bplaytext.value = true
+                            })) {
+                                //KText2(txt = it.translated, size = statusApp.fontSize.value)
+                                DrawText(text = it.translated, lPy =it.romanizedt , sApp =statusApp )
+                               // DrawPinyn(it.translated, sApp = statusApp, it.romanizedt)
+                            }
+
+                        }
+                        if (it.kArticle.link.isNotEmpty()) {
+                            Row(
+                                horizontalArrangement = Arrangement.End,
+                                modifier = Modifier
+                                    .fillParentMaxWidth()
+                                    .padding(horizontal = 11.dp)
+                              ) {
+
+                                Icon(
+                                    vectorResource(id = R.drawable.ic_link_24px),
+                                    Modifier.clickable(
+                                        onClick = {
+                                            statusApp.vm.scrollposHL = index
+                                            statusApp.currentScreen.value =
+                                                Screens.FullArticleScreen(it)
+                                        })
+                                )
+                            }
+                        }
+                        if (bplaytext.value) {
+                            Timber.d("let's play text")
+                            if(original.value){
+                                if(statusApp.currentNewsPaper.olang.equals("zh"))
+                                    PlayText22(bplayText = bplaytext, transclass =TransClass.WithPinYin(it.romanizedo) , sApp =statusApp , original = true )
+                                else
+                                PlayText22(bplayText = bplaytext, transclass =TransClass.NoPinYin(it.kArticle.title.split(" ")) , sApp =statusApp , original = true )
+                            }else{
+                                if(statusApp.lang.equals("zh"))
+                                  PlayText22(bplayText = bplaytext, transclass =TransClass.WithPinYin(it.romanizedt) , sApp =statusApp , original = false )
+                                else
+                                    PlayText22(bplayText = bplaytext, transclass =TransClass.NoPinYin(it.translated.split(" ")) , sApp =statusApp , original = false )
+                            }
+
+
+
+                        }//else Timber.d("bplaytext=${bplaytext.value}")
+                    }
                 }
             }
         }
-    })
+    }
+}
+@ExperimentalLayout
+@Composable
+fun DrawText(text:String,lPy:ListPinyin,sApp: StatusApp){
+    if(lPy.lPy.size>0) DrawPinyn(translated = text, sApp =sApp , lPy =lPy )
+    else DrawPinynNone(translated = text, sApp = sApp, lPy =lPy )
 }
 
-/*
-fun get_HeadLines(lhd: MutableState<MutableList<OriginalTransLink>>, statusApp: StatusApp, zgetLines: KSuspendFunction1<StatusApp, THeadLines>) {
-    Timber.d("->getLHeadlines")
-    GlobalScope.launch(Dispatchers.Main) {
-        statusApp.currentStatus = AppStatus.Loading
-        statusApp.nItems=0
-        val resp = exWithException<THeadLines, String> {
-            //zgetLHeadLines(statusApp)
-            zgetLines(statusApp)
-        }
-        when(resp) {
-            is KResult.Success -> {
-                Timber.d("SUCCES")
-                //lhd.clear()
-                //lhd.addAll(resp.t)
-                lhd.value=resp.t.lhl.toMutableList()  //to be amended!!
-                statusApp.nItems=lhd.value.size
-                statusApp.currentStatus = AppStatus.Idle
-            }
-            is KResult.Error -> { statusApp.currentStatus = AppStatus.Error(resp.msg, resp.e) }
-        }
 
+
+
+@ExperimentalLayout
+@Composable
+fun DrawPinyn(translated: String, sApp: StatusApp, lPy: ListPinyin) {
+//    Timber.d("drawpinyin mode ${sApp.romanized}  olang lang ${sApp.lang}")
+    if (sApp.lang != "zh" && sApp.lang != "zh-TW") {
+ //       DrawPinynNone(translated, sApp, lPy); return
+    }  //To be solved!
+    if (sApp.romanized == 0) DrawPinynSimple(translated, sApp, lPy)
+    if (sApp.romanized == 1) DrawPinynComplete(translated, sApp, lPy)
+    if (sApp.romanized == 2) DrawPinynNone(translated, sApp, lPy)
+}
+
+
+@ExperimentalLayout
+@Composable
+fun DrawPinynComplete(translated: String, sApp: StatusApp, lPy: ListPinyin) {
+    Timber.d("DrawPinYin->${lPy.lPy}")
+
+    Column(Modifier.padding(start = 6.dp, end = 2.dp)) {
+        //KText2(txt = translated, size = sApp.fontSize.value)
+
+        FlowRow(mainAxisSpacing = 3.dp) {
+            lPy.lPy.forEach {
+                Column(
+                    //Modifier.border(BorderStroke(1.dp, Color.LightGray)).padding(start = 0.dp, end = 0.dp)
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    //KText2(it.word,size = sApp.fontSize.value)
+                    //KText2(it.romanized,size = sApp.fontSize.value)
+
+                    Text(
+                        it.w,
+                        style = MaterialTheme.typography.h5,
+                        fontSize = TextUnit.Companion.Sp(sApp.fontSize.value),
+                        //textAlign = TextAlign.Center
+                        //textAlign = TextAlign.End
+                    )
+                    Text(
+                        it.r.replace("\\s".toRegex(), ""), //fuck white spaces
+                        style = MaterialTheme.typography.h5,
+                        fontSize = TextUnit.Companion.Sp(sApp.fontSize.value)
+                    )
+                }
+            }
+        }
     }
-    Timber.d("<-getLHeadlines")
-}*/
+}
+
+@ExperimentalLayout
+@Composable
+fun DrawPinynNone(translated: String, sApp: StatusApp, lPy: ListPinyin) {
+    //Column() {
+    KText2(txt = translated, size = sApp.fontSize.value)
+    //}
+}
+
+@ExperimentalLayout
+@Composable
+fun DrawPinynSimple(translated: String, sApp: StatusApp, lPy: ListPinyin) {
+    Timber.d("drawPinyin Simple  ${sApp.romanized}")
+    Column() {
+        KText2(txt = translated, size = sApp.fontSize.value)
+        KText2(txt = getOnlyPinyin(lPy), size = sApp.fontSize.value)
+    }
+}
+
+fun getOnlyPinyin(lPy: ListPinyin): String {
+    Timber.d("lPy  $lPy")
+    val strb = StringBuilder()
+    lPy.lPy.forEach { it -> strb.append(it.r.replace("\\s".toRegex(), "") + " ") }
+    return strb.toString()
+}
