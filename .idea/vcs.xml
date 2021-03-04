@@ -2,5 +2,8 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="H:/prg/KNewsClient" vcs="Git" />
+    <mapping directory="H:/prg/KNewsCommon" vcs="Git" />
+    <mapping directory="H:/prg/KnewsPlatform" vcs="Git" />
   </component>
 </project>

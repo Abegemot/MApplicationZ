@@ -1,21 +1,24 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
-    id("com.github.ben-manes.versions") version (Deps.manes_versions)
+    id("com.github.ben-manes.versions") version ("0.36.0")
 }
     buildscript {
         //ext.kotlin_version = "1.3.61"
         repositories {
+
+            maven {
+                url=uri("https://dl.bintray.com/kotlin/kotlin-eap/")
+
+            }
+            mavenLocal()
             google()
-            jcenter()
+            //jcenter()
         }
         dependencies {
+            platform("com.begemot.knewsplatform-bom:deps:0.0.1")
+            classpath("com.android.tools.build:gradle:7.0.0-alpha08")
+            classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.30")
 
-            classpath(Deps.comandroidtools)
-            classpath(Deps.kotlingradleplugin)
-            // classpath "com.android.tools.build:gradle:4.0.0-beta01"
-            // classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${Deps.kotlinVer}"
-            //classpath ("androidx.navigation:navigation-safe-args-gradle-plugin:2.1.0")
-            classpath("com.github.ben-manes:gradle-versions-plugin:${Deps.manes_versions}")
 
             // NOTE: Do not place your application dependencies here; they belong
             // in the individual module build.gradle files
@@ -24,8 +27,9 @@ plugins {
 
     allprojects {
         repositories {
+            mavenCentral()
             google()
-            jcenter()
+            //jcenter()
         }
     }
     tasks.register("clean").configure{
