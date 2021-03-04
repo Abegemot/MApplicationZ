@@ -22,7 +22,7 @@ import timber.log.Timber
 
 @Composable
 fun articleScreen(originalTransLink: OriginalTransLink, sApp: StatusApp) {
-    Timber.d("${originalTransLink.kArticle.link}")
+    Timber.d("->${originalTransLink.kArticle.link}")
     sApp.currentBackScreen = Screens.HeadLinesScreen
     val trans3 = remember { mutableStateOf<List<OriginalTrans>>(emptyList()) }
     LaunchedEffect(sApp.lang) {
