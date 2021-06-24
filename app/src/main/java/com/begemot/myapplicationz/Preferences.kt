@@ -1,16 +1,19 @@
-package com.begemot.inreader
+package com.begemot.myapplicationz
 
 
 //import androidx.ui.text.Locale
 
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 
 //import androidx.compose.foundation.layout.ColumnScope.gravity
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 //import androidx.compose.ui.platform.ContextAmbient
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 
 
@@ -33,6 +37,10 @@ import com.begemot.kclib.KButtonBar
 import com.begemot.kclib.KHeader
 import com.begemot.kclib.KText2
 import com.begemot.kclib.KWindow
+import com.begemot.knewsclient.KNews
+import com.begemot.knewscommon.GetHeadLines
+import com.begemot.knewscommon.KResult2
+import kotlinx.coroutines.launch
 
 import timber.log.Timber
 import kotlin.collections.HashMap
@@ -41,8 +49,6 @@ import kotlin.collections.HashMap
 class PrefsParams {
     val localFontSize: MutableState<Int> = mutableStateOf(prefs.fontSize)
     val tabstate: MutableState<Int> = mutableStateOf(prefs.preftab)
-   // val localPitch: MutableState<Float> = mutableStateOf(prefs.pitch)
-   // val localSpeechrate: MutableState<Float> = mutableStateOf(prefs.speechrate)
     val selectLocales: MutableState<Boolean> = mutableStateOf(false)
     val localCurrentLang: MutableState<String> = mutableStateOf(prefs.kLang)
     val localSelectedLang: MutableState<String> = mutableStateOf(prefs.selectedLang)
@@ -116,7 +122,7 @@ fun prefTitles(sApp: StatusApp, prefParams: PrefsParams): List<String> {
     return if (yes != null) listOf("Language", "Text", "Sound", "Latin")
     else listOf("Language", "Text", "Sound")
     */
-    return listOf("Language", "Text",  "Latin")
+    return listOf("Language", "Text",  "Latin","About")
 }
 
 
@@ -147,8 +153,8 @@ fun tabPreferences(sApp: StatusApp, prefParams: PrefsParams) {
             when (prefParams.tabstate.value) {
                 0 -> tabLanguage(sApp, prefParams)
                 1 -> tabText(sApp, prefParams.localFontSize)
-                //2 -> tabSound(prefParams)
                 2 -> tabRomanization(sApp, prefParams)
+                3 -> tabAbout(sApp)
             }
         }
     }
@@ -270,33 +276,91 @@ fun tabText(statusApp: StatusApp, localFontSize: MutableState<Int>) {
     }
 }
 
-/*
+
 @Composable
-fun tabSound(prefParams: PrefsParams) {
-    val sliderPitch: MutableState<Float> = mutableStateOf(prefParams.localPitch.value)
-    val sliderRate: MutableState<Float> = mutableStateOf(prefParams.localSpeechrate.value)
-    Timber.d("sound pitch")
-    Column(modifier = Modifier.padding(1.dp), verticalArrangement = Arrangement.Center) {
-        Text("Pitch")
-        Slider(
-            value = sliderPitch.value,
-            onValueChange = { sliderPitch.value = it;prefParams.localPitch.value = it },
-            valueRange = 0.1f..2.0f
-        )
-        Text("Speech Rate")
-        Slider(
-            value = sliderRate.value,
-            onValueChange = { sliderRate.value = it;prefParams.localSpeechrate.value = it },
-            valueRange = 0.1f..2.0f
-        )
+fun tabAbout(sApp: StatusApp){
+    val sc= rememberCoroutineScope()
+    var txt by remember { mutableStateOf("") }
+    val scrollState: ScrollState = rememberScrollState(0)
+    Column(modifier=Modifier.verticalScroll(scrollState)) {
+        Text("Version Code ${BuildConfig.VERSION_CODE}")
+        Text("Version Name ${BuildConfig.VERSION_NAME}")
+        //Divider()
+        Text(txt,fontSize = 14.sp)
+        Row(Modifier.padding(5.dp)) {
+            Button(
+                onClick = { /*KCache.removeBookmarks()*/
+                    sc.launch {
+                        //val r = KCache.loadFromCache("ERROR.BGM")
+                        //txt = r
+                        //Timber.d("ERROR.BGM  $r")
+                        txt= getCache(sApp)
+                    }
+                },
+                Modifier
+                    .padding(top = 10.dp,end = 5.dp)
+                   // .align(Alignment.CenterHorizontally)
+            ) { Text("Cache content") }
+            Button(onClick = {
+                //KCache.deleteFile("ERROR.BGM")
+                KCache.deleteDirectory("Articles")
+                txt=""
+            },Modifier
+                .padding(top = 10.dp)
+            ){  Text("Clear cache")}
+            Button(onClick = { /*TODO*/ }) {
+              Text("Cls")
+            }
+
+        }
     }
-}*/
+}
+
+
+suspend fun getCache(sApp: StatusApp):String{
+    val s=StringBuilder()
+    s.append("${sApp.vm.newsPapers.toString()}\n")
+    s.append(KCache.listFiles().joinToString("\n"))
+    return s.toString()
+}
+
+
+suspend fun testIns():String{
+    //val r=KNews().getNewsPapersWithVersion(0)
+
+    var s=""
+    val r=KNews().getNewsPapers()//Test("1")
+    s+=" SIZE news papers ${r.size}"
+    //KCache.storeInCache("test.pp","42")
+    //val s=KCache.loadFromCache("test.pp")
+    //if(r is KResult2.Error){
+    //    s+="error ${r.msg}\n"
+    //}
+    //if(r is KResult2.Success){
+    //    s+="Succes ${r.t}"
+    //}
+    val r2=KNews().getHeadLines(GetHeadLines("LV","es",0))
+    if(r2 is KResult2.Error){
+        s+="error ${r2.msg}\n"
+    }
+    if(r2 is KResult2.Success){
+        s+="Succes ${r2.t}"
+    }
+
+
+    s+=" $r2"
+
+
+
+    return "testIns  $s   "
+}
+
 
 
 @Preview
 @Composable
 fun tps() {
-    val selectLang: MutableState<Boolean> = mutableStateOf(true)
+    //var selectLang: MutableState<Boolean> = mutableStateOf(true)
     //editPreferences(sApp = StatusApp(Screens.StartUpScreen,Screens.QuitScreen) )
 }
 
@@ -376,7 +440,7 @@ fun getSelectedLang(): BiHashMap<String, String> {
 fun localesDlg(prefParams: PrefsParams, statusApp: StatusApp) {
     val context = LocalContext.current
     //var lselected by remember {mutableStateOf(true)}
-    var lselected by mutableStateOf(false)
+    var lselected by remember{ mutableStateOf(false) }
     printStat("Enter localesDlg", prefParams, statusApp)
     Dialog(onDismissRequest = { prefParams.selectLocales.value = false }) {
         val lKLocale = getLocalesZ2()

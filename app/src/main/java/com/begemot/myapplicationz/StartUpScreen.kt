@@ -1,6 +1,4 @@
-package com.begemot.inreader
-
-import androidx.compose.foundation.*
+package com.begemot.myapplicationz
 
 import kotlinx.coroutines.flow.Flow
 //import dev.chrisbanes.accompanist.coil.CoilImage
@@ -104,7 +102,7 @@ suspend fun allReadyInstalled(statusApp: StatusApp) {
     Timber.d("BEgin")
     scope.launch {
         try {
-            statusApp.vm.newsPapers.getNewsPapers(statusApp)
+            statusApp.vm.newsPapers.getLocalNewsPapers(statusApp)
             if (!statusApp.vm.newsPapers.checkUpdates(statusApp)) statusApp.vm.msg.setMsg(
                 statusApp,
                 "No News Papers Updates"

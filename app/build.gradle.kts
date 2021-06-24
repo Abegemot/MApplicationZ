@@ -3,27 +3,44 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  plugins {
      id("com.android.application")
      kotlin("android")
-     kotlin("plugin.serialization") version "1.4.30"
+     kotlin("plugin.serialization") version "1.5.10"
 
  }
 android {
-    compileSdkVersion(30)
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("G:\\mGoogleDrive\\INewsReader\\INRKeyStore2.jks")
+            storePassword = "edmund"
+            keyAlias = "key0"
+            keyPassword = "edmund"
+        }
+    }
+    compileSdk =30
      defaultConfig {
         applicationId="com.begemot.myapplicationz"
-        minSdkVersion(24)
-        targetSdkVersion(30)
-        versionCode= 1
-        versionName= "0.1.1"
-        testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner"
+        minSdk = 26
+        targetSdk= 30
+        versionCode= 30
+        versionName= "0.3.7"
+//        testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
         compose=true
     }
     buildTypes {
         getByName("release") {
+            isShrinkResources = true
             isMinifyEnabled = true
             proguardFiles( getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
+        getByName("debug"){
+           // isDebuggable = true
+           // applicationIdSuffix = ".debug"
+            //isMinifyEnabled = true
+            proguardFiles( getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+
+        }
+
     }
     packagingOptions {
         resources.excludes.add("META-INF/NOTICE.md")
@@ -43,16 +60,37 @@ android {
         // kotlinCompilerVersion = "1.3.70-dev-withExperimentalGoogleExtensions-20200424"
         //kotlinCompilerVersion="1.4.0-dev-withExperimentalGoogleExtensions-20200720"
        // kotlinCompilerVersion="1.4.21-2"
-        kotlinCompilerExtensionVersion = "1.0.0-beta01"
+        kotlinCompilerExtensionVersion = "1.0.0-beta09"
     }
 
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
-        useIR = true
+        //useIR = true
+        freeCompilerArgs += "-Xallow-jvm-ir-dependencies"
         //freeCompilerArgs= listOf("-P","plugin:androidx.compose.plugins.idea:liveLiterals=false")
     }
 }
+
+ task("mytask"){
+     dependsOn(":app:assembleRelease")
+      doLast{
+          print("QUINSSSS COLLLONSSS")
+      }
+ }
+
+
+ tasks.register<Copy>("myzcopy"){
+
+         from("C:/Users/dad/AndroidStudioProjects/MyApplicationZ/app/release/app-release.apk")
+         into("g:/mGoogleDrive/INewsReader/output")
+         from("C:/Users/dad/AndroidStudioProjects/MyApplicationZ/app/build/outputs/apk/debug/app-debug.apk")
+         into("g:/mGoogleDrive/INewsReader/output")
+         from("C:/Users/dad/AndroidStudioProjects/MyApplicationZ/app/release/app-release.aab")
+         into("g:/mGoogleDrive/INewsReader/output")
+     
+ }
+
  tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>{
      kotlinOptions {
         // languageVersion="1.4"
@@ -91,25 +129,29 @@ dependencies {
     implementation("com.jakewharton.timber:timber")
     debugImplementation("com.squareup.leakcanary:leakcanary-android")
 
+    //implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
 
-    api( "androidx.compose.runtime:runtime")
-    implementation("androidx.core:core-ktx")
+    implementation( "androidx.compose.runtime:runtime")
+    //implementation("androidx.core:core-ktx")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx")
-    implementation("androidx.activity:activity-compose:1.3.0-alpha03")
+    //implementation("androidx.activity:activity-compose")
+
+    //implementation("io.github.microutils:kotlin-logging-jvm")
+    //implementation( "ch.qos.logback:logback-classic")
 
     implementation("com.sun.mail:android-mail")
     implementation("com.sun.mail:android-activation")
 
-    api("com.begemot:KNewsClient")
-    api("com.begemot:kclib")
-    api("com.begemot:knewscommon")
+    implementation("com.begemot:KNewsClient")
+    implementation("com.begemot:kclib")
+    implementation("com.begemot:knewscommon")
 
     testImplementation("junit:junit")
     androidTestImplementation("androidx.test.ext:junit")
-    implementation("io.ktor:ktor-client-android")
+   // implementation("io.ktor:ktor-client-android")
 }

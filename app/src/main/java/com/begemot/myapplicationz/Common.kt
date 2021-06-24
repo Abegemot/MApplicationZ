@@ -1,4 +1,4 @@
-package com.begemot.inreader
+package com.begemot.myapplicationz
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

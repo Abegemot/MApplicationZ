@@ -1,11 +1,10 @@
-package com.begemot.inreader.model
+package com.begemot.myapplicationz.model
 
-import com.begemot.inreader.KLocale
-import com.begemot.inreader.prefs
+import com.begemot.myapplicationz.prefs
 import timber.log.Timber
 
 
-class KKLang {
+class KKLang() {
     fun getSelectedLangs(Olng:String,Tlng:String):List<KLocale2>{
         val lExcudedLang = listOf(Olng,Tlng)
         val lSelected = prefs.selectedLang.split(",")  //"ca,en" ...

@@ -1,15 +1,21 @@
-package com.begemot.inreader
+package com.begemot.myapplicationz
 
 import android.speech.tts.TextToSpeech
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
+
+
 import androidx.compose.material.*
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.Center
+import androidx.compose.ui.Alignment.Companion.CenterEnd
+import androidx.compose.ui.Alignment.Companion.CenterStart
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -18,8 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.begemot.inreader.model.TText
-import com.begemot.inreader.model.TransClass
+import com.begemot.myapplicationz.model.TText
+import com.begemot.myapplicationz.model.TransClass
 import com.begemot.kclib.FlowRowX
 import com.begemot.kclib.KWindow2
 import com.begemot.knewscommon.*
@@ -27,22 +33,85 @@ import kotlinx.coroutines.*
 import timber.log.Timber
 import java.util.*
 
+private val sizeicon=24.dp
 
-class PlayTextParams(val sApp: StatusApp) {
+
+enum class SourcePTP{
+    headlines,article
+}
+
+class PlayTextParams(val sApp: StatusApp,val bookmarkable: Boolean,index:Int=0,val original: Boolean,val source:SourcePTP) {
     var larrselected by mutableStateOf(false)
     var rarrselected by mutableStateOf(false)
-    var oLang by mutableStateOf("")
-    var tLang by mutableStateOf("")
+    var oLang by mutableStateOf(if (original) sApp.currentNewsPaper.olang else sApp.lang)
+    var tLang by mutableStateOf(if (original) sApp.lang else sApp.currentNewsPaper.olang)
+    var isSoundParamsEnabled by mutableStateOf(false)
+    var tXXTransClass by mutableStateOf(TText())
+
     var searching by mutableStateOf(false)
 
     var tTranslated by mutableStateOf(TText())
     var tSelected by mutableStateOf("")
     var tOriginal by mutableStateOf("")
+    //var bookmarkable by mutableStateOf(bookmarkable)
+    var aIndex by mutableStateOf(index)
+    //    lSo.value=ListSelectableObjects(txt.split(" "))
+    //var lSOt by mutableStateOf(ListSelectableObjects(sApp.vm.article.lArticle.value[aIndex].original.split(" ")))
+
+    var lSOnpy by mutableStateOf(ListSelectableObjects(listOf("")))
+    var lSOpy by mutableStateOf(ListSelectableObjects(listOf(Pinyin())))
+
+    var transclassNPY by mutableStateOf(TransClass.NoPinYin())
+
 
     fun anyarrowSelected(): Boolean = larrselected || rarrselected
     fun status():String="pTP-> olang=$oLang tlang=$tLang  selected='$tSelected' translated='$tTranslated'"
-}
+    fun setlSOt(){lSOnpy=(ListSelectableObjects(sApp.vm.article.lArticle.value[aIndex].original.split(" ")))}
 
+    enum class scroll{
+        BACK,FORWARD
+    }
+
+    fun canIscrollOne(s:scroll):Boolean{
+        if(s == scroll.FORWARD){
+            if(source==SourcePTP.headlines){
+                return aIndex < sApp.vm.headLines.lHeadLines.value.lhl.size
+            }
+            if(source==SourcePTP.article){
+                return aIndex < sApp.vm.article.lArticle.value.size
+            }
+        }
+        if(s == scroll.BACK){
+            if(source==SourcePTP.headlines){
+                return aIndex < 0
+            }
+            if(source==SourcePTP.article){
+                return aIndex < 0
+            }
+        }
+        return false
+    }
+
+    fun setIndex(i:Int){
+        tTranslated=TText()
+        tSelected = ""
+
+
+        aIndex=i
+        tXXTransClass= getTransClass(sApp,aIndex,original,source)
+        tOriginal = tXXTransClass.getText()
+
+        if(tXXTransClass is TransClass.WithPinYin){
+            lSOpy = ListSelectableObjects((tXXTransClass as TransClass.WithPinYin).lPy)
+        }
+        if(tXXTransClass is TransClass.NoPinYin){
+            lSOnpy = ListSelectableObjects((tXXTransClass as TransClass.NoPinYin).lStr)
+        }
+    }
+    init{
+        setIndex(index)
+    }
+}
 
 lateinit var t2: TextToSpeech
 
@@ -67,7 +136,7 @@ fun initSpeak(lan: String) {
 
 fun setlangSpeak(lan: String, pTP: PlayTextParams) {
     Timber.d("lan :$lan pTP.olang:${pTP.oLang}  pTP.tLang:${pTP.tLang}")
-    val lng=pTP.sApp.vm.tLang.getLang(lan)
+    val lng=pTP.sApp.vm.toneAndPitchMap.getLang(lan)
     var msg = ""
     val result = t2.setLanguage(Locale.forLanguageTag(lan))
     if (result == TextToSpeech.LANG_MISSING_DATA) msg = "Missing data"
@@ -85,34 +154,83 @@ fun spc(txt: String, lan: String, pTP: PlayTextParams) {
 }
 
 
-@Composable
-fun PlayText22(
-    bplayText: MutableState<Boolean>,
-    transclass: TransClass,
-    sApp: StatusApp,
-    original: Boolean
-) {
-    val pTP = remember { PlayTextParams(sApp) }
+fun getTransClass(sApp: StatusApp,index:Int,original: Boolean,source: SourcePTP):TransClass {
+    Timber.d("gettransclass of $index")
 
-    if(pTP.oLang.isEmpty()) {
-        pTP.oLang = if (original) sApp.currentNewsPaper.olang else sApp.lang
-        pTP.tLang = if (original) sApp.lang else sApp.currentNewsPaper.olang
+    if(source==SourcePTP.article) {
+
+        val origtrans = sApp.vm.article.lArticle.value[index]
+
+        if (original) {
+            if (sApp.currentNewsPaper.olang.equals("zh"))
+                return TransClass.WithPinYin(origtrans.romanizedo.lPy)
+            else
+                return TransClass.NoPinYin(origtrans.original.split(" "))
+        } else {
+            if (sApp.lang.equals("zh"))
+                return TransClass.WithPinYin(origtrans.romanizedt.lPy)
+            else
+                return TransClass.NoPinYin(origtrans.translated.split(" "))
+        }
     }
+    if(source==SourcePTP.headlines) {
 
-    pTP.tOriginal = transclass.getText()
-    //pTP.tSelected=""
+        val origtranslink = sApp.vm.headLines.listHL[index]
+
+        if (original) {
+            if (sApp.currentNewsPaper.olang.equals("zh"))
+                return TransClass.WithPinYin(origtranslink.romanizedo.lPy)
+            else
+                return TransClass.NoPinYin(origtranslink.kArticle.title.split(" "))
+        } else {
+            if (sApp.lang.equals("zh"))
+                return TransClass.WithPinYin(origtranslink.romanizedt.lPy)
+            else
+                return TransClass.NoPinYin(origtranslink.translated.split(" "))
+        }
+    }
+    return TransClass.NoPinYin(listOf(""))
+}
+
+fun scrollparent(pTP: PlayTextParams,ls: LazyListState,cS: CoroutineScope){
+    Timber.d("SCROLL PARENT 1")
+    cS.launch() {
+        //ls.animateScrollToItem(pTP.aIndex)
+        Timber.d("SCROLL PARENT 2")
+        //ls.animateScrollToItem(pTP.aIndex)
+        ls.scrollToItem(pTP.aIndex)
+        Timber.d("SCROLL PARENT 3")
+    }
+    Timber.d("SCROLL PARENT 4")
+}
+
+@Composable
+fun PlayText(sApp: StatusApp,bplayText: MutableState<Boolean>,bookmarkable:Boolean,index:Int,original: Boolean,ls: LazyListState,source: SourcePTP,cS:CoroutineScope?=null){
+    Timber.d("play text A -> $index")
+    val pTP = remember { PlayTextParams(sApp,bookmarkable,index,original,source) }
+    val cS1 = rememberCoroutineScope()
+    Timber.d("play text B -> ${pTP.aIndex}")
     initSpeak( if (original)  pTP.oLang else  pTP.tLang )
+    Dialog(onDismissRequest = {
+        scrollparent(pTP,ls,cS1)
+        t2.shutdown()
+        bplayText.value = false
+        sApp.vm.toneAndPitchMap.save()
 
-    Dialog(onDismissRequest = { t2.shutdown(); bplayText.value = false; sApp.vm.tLang.save() }) {
+    }) {
+        Timber.d("passed playtext")
         KWindow2(4) {
             resfreshWraper2(loading = pTP.searching) {
-                SelectableTextAA(pTP,transclass)
-                BottomPlayText(pTP)
+                SelectableTextAA(pTP)//, getTransClass(sApp,pTP.aIndex,original,pTP.source))
+                BottomPlayText(pTP,ls)
                 DrawTranslatedText(pTP)
             }
         }
     }
 }
+
+
+
 
 enum class ClikedSoundPitch {
     None, Left, Right
@@ -121,15 +239,17 @@ enum class ClikedSoundPitch {
 //.border(BorderStroke(1.dp, Color.Green))
 @Composable
 fun BottomPlayText(
-    pTP: PlayTextParams
+    pTP: PlayTextParams,
+    ls: LazyListState
 ) {
     var csoundpitch = remember { mutableStateOf(ClikedSoundPitch.None) }
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .border(BorderStroke(1.dp, Color.LightGray))
+            .padding(vertical = 3.dp)
     ) {
-        SoundControl(pTP)
+        SoundControl(pTP,ls)
         if (pTP.anyarrowSelected())
             SoundPitch(sp = csoundpitch.value, pTP)
     }
@@ -137,71 +257,163 @@ fun BottomPlayText(
 
 
 @Composable
-fun SoundControl(pTP: PlayTextParams) {
+fun BookMarkIcon(pTP: PlayTextParams){
+    var isBookMark by remember { mutableStateOf(pTP.sApp.vm.article.bookMarks.value.isBookMark(pTP.aIndex)) }
+    val colorNoBookMarks = if(pTP.sApp.kt.value.theme.isLight) Color.Black else Color.White
+
+    if(pTP.bookmarkable) {
+        Box(modifier = Modifier.clickable { pTP.sApp.vm.article.bookMarks.value.toggleBookMark(pTP.aIndex,pTP.sApp.vm.article.qarticleHandler.value)
+                isBookMark=pTP.sApp.vm.article.bookMarks.value.isBookMark(pTP.aIndex)
+                val l=pTP.sApp.vm.article.lArticle.value
+                pTP.sApp.vm.article.lArticle.value= emptyList()
+                pTP.sApp.vm.article.lArticle.value = l
+                pTP.sApp.arethereBookMarks = !pTP.sApp.vm.article.bookMarks.value.bkMap.isEmpty()
+
+        } ) {
+            val tintHL = if (isBookMark) Color.Cyan
+            else colorNoBookMarks
+            Icon(
+                painterResource(id = R.drawable.ic_bookmark_border_black_24dp),
+                contentDescription = null,
+                tint = tintHL,
+                modifier = Modifier.size(sizeicon)
+            )
+        }
+    }
+}
+
+
+@Composable
+fun LeftLangSpeaker(pTP: PlayTextParams,tup:String,tintL:Color){
+    Row(modifier = Modifier.clickable(onClick = {spc(tup, pTP.oLang, pTP)}),horizontalArrangement = Arrangement.Start) {
+        Icon(
+            painterResource(id = R.drawable.ic_volume_up24px),
+            contentDescription = "",
+            tint = tintL,
+            modifier = Modifier.size(sizeicon)
+        )
+        Text("(${pTP.oLang})",Modifier.align(Alignment.CenterVertically))
+    }
+
+}
+
+@Composable
+fun RightLangSpeacker(pTP: PlayTextParams,tintR:Color){
+         Row(
+            modifier = Modifier
+                .clickable(onClick = { spc(pTP.tTranslated.getText(), pTP.tLang, pTP) }),
+            ) {
+            Text("(${pTP.tLang})", Modifier.align(Alignment.CenterVertically))
+            Icon(
+                painterResource(id = R.drawable.ic_volume_up_24px_1__1_), tint = tintR,
+                contentDescription = "",
+                modifier = Modifier.size(sizeicon)
+            )
+        }
+}
+
+@Composable
+fun SoundSelector(pTP: PlayTextParams){
+
+        IconToggleButton(
+            checked = pTP.larrselected,
+            modifier=Modifier.size(sizeicon),
+            onCheckedChange = {
+                pTP.larrselected = it
+                pTP.rarrselected = false
+            }) {
+            val tint by animateColorAsState(
+                if (pTP.larrselected) Color(0xFFEC407A) else Color(
+                    0xFFB0BEC5
+                )
+            )
+            if(pTP.isSoundParamsEnabled)
+            Icon(painterResource(id = R.drawable.ic_arrow_back_24px),
+                tint = tint,contentDescription = "",
+                modifier=Modifier.size(sizeicon)
+            )
+        }
+
+        Icon(painterResource(id = R.drawable.ic_music_note_24px),contentDescription = "", modifier=Modifier.size(sizeicon).clickable {
+            pTP.isSoundParamsEnabled=!pTP.isSoundParamsEnabled
+            pTP.rarrselected = false
+            pTP.larrselected = false
+        })
+            IconToggleButton(
+                checked = pTP.rarrselected,
+                onCheckedChange = {
+                    pTP.rarrselected = it
+                    pTP.larrselected = false
+                },Modifier.size(sizeicon)) {
+                val tint by animateColorAsState(
+                    if (pTP.rarrselected) Color(0xFFEC407A) else Color(
+                        0xFFB0BEC5
+                    )
+                )
+                if(pTP.isSoundParamsEnabled)
+                Icon(painterResource(id = R.drawable.ic_arrow_forward_24px),
+                    tint = tint,contentDescription = "",
+                    modifier=Modifier.size(sizeicon)
+                )
+            }
+
+}
+
+
+
+@Composable
+fun SoundControl(pTP: PlayTextParams,ls: LazyListState?=null) {
+    val crs= rememberCoroutineScope()//  CoroutineScope(Dispatchers.IO)
+    var currentJob by remember { mutableStateOf<Job?>(null) }
     val colorSpeaker = if(pTP.sApp.kt.value.theme.isLight) Color.Black else Color.White
     val tup = if (pTP.tSelected.equals("")) pTP.tOriginal else pTP.tSelected
     val tintL = if(pTP.larrselected) Color(0xFFEC407A ) else colorSpeaker
     val tintR = if(pTP.rarrselected) Color(0xFFEC407A ) else colorSpeaker
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .align(alignment = Alignment.CenterStart)
-                .clickable(onClick = { spc(tup, pTP.oLang, pTP) })
-        ) {
-            Icon(painterResource(id = R.drawable.ic_volume_up24px),contentDescription = "",tint=tintL)
-            Text("(${pTP.oLang})")
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.align(alignment = Alignment.Center)
-        ) {
-            IconToggleButton(
-                checked = pTP.larrselected,
-                onCheckedChange = {
-                    pTP.larrselected = it
-                    pTP.rarrselected = false
-                }) {
-                val tint by animateColorAsState(
-                    if (pTP.larrselected) Color(0xFFEC407A) else Color(
-                        0xFFB0BEC5
-                    )
-                )
-                Icon(painterResource(id = R.drawable.ic_arrow_back_24px), tint = tint,contentDescription = "")
-            }
 
-            Icon(painterResource(id = R.drawable.ic_music_note_24px),contentDescription = "")
-            if (!pTP.tTranslated.getText().equals("")) {
-                IconToggleButton(
-                    checked = pTP.rarrselected,
-                    onCheckedChange = {
-                        pTP.rarrselected = it
-                        pTP.larrselected = false
-                    }) {
-                    val tint by animateColorAsState(
-                        if (pTP.rarrselected) Color(0xFFEC407A) else Color(
-                            0xFFB0BEC5
-                        )
-                    )
-                    Icon(painterResource(id = R.drawable.ic_arrow_forward_24px), tint = tint,contentDescription = "")
+        Box(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.align(alignment = CenterStart)) {
+            if(pTP.aIndex>0) Icon(painterResource(id = R.drawable.ic_navigate_before_24px),contentDescription = null /*modifier = Modifier.width(75.dp)*/,
+                Modifier.clickable {
+                    currentJob?.cancel()
+                    currentJob=crs.launch {
+                        pTP.setIndex(pTP.aIndex-1)
+                        //pTP.aIndex--
+                        //pTP.setlSOt()
+                        Timber.d("Index:   ${pTP.aIndex}")
+                        //ls?.animateScrollToItem(pTP.aIndex)
+                     //   ls?.scrollToItem(pTP.aIndex)
+                    }
                 }
-            }
+            )
+
+            BookMarkIcon(pTP)
+            LeftLangSpeaker(pTP, tup, tintL)
         }
-        if (!pTP.tTranslated.getText().equals("")) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .align(alignment = Alignment.CenterEnd)
-                    .clickable(onClick = { spc(pTP.tTranslated.getText(), pTP.tLang, pTP) })
-            ) {
+        Row(modifier = Modifier.align(alignment = Center)){
+            SoundSelector(pTP)
+        }
+        Row(modifier = Modifier.align(alignment = CenterEnd)) {
                 SelectableLang(pTP)
-                Text("(${pTP.tLang})")
-                Icon(painterResource(id = R.drawable.ic_volume_up_24px_1__1_),tint=tintR,contentDescription = "")
+                Spacer(Modifier.width(5.dp))
+                RightLangSpeacker(pTP, tintR)
+            Icon(painterResource(id = R.drawable.ic_navigate_next_black_24dp),contentDescription = null /*modifier = Modifier.width(75.dp)*/,
+                Modifier.clickable {
+                    if(pTP.canIscrollOne(PlayTextParams.scroll.FORWARD)) {
+                   // if (pTP.aIndex < pTP.sApp.vm.article.lArticle.value.size) {
+                        crs.launch(){
+                            Timber.d("set index-> ${pTP.aIndex}")
+                            pTP.setIndex(pTP.aIndex + 1)
+                            //ls?.animateScrollToItem(pTP.aIndex)
+                           // ls?.scrollToItem(pTP.aIndex)
+                        }
+                    }
+                }
+            )
             }
         }
-    }
-    //DisposableEffect(Unit) { onDispose(onDisposeEffect = { /*vaaTODO*/ }) }
 }
+
+
 
 
 @Composable
@@ -210,8 +422,8 @@ fun SelectableLang(pTP: PlayTextParams){
     var expanded by remember { mutableStateOf(false) }
     val lselectedLang=pTP.sApp.vm.jLang.getSelectedLangs(pTP.oLang,pTP.tLang)
     Box() {
-        IconButton(onClick = { expanded = true }) {
-            Icon(Icons.Default.MoreVert, contentDescription = "Localized description")
+        IconButton(onClick = { expanded = true },modifier = Modifier.size(sizeicon)) {
+            Icon(Icons.Default.MoreVert, contentDescription = "Localized description",modifier = Modifier.size(sizeicon))
         }
         DropdownMenu(
             expanded = expanded,
@@ -251,7 +463,7 @@ fun SoundPitch(sp: ClikedSoundPitch, pTP: PlayTextParams) {
     val cl= if(pTP.larrselected) pTP.oLang else pTP.tLang
     Timber.d("CL ---> $cl")
 
-    val curlang = pTP.sApp.vm.tLang.getLang(cl)
+    val curlang = pTP.sApp.vm.toneAndPitchMap.getLang(cl)
 
     val sliderPitch: MutableState<Float> = remember { mutableStateOf( curlang.tone) }
     val sliderRate: MutableState<Float> = remember  { mutableStateOf(curlang.speed) }
@@ -268,7 +480,7 @@ fun SoundPitch(sp: ClikedSoundPitch, pTP: PlayTextParams) {
                 onValueChange = {
                      sliderPitch.value = it
                      curlang.tone=it
-                     pTP.sApp.vm.tLang.setChanged()
+                     pTP.sApp.vm.toneAndPitchMap.setChanged()
                      Timber.d("onvaluechange $it") },
                 valueRange = 0.1f..2.0f
             )
@@ -321,52 +533,51 @@ fun SoundPitch(sp: ClikedSoundPitch, pTP: PlayTextParams) {
     //.border(BorderStroke(1.dp, Color.Green))
 
     @Composable
-    fun SelectableTextAA(pTP: PlayTextParams,transclass: TransClass) {
+    fun SelectableTextAA(pTP: PlayTextParams) {
+        //Timber.d("AA->${transclass.getText()}<-")
+        //Timber.d("XXX->${pTP.lSOnpy.lSO}")
         Box(
             contentAlignment = Alignment.CenterStart, modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = 250.dp)
+                //.border(3.dp, Color.Magenta)
         ) {
             val scrollState: ScrollState = rememberScrollState(0)
             Column(modifier=Modifier.verticalScroll(scrollState)){
-                when (transclass) {
-                    is TransClass.WithPinYin ->  SelectableTextPy(pTP,transclass.lPy)
-                    is TransClass.NoPinYin   ->  SelectableText(pTP,transclass.lStr.joinToString(" "))
+                when (pTP.tXXTransClass) {
+                    is TransClass.WithPinYin ->  SelectableTextPy(pTP)
+                    is TransClass.NoPinYin   ->  SelectableText(pTP)
                     }
                 }
             }
     }
 
 @Composable
-fun SelectableText(pTP: PlayTextParams,txt: String) {
+fun SelectableText(pTP: PlayTextParams) {
+        //Timber.d("BB->$txt")
         val scope = rememberCoroutineScope()
-        Timber.d("$txt")
-        val lSo = remember { ListSelectableObjects(txt.split(" "))}
         FlowRowX(mainAxisSpacing = 2.dp) {
-            lSo.lSO.forEach {
+            pTP.lSOnpy.lSO.forEach {
                 TextX(
                     it.x.first,
                     pTP.sApp.fontSize.value,
                     it.x.second.value,
-                    Modifier.clickable( onClick = { onClickText2(pTP,lSo,it,scope)} )
+                    Modifier.clickable( onClick = { onClickText2(pTP,pTP.lSOnpy,it,scope)} )
                 )
             }
         }
-        //pTP.tTranslated = b.value
-    }
+}
 
 
     @Composable
-    fun SelectableTextPy(pTP: PlayTextParams,lPy: List<Pinyin>) {
+    fun SelectableTextPy(pTP: PlayTextParams) {
         val scope = rememberCoroutineScope()
-        Timber.d("lPy  size ${lPy.size}")
-        val lSo = remember { ListSelectableObjects(lPy) }
         FlowRowX(mainAxisSpacing = 2.dp) {
-            lSo.lSO.forEach {
+             pTP.lSOpy.lSO.forEach {
                 Column(
                     Modifier//.border(BorderStroke(0.dp, Color.LightGray))
                         .padding(start = 2.dp, end = 2.dp)
-                        .clickable(onClick = { onClickText2(pTP, lSo, it, scope) }),
+                        .clickable(onClick = { onClickText2(pTP, pTP.lSOpy, it, scope) }),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     TextX(
@@ -465,7 +676,8 @@ class SelectableObject<T>(x:T){
 
 }
 
-class ListSelectableObjects<T>(l:List<T>){
+class ListSelectableObjects<T>(l:List<T> = emptyList()){
+
     val lSO = l.map{ it->SelectableObject(it) }
     fun unselectAll(){ lSO.forEach { it.setSelectState(false) }}
     fun getSelectedText():String {
@@ -508,6 +720,6 @@ fun <T>  onClickText2(
         pTP.searching = false
     }
 }
-
+// Max 661 770 !!
 //Max 528  440
 // Max 718

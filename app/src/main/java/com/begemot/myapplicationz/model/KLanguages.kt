@@ -1,6 +1,6 @@
-package com.begemot.inreader.model
+package com.begemot.myapplicationz.model
 
-import com.begemot.inreader.KCache
+import com.begemot.myapplicationz.KCache
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -17,25 +17,35 @@ class KLAnguanges(){
     private var lMap:MutableMap<String,dLang> = HashMap()
     private var changed = false
     private val namefile="lanpitch"
+    val size:Int
+        get() = lMap.size
+
+    override fun toString(): String {
+        return lMap.toString()
+    }
 
     fun save(){
         if(!changed) return
         val sAux= Json.encodeToString(langContainer.serializer(),langContainer("pse",lMap))
         Timber.d(sAux)
-        KCache.storeInCache3("/$namefile",sAux)
+        KCache.storeInCache("/$namefile",sAux)
         changed = false
     }
     fun setChanged(){
         changed=true
     }
 
-    fun load(){
+
+
+    suspend fun load(){
+        Timber.d("KLanguages")
         try {
             val lp= KCache.loadFromCache(namefile)
+            if(lp.length==0) return
             val ss= Json.decodeFromString<langContainer>(lp)
             lMap=ss.lMap
         } catch (e: Exception) {
-            Timber.d(e)
+             Timber.d("except ${e.message}")
         }
     }
     /*fun getListSelected():List<dLang>{
