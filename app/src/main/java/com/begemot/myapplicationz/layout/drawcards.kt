@@ -1,9 +1,10 @@
 package com.begemot.myapplicationz.layout
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.*
+import androidx.compose.material.Card
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,7 +14,42 @@ import com.begemot.kclib.FlowRowX
 import com.begemot.kclib.KText2
 import com.begemot.knewscommon.ListPinyin
 import com.begemot.myapplicationz.StatusApp
+import com.begemot.myapplicationz.screens.detectDoubleTap
 import timber.log.Timber
+
+@ExperimentalMaterialApi
+@Composable
+fun myCard(mod:Modifier,onClik:()->Unit, children: @Composable () -> Unit){
+    Card(
+        shape = RoundedCornerShape(8.dp),
+        elevation = 4.dp,
+        //modifier = mod.then(Modifier.padding(6.dp)),//.then(mod),
+        modifier = Modifier.padding(top = 2.dp,start = 2.dp,end = 2.dp,bottom = 2.dp).then(mod),
+        backgroundColor = MaterialTheme.colors.surface,
+        onClick=onClik,
+        content = {
+            children()
+
+        }
+    )
+}
+
+@Composable
+fun myCard2(modifier:Modifier=Modifier, children: @Composable () -> Unit){
+    Card(
+        modifier = Modifier.padding(top = 2.dp,start = 2.dp,end = 2.dp,bottom = 2.dp).then(modifier),
+        shape = RoundedCornerShape(8.dp),
+        elevation = 4.dp,
+        //modifier = mod.then(Modifier.padding(6.dp)),//.then(mod),
+       // modifier = Modifier.padding(top = 2.dp,start = 2.dp,end = 2.dp,bottom = 2.dp).then(modifier),
+
+        backgroundColor = MaterialTheme.colors.surface,
+        content = {
+            children()
+
+        }
+    )
+}
 
 @Composable
 fun DrawText(text:String,lPy:ListPinyin,sApp: StatusApp){
@@ -26,7 +62,7 @@ fun DrawText(text:String,lPy:ListPinyin,sApp: StatusApp){
 @Composable
 fun DrawPinyn(translated: String, sApp: StatusApp, lPy: ListPinyin) {
 //    Timber.d("drawpinyin mode ${sApp.romanized}  olang lang ${sApp.lang}")
-    if (sApp.lang != "zh" && sApp.lang != "zh-TW") {
+    if (sApp.userlang != "zh" && sApp.userlang != "zh-TW") {
         //       DrawPinynNone(translated, sApp, lPy); return
     }  //To be solved!
     if (sApp.romanized == 0) DrawPinynSimple(translated, sApp, lPy)
@@ -70,7 +106,10 @@ fun DrawPinynComplete(translated: String, sApp: StatusApp, lPy: ListPinyin) {
         }
     }
 }
-
+@Composable
+fun ListModifier():Modifier{
+    return Modifier.fillMaxSize().background(MaterialTheme.colors.background).padding(top=3.dp,start = 3.dp,end=3.dp)
+}
 
 @Composable
 fun DrawPinynNone(translated: String, sApp: StatusApp, lPy: ListPinyin) {

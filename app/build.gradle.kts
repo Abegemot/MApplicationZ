@@ -3,7 +3,10 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  plugins {
      id("com.android.application")
      kotlin("android")
-     kotlin("plugin.serialization") version "1.5.10"
+     kotlin("plugin.serialization") version "1.5.30"
+     id("com.google.gms.google-services")
+     id("com.google.firebase.crashlytics")
+
 
  }
 android {
@@ -20,8 +23,8 @@ android {
         applicationId="com.begemot.myapplicationz"
         minSdk = 26
         targetSdk= 30
-        versionCode= 30
-        versionName= "0.3.7"
+        versionCode= 37
+        versionName= "0.4.4"
 //        testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
@@ -60,14 +63,14 @@ android {
         // kotlinCompilerVersion = "1.3.70-dev-withExperimentalGoogleExtensions-20200424"
         //kotlinCompilerVersion="1.4.0-dev-withExperimentalGoogleExtensions-20200720"
        // kotlinCompilerVersion="1.4.21-2"
-        kotlinCompilerExtensionVersion = "1.0.0-beta09"
+        kotlinCompilerExtensionVersion = "1.0.3"
     }
 
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
         //useIR = true
-        freeCompilerArgs += "-Xallow-jvm-ir-dependencies"
+        //freeCompilerArgs += "-Xallow-jvm-ir-dependencies"
         //freeCompilerArgs= listOf("-P","plugin:androidx.compose.plugins.idea:liveLiterals=false")
     }
 }
@@ -83,11 +86,11 @@ android {
  tasks.register<Copy>("myzcopy"){
 
          from("C:/Users/dad/AndroidStudioProjects/MyApplicationZ/app/release/app-release.apk")
-         into("g:/mGoogleDrive/INewsReader/output")
+         into("d:/My Drive/INewsReader/output")
          from("C:/Users/dad/AndroidStudioProjects/MyApplicationZ/app/build/outputs/apk/debug/app-debug.apk")
-         into("g:/mGoogleDrive/INewsReader/output")
+         into("d:/My Drive/INewsReader/output")
          from("C:/Users/dad/AndroidStudioProjects/MyApplicationZ/app/release/app-release.aab")
-         into("g:/mGoogleDrive/INewsReader/output")
+         into("d:/My Drive/INewsReader/output")
      
  }
 
@@ -125,6 +128,11 @@ android {
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
 
+    implementation(platform("com.google.firebase:firebase-bom:28.4.1"))
+    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-crashlytics-ktx")
+
+
     implementation(platform("com.begemot.knewsplatform-bom:deps:0.0.1"))
     implementation("com.jakewharton.timber:timber")
     debugImplementation("com.squareup.leakcanary:leakcanary-android")
@@ -139,6 +147,8 @@ dependencies {
     implementation( "androidx.compose.runtime:runtime")
     //implementation("androidx.core:core-ktx")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx")
+
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
     //implementation("androidx.activity:activity-compose")
 
     //implementation("io.github.microutils:kotlin-logging-jvm")

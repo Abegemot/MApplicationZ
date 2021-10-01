@@ -1,6 +1,9 @@
 package com.begemot.myapplicationz
 
 
+import android.graphics.BitmapFactory
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import com.begemot.knewsclient.KNews
 import com.begemot.knewscommon.*
 import com.begemot.myapplicationz.model.articleHandler
@@ -16,7 +19,7 @@ object KProvider {
         //Preconditions.checkArgument(1==1)
         //throw(Exception("Error geting news papers updates"))
         val nP = KNews().getNewsPapersWithVersion(currentver)
-        checkImages(nP.newspaper)
+        //checkImages(nP.newspaper)
         if (nP.version == 0) {  //no updates
             Timber.d("no updates current version ${currentver}")
             return nP
@@ -29,22 +32,36 @@ object KProvider {
         }
     }
 
-    suspend fun checkImages(lnp: List<NewsPaper>) {
-        Timber.d("check Images News Paper size ${lnp.size}")
-        lnp.forEach {
-            if (!KCache.fileExistsAndNotEmpty(it.logoName, "/Images")) {
-                val ba = KNews().getImage2("Images/${it.logoName}")
-                if(ba is KResult2.Success){
-                    KCache.storeImageInCache(it.logoName, ba.t.bresult)
-                }
-                if(ba is KResult2.Error) {
-                    Timber.d("${it.logoName}  NOT FOUND  ${ba.msg}")
-                }
 
+suspend fun getImage(nameImg:String): ImageBitmap?{
+        Timber.d("OOOOOOOOOOOOOO  $nameImg")
+        val img=KCache.getBitmapImageFromMemCache(nameImg)
+        if(img!=null) return img
 
-            }
+        val img2 = KCache.findImageInFile(nameImg)
+        if(img2!=null){ KCache.addImageInMemory(nameImg,img2); return img2 }
 
+        val ba = KNews().getImage2("Images/$nameImg")
+        if(ba is KResult2.Success){
+                Timber.d("Result ok size img ${ba.t.bresult.size}")
+                //KCache.storeImageInCache(np.logoName, ba.t.bresult)
+                if(ba.t.bresult.size>0) {
+                    KCache.storeImageInFile(nameImg, ba.t.bresult)
+                    KCache.addImageInMemory(nameImg,
+                        BitmapFactory.decodeByteArray(ba.t.bresult, 0, ba.t.bresult.size)
+                            .asImageBitmap()
+                    )
+                    return KCache.getBitmapImageFromMemCache(nameImg)
+                }else
+                    return null
         }
+        if(ba is KResult2.Error) {
+                Timber.d("Failed to load  $nameImg")
+                KCache.writeError("${nameImg}  NOT FOUND  ${ba.msg}")
+                Timber.d("${nameImg}  NOT FOUND  ${ba.msg}")
+                return null
+        }
+        return null
     }
 
 

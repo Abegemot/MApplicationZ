@@ -1,4 +1,6 @@
 package com.begemot.myapplicationz.model
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import com.begemot.knewscommon.*
@@ -6,6 +8,8 @@ import com.begemot.myapplicationz.AppStatus
 import com.begemot.myapplicationz.KCache
 import com.begemot.myapplicationz.KProvider
 import com.begemot.myapplicationz.StatusApp
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -28,7 +32,7 @@ class BookMark2(){
     fun toggleBookMark(i:Int,q:articleHandler){
         if(bkMap[i]==null) bkMap[i]=i
         else bkMap.remove(i)
-        KCache.storeInCache(q.nameFileArticle()+".BKM",
+        KCache.storeInCache(q.nameFileBooMarksAndLast()+".BKM",
             kjson.encodeToString(BookMark2.serializer(),this))
     }
     fun isBookMark(i:Int):Boolean{
@@ -55,6 +59,9 @@ class articleHandler(val nphandler:String="", val link:String="", val tlang:Stri
     fun nameFileArticle():String {
         return "Articles/$nphandler${link.takeLast(15).replace("/","")}$tlang"
     }
+    fun nameFileBooMarksAndLast():String{
+        return "Articles/$nphandler${link.takeLast(15).replace("/","")}"
+    }
 }
 
 class article {
@@ -62,24 +69,54 @@ class article {
     val lArticle : MutableState<List<OriginalTrans>> = mutableStateOf(emptyList())
     val iInitialItem :MutableState<Int> = mutableStateOf(0)
     val bookMarks:MutableState<BookMark2> = mutableStateOf(BookMark2())
+    var listState:LazyListState? = null
+    var currentArticle = 0
+    private val _nIndex = MutableStateFlow(0)
+    val nIndex :StateFlow<Int> = _nIndex
+    fun setNIndex(i:Int){
+        _nIndex.value=i
+    }
 
-    suspend fun reinicializeArticle(q:articleHandler) {
+    //var lzls  = LazyListState()
+    var holdingItem : MutableState<Int> = mutableStateOf(0)
+
+    fun reinizializeArticle2(){
+        lArticle.value        = emptyList()
+        listState = null
+    }
+
+    fun reinicializeArticle(q:articleHandler,alistState: LazyListState) {
         qarticleHandler.value = q
         lArticle.value        = emptyList()
        // bookMarks.value       =
+       // lzls  = LazyListState()
         loadBookMarks()
+        listState = alistState
     }
 
-    suspend fun loadBookMarks(){
-        val lP = KCache.loadFromCache(qarticleHandler.value.nameFileArticle()+".BKM")
+     fun loadBookMarks(){
+        val lP = KCache.loadFromCache(qarticleHandler.value.nameFileBooMarksAndLast()+".BKM")
         if(lP.isEmpty()) bookMarks.value=BookMark2()
         else {
             val l = kjson.decodeFromString<BookMark2>(lP)
             bookMarks.value = l
         }
+        val ii=KCache.loadFromCache(qarticleHandler.value.nameFileBooMarksAndLast()+".LIN")
+        if(ii.isEmpty()){
+            Timber.d("ii empty")
+            iInitialItem.value=0
+        }
+        else{
+            val u=ii.toInt()
+            Timber.d("ii not empty $u")
+            iInitialItem.value=u
+        }
         //return l.iBookMark }
     }
 
+    fun storeLastIndex(index:Int){
+        KCache.storeInCache(qarticleHandler.value.nameFileBooMarksAndLast()+".LIN",index.toString())
+    }
 
     /*fun isbookmark(i:Int):Boolean{
         if(i==1) return true
@@ -114,7 +151,7 @@ class article {
                 Timber.d("size ${resp.t.size}")
                 sApp.currentStatus.value = AppStatus.Idle
                 lArticle.value = resp.t
-                  Timber.d(lArticle.value.print("article"))
+         //         Timber.d(lArticle.value.print("article"))
                 if(resp.t.size==0){
                      lArticle.value=listOf(OriginalTrans("Article only for subscriptors"))
                 }

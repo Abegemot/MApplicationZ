@@ -8,6 +8,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.util.Log
 import android.util.Log.DEBUG
+import androidx.datastore.core.DataStore
 import androidx.lifecycle.viewModelScope
 //import androidx.ui.intl.Locale
 import com.begemot.myapplicationz.App.Companion.sApp
@@ -32,6 +33,7 @@ import java.util.*
 
  class App:Application(){
     companion object {
+        //val preferenceDataStore: DataStore<Preferences> = createDataStore(name = "profile")
         val sApp by lazy { StatusApp(Screens.SetUpScreen,Screens.QuitScreen) }
         lateinit var instance:App
         val lcontext by lazy { App.instance }

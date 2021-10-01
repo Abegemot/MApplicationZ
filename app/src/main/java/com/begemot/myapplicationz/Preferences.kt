@@ -6,6 +6,7 @@ package com.begemot.myapplicationz
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -22,6 +23,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 //import androidx.compose.runtime.state
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 
 import androidx.compose.ui.platform.LocalContext
@@ -31,6 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 
 import com.begemot.kclib.KButtonBar
@@ -59,12 +62,13 @@ fun printStat(msg: String, prefParams: PrefsParams, statusApp: StatusApp) {
     Timber.d("printStat : $msg")
     Timber.d("localCurrentLang ${prefParams.localCurrentLang.value}")
     Timber.d("localSelectedLang ${prefParams.localSelectedLang.value}")
-    Timber.d("statusApp.lang  ${statusApp.lang}")
+    Timber.d("statusApp.lang  ${statusApp.userlang}")
     Timber.d("localCurrent Romanize ${prefParams.localromanize.value}")
 }
 
 
 
+@ExperimentalComposeUiApi
 @Composable
 fun editPreferences(sApp: StatusApp) {
     Timber.d("editprefs")
@@ -83,8 +87,8 @@ fun editPreferences(sApp: StatusApp) {
                    // prefs.speechrate = prefParams.localSpeechrate.value
                     sApp.selectLang.value = false
                     prefs.kLang = prefParams.localCurrentLang.value
-                    if (sApp.lang != prefs.kLang) sApp.vm.headLines.reinicializeHeadLines() //If lang changes force reload <-
-                    sApp.lang = prefs.kLang
+                    if (sApp.userlang != prefs.kLang) sApp.vm.headLines.reinicializeHeadLines() //If lang changes force reload <-
+                    sApp.userlang = prefs.kLang
                     prefs.romanize = prefParams.localromanize.value
                     sApp.romanized=prefs.romanize
                     printStat("After OK edit Preferences ", prefParams, sApp)
@@ -218,7 +222,7 @@ fun tabLanguage(statusApp: StatusApp, prefParams: PrefsParams) {
     //val r= lKLocales.find { it.acronim==statusApp.lang }
     //var indx=radioOptions.indexOf("${r?.displayName}  (${r?.acronim})")
     //Timber.d("tab language ${statusApp.lang}  ${getOptions[statusApp.lang]}")
-    val v = getOptions[statusApp.lang]
+    val v = getOptions[statusApp.userlang]
     val z = getOptions.getKey(v!!)
     val comb = "$v  ($z)"
     var indx = radioOptions.indexOf(comb)
@@ -234,6 +238,7 @@ fun tabLanguage(statusApp: StatusApp, prefParams: PrefsParams) {
         printStat("before on change current lang", prefParams, statusApp)
         prefParams.localCurrentLang.value = text.substringAfterLast("(").substringBefore(")")
         printStat("after on change current lang", prefParams, statusApp)
+        Ok(prefParams,statusApp)
     }
 
     Column {
@@ -265,13 +270,14 @@ fun tabLanguage(statusApp: StatusApp, prefParams: PrefsParams) {
 fun tabText(statusApp: StatusApp, localFontSize: MutableState<Int>) {
     Column() {
         KText2("Text Size", size = statusApp.fontSize.value)
-        var sliderPosition = mutableStateOf(statusApp.fontSize.value.toFloat())
+        var sliderPosition = remember{ mutableStateOf(statusApp.fontSize.value.toFloat()) }
         Slider(
             value = sliderPosition.value,
-            //onValueChange={sliderPosition.value=it;localFontSize.value=it.toInt()},
-            onValueChange = { sliderPosition.value = it;statusApp.fontSize.value = it.toInt() },
+            onValueChange = {
+                sliderPosition.value = it
+                statusApp.fontSize.value = it.toInt()
+                            },
             valueRange = 10f..35f
-            //    color=Color.Black
         )
     }
 }
@@ -283,34 +289,44 @@ fun tabAbout(sApp: StatusApp){
     var txt by remember { mutableStateOf("") }
     val scrollState: ScrollState = rememberScrollState(0)
     Column(modifier=Modifier.verticalScroll(scrollState)) {
-        Text("Version Code ${BuildConfig.VERSION_CODE}")
-        Text("Version Name ${BuildConfig.VERSION_NAME}")
+        Row() {
+            Column() {
+                Text("Version Code ${BuildConfig.VERSION_CODE}")
+                Text("Version Name ${BuildConfig.VERSION_NAME}")
+            }
+            Button(onClick = {  txt="" },Modifier.padding(top = 10.dp,start = 20.dp)) {
+                Text("Cls")
+            }
+            Button(onClick = {  KCache.clearErrors(); txt="" },Modifier.padding(top = 10.dp,start = 20.dp)) {
+                Text("Cle")
+            }
+        }
         //Divider()
         Text(txt,fontSize = 14.sp)
         Row(Modifier.padding(5.dp)) {
             Button(
                 onClick = { /*KCache.removeBookmarks()*/
                     sc.launch {
-                        //val r = KCache.loadFromCache("ERROR.BGM")
-                        //txt = r
-                        //Timber.d("ERROR.BGM  $r")
                         txt= getCache(sApp)
                     }
                 },
                 Modifier
                     .padding(top = 10.dp,end = 5.dp)
                    // .align(Alignment.CenterHorizontally)
-            ) { Text("Cache content") }
+            ) { Text("vCache") }
             Button(onClick = {
                 //KCache.deleteFile("ERROR.BGM")
                 KCache.deleteDirectory("Articles")
+                KCache.deleteDirectory("Headlines")
+                KCache.deleteFile("ERROR.BGM")
                 txt=""
             },Modifier
                 .padding(top = 10.dp)
-            ){  Text("Clear cache")}
-            Button(onClick = { /*TODO*/ }) {
-              Text("Cls")
+            ){  Text("dCache")}
+            Button(onClick = {  txt=KCache.readErrors() },Modifier.padding(top = 10.dp,start = 5.dp)) {
+                Text("vErrors")
             }
+
 
         }
     }
@@ -319,8 +335,16 @@ fun tabAbout(sApp: StatusApp){
 
 suspend fun getCache(sApp: StatusApp):String{
     val s=StringBuilder()
+    s.append("Cahe contents\n")
     s.append("${sApp.vm.newsPapers.toString()}\n")
-    s.append(KCache.listFiles().joinToString("\n"))
+    s.append("Images\n")
+    s.append(KCache.listDirectory("Images"))
+    s.append("\nArticles\n")
+    s.append(KCache.listDirectory("Articles"))
+    s.append("\nHeadlines\n")
+    s.append(KCache.listDirectory("Headlines"))
+
+    //s.append(KCache.listFiles().joinToString("\n"))
     return s.toString()
 }
 
@@ -372,9 +396,10 @@ fun Ok(prefParams: PrefsParams, statusApp: StatusApp) {
     val s = lnames.joinToString(",")
     prefs.selectedLang = lnames.joinToString(",")
     prefParams.selectLocales.value = false
-    statusApp.lang = prefParams.localCurrentLang.value
+    statusApp.userlang = prefParams.localCurrentLang.value
     printStat("Leaving OK select langs ", prefParams, statusApp)
     //  Timber.d("selectedLang : ${prefs.selectedLang}")
+    statusApp.selectLang.value = false
 }
 
 fun setSelectedLang() {
@@ -517,16 +542,53 @@ fun localesDlg(prefParams: PrefsParams, statusApp: StatusApp) {
     }
 }
 
+
+fun oncheckLang(checked: MutableState<Boolean>,it:KLocale,prefParams: PrefsParams,context: Context){
+    checked.value=!checked.value
+    it.checked=checked.value
+    if (it.acronim.equals(prefParams.localCurrentLang.value)) {
+        it.checked = true
+        checked.value = true
+        Toast.makeText(
+            context,
+            "You can't remove current selected language (${it.acronim})",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+    val count = lKLocales.count { it.checked }
+    if (count == 9 && it.checked) {
+        checked.value= false
+        it.checked=false
+        Toast.makeText(
+            context,
+            "Max number of selected languages reached",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+
+}
+
 @Composable
 fun rowlang(it: KLocale, statusApp: StatusApp, context: Context, prefParams: PrefsParams) {
+    var checked = mutableStateOf(it.checked)
+    val context = LocalContext.current
     Row(
         Modifier
             .padding(start = 10.dp, top = 5.dp)
-            .fillMaxWidth(1.0f)) {
-        var checked = mutableStateOf(it.checked)
+            .fillMaxWidth(1.0f)
+            .clickable {
+                Timber.d("PATATA")
+                oncheckLang(checked,it,prefParams,context)
+                //checked.value=!checked.value
+                //it.checked=checked.value
+            }
+    ) {
+        //var checked = mutableStateOf(it.checked)
         Checkbox(
             checked = checked.value,
-            onCheckedChange = { c ->
+            onCheckedChange = null
+           /* onCheckedChange = { c ->
                 val count = lKLocales.count { it.checked }
                 if (count == 8 && c) {
                     Toast.makeText(
@@ -548,8 +610,11 @@ fun rowlang(it: KLocale, statusApp: StatusApp, context: Context, prefParams: Pre
                             Toast.LENGTH_SHORT
                         ).show()
                     }
+                    //else{
+                    //    Ok(prefParams,statusApp)
+                    //}
                 }
-            }
+            }*/
         )
         Text(it.toString(), Modifier.padding(start = 3.dp))
     }
@@ -683,6 +748,9 @@ class BiHashMap<K, V> : HashMap<K, V>() {
         rMap[value] = key
         return super.put(key, value)
     }
+
+    override val size: Int
+        get() = rMap.size
 
     fun getKey(target: V): K? {
         return rMap[target]

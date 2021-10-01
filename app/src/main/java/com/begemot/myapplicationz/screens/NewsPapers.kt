@@ -1,31 +1,30 @@
-package com.begemot.inreader
+package com.begemot.myapplicationz.screens
 
 import android.content.Context
 //import androidx.compose.foundation.Text
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import timber.log.Timber
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.Shape
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat.startActivity
+import com.begemot.myapplicationz.*
+import com.begemot.myapplicationz.layout.ListModifier
+import com.begemot.myapplicationz.layout.myCard
 
 //data class NewsPapers(val Name:String,val Desc:String,val resid:Int,val screen:Screens,val newsProvider:INewsPaper)
 
@@ -35,6 +34,7 @@ import androidx.core.content.ContextCompat.startActivity
   //  NewsPapers("Süddeutsche Zeitung","German News",R.drawable.ic_sz_plus_logo,Screens.ListHeadLines,SZ)
 )*/
 
+@ExperimentalMaterialApi
 @Composable
 fun newsPapersScreen(sApp: StatusApp) {
     sApp.currentBackScreen = Screens.QuitScreen
@@ -47,31 +47,38 @@ fun newsPapersScreen(sApp: StatusApp) {
 }
 
 
+@ExperimentalMaterialApi
 @Composable
 fun draw_newsPapers(sApp: StatusApp) {
     val context = LocalContext.current
+
+    //sApp.setMsg(" Newspapers-> ${sApp.vm.newsPapers.lNewsPapers.size}")
     Timber.d("Composable ${sApp.status()}")
     sApp.vm.headLines.reinicializeHeadLines()
     val (shape, setShape) = mutableStateOf(CircleShape)
     val scrollState: ScrollState = rememberScrollState(0)
     // LazyColumn(){
     //         items(sApp.vm.lNewsPapers, itemContent = {
-    Column(modifier = Modifier.verticalScroll(state = scrollState)) {
+    Column(modifier = Modifier
+        .verticalScroll(state = scrollState)
+        .then(ListModifier())) {
         sApp.vm.newsPapers.lNewsPapers.forEach {
-            Card(
-                shape = RoundedCornerShape(8.dp),
-                elevation = 7.dp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(3.dp)
-                    .clickable(onClick = {
-                        Timber.d("onClick going to HL")
-                        sApp.currentScreen.value = Screens.HeadLinesScreen
-                        sApp.currentBackScreen = Screens.NewsPapersScreen
-                        sApp.currentNewsPaper = it
-                        sApp.currentStatus.value = AppStatus.Loading
+            myCard(
+                //shape = RoundedCornerShape(8.dp),
+                //elevation = 7.dp,
+                onClik = {
+                    sApp.currentScreen.value = Screens.HeadLinesScreen
+                    sApp.currentBackScreen = Screens.NewsPapersScreen
+                    sApp.currentNewsPaper = it
+                    sApp.currentStatus.value = AppStatus.Loading
+                },
+                mod = Modifier
+                    //.fillMaxWidth()
+                    .padding(0.dp)
 
-                    })
+                    //.background(Color.Blue)
+
+
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     //Box(modifier = Modifier.preferredHeight(64.dp).preferredWidth(120.dp)) {
@@ -80,31 +87,46 @@ fun draw_newsPapers(sApp: StatusApp) {
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
                         shape = RoundedCornerShape(8.dp)
                     ) {
+                        val img = remember { mutableStateOf(ImageBitmap(10, 10)) }
+                        LaunchedEffect(img.value) {
+                            //val i=KProvider.getImage(it.logoName)
+                            val i=KProvider.getImage(it.logoName )
+                            if(i!=null) {
+                                img.value=i
+
+                            }
+                            //!!!!! img.value = KCache.getBitmapImage(it.logoName)!!
+                        }
+
                         Image(
-                            bitmap = KCache.getBitmapImage(it.logoName),
+                            bitmap = img.value,//KCache.getBitmapImage2(it.logoName).value?: ImageBitmap(10,10),
                             modifier = Modifier
                                 .height(64.dp)
                                 .width(120.dp)
                                 .padding(horizontal = 10.dp)
-                                .clickable(onClick = { OpenBrowser(context, it.url) }),
+                                .clickable(onClick = {
+                                    if (it.url.isNotEmpty())
+                                        OpenBrowser(context, it.url)
+                                }
+                                ),
                             // modifier = Modifier.size(225.dp).padding(15.dp).drawShadow(8.dp,shape),
                             contentScale = ContentScale.Fit,
                             contentDescription = ""
                         )
-
-
                     }
-                    Column(Modifier.padding(start = 6.dp)) {
+                    Column(
+                        Modifier
+                            .padding(start = 6.dp)
+                            .fillMaxSize()) {
                         Text(it.name)
                         Text(it.desc)
                     }
-
                 }
             }
-            // })
         }
     }
 }
+
 
 fun OpenBrowser(ctx:Context,url:String){
     if(url.equals("none")) return

@@ -72,4 +72,4 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
--keep class io.ktor.** { *; }
+#-keep class io.ktor.** { *; }

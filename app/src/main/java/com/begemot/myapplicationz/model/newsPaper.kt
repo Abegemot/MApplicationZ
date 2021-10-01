@@ -19,7 +19,7 @@ class newsPapers() {
 
 
         //return "X version ${newsPapers.version} newspapers ${newsPapers.newspaper}"
-        return "--->ANewsPaperVersion.toString()${newsPapers.toString2()}"
+        return "${newsPapers.toString2()}"
     }
 
     suspend fun getLocalNewsPapers(sApp: StatusApp) {
@@ -48,7 +48,7 @@ class newsPapers() {
     suspend fun checkUpdates(sApp: StatusApp): Boolean {
         val resp = exWithException<NewsPaperVersion, String> {
             Timber.d("looking for News Papers Update with currver=${sApp.vm.newsPapers.Npversion}")
-            KProvider.checkImages(sApp.vm.newsPapers.lNewsPapers)
+            //KProvider.checkImages(sApp.vm.newsPapers.lNewsPapers)
             KProvider.getNewsPapersUpdates(sApp.vm.newsPapers.Npversion)
         }
         when (resp) {

@@ -3,6 +3,7 @@ package com.begemot.myapplicationz
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
+import com.begemot.myapplicationz.App.Companion.sApp
 import com.begemot.myapplicationz.model.*
 
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,8 +17,6 @@ class VM : ViewModel() {
     val headLines: headLines = headLines()
 
     val article:article = article()
-
-    var scrollposHL = 0
 
     val msg = mesages()
 
