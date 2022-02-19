@@ -3,7 +3,7 @@ package com.begemot.myapplicationz.model
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import com.begemot.knewscommon.*
-import com.begemot.myapplicationz.App.Companion.sApp
+//import com.begemot.myapplicationz.App.Companion.sApp
 import com.begemot.myapplicationz.AppStatus
 import com.begemot.myapplicationz.KCache
 import com.begemot.myapplicationz.KProvider
@@ -28,11 +28,11 @@ class headLines() {
 
     fun reinicializeHeadLines() {
         lHeadLines.value = THeadLines()
-        scrollposHL = 0
-        currChapter.value = 0 //loadSelectedChapter()
+        //scrollposHL = 0
+        //currChapter.value = 0 //loadSelectedChapter()
     }
 
-    fun loadSelectedChapter():Int{
+    fun loadSelectedChapter(sApp: StatusApp):Int{
         if(sApp::currentNewsPaper ==null) return 0
         val ii= KCache.loadFromCache("${sApp.currentNewsPaper.handler}.CCH")
         if(ii.isEmpty()){
@@ -64,7 +64,7 @@ class headLines() {
                 sApp.currentStatus.value = AppStatus.Idle
                 lHeadLines.value = resp.t
                 Timber.d(lHeadLines.value.lhl.print("getlines"))
-                currChapter.value=loadSelectedChapter()
+                currChapter.value=loadSelectedChapter(sApp)
             }
             is KResult2.Error -> {
                 Timber.d("SERVER ERROR!!!")
@@ -84,7 +84,7 @@ class headLines() {
                 if (resp.t.datal != 0L) {
                     lHeadLines.value = resp.t
                     sApp.vm.msg.setMsg(sApp, "New Headlines  !!")
-                    storeLastSelectedChapter(sApp,0)
+                    storeLastSelectedChapter(sApp,0) //?? Vols dir?
                 } else sApp.vm.msg.setMsg(sApp, "No new Headlines  !!")
                 sApp.currentStatus.value = AppStatus.Idle
             }

@@ -1,18 +1,15 @@
 package com.begemot.myapplicationz
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
@@ -27,29 +24,71 @@ import timber.log.Timber
 
 @Composable
 fun SetUpScreen(sApp: StatusApp) {
-    Timber.d("hey ya")
-    val scrollState: ScrollState = rememberScrollState(0)
+    //Timber.d("hey ya")
+    //return
     resfreshWraper(true) {
-        Column(verticalArrangement = Arrangement.Top, modifier = Modifier.fillMaxSize().verticalScroll(scrollState)) {
-            //sApp.setMsg2("Draw SetUp Screen")
-            //Text("SetUpScreen  ${sApp.vm.msg.LMSG.size}")
-            sApp.vm.msg.LMSG.forEach {
-                Text(
-                    it,
-                    color = Color.Unspecified,
-                    textAlign = TextAlign.Start,
-                    modifier = Modifier.padding(start = 10.dp),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontStyle = FontStyle.Italic,
-                    fontSize = 20.sp
-                )
+        val scrollState: ScrollState = rememberScrollState(0)
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color.Transparent)
+                .border(2.dp, color = Color.Yellow)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.Top,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .background(Color.Transparent)
+            ) {
+                sApp.vm.msg.LMSG.forEach {
+                    Text(
+                        it,
+                        color = Color.White,
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier
+                            .padding(start = 10.dp)
+                            .background(Color.Gray),
+                        fontWeight = FontWeight.ExtraBold,
+                        fontStyle = FontStyle.Italic,
+                        fontSize = 20.sp,
+                        
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                }
+            }
+            if(sApp.shallIquit) {
+                Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp)) {
+                    Button(onClick = {
+                        //moveTaskToBack(true)
+                        android.os.Process.killProcess(android.os.Process.myPid())
+                        System.exit(1)
+                    }) {
+                        Text("QUIT")
+                    }
+                }
             }
         }
     }
+
 }
 
 @Preview
 @Composable
 fun UTThemes() {
-    Text("HI")
+    val lS=listOf("one","two","tree")
+    Box(
+        Modifier
+            .background(Color.Blue)
+            .fillMaxSize(1f)) {
+        Column(){
+            lS.forEach{
+                Text(it)
+            }
+        }
+        Column(Modifier.align(Alignment.BottomCenter)) {
+            Text("HI")
+        }
+
+    }
 }

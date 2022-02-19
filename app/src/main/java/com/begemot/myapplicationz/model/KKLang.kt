@@ -1,6 +1,7 @@
 package com.begemot.myapplicationz.model
 
-import com.begemot.myapplicationz.prefs
+
+import com.begemot.myapplicationz.App.Companion.prefs
 import timber.log.Timber
 
 

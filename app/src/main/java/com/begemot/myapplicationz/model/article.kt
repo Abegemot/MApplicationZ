@@ -1,4 +1,4 @@
-package com.begemot.myapplicationz.model
+    package com.begemot.myapplicationz.model
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.MutableState

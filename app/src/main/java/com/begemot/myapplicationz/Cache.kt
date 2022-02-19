@@ -1,4 +1,4 @@
-package com.begemot.myapplicationz
+  package com.begemot.myapplicationz
 
 import android.graphics.BitmapFactory
 import android.text.format.Formatter
@@ -10,6 +10,7 @@ import timber.log.Timber
 import java.io.File
 import java.nio.file.*
 import java.text.SimpleDateFormat
+import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Collectors
 //import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.fileSize
@@ -20,12 +21,11 @@ import kotlin.io.path.getLastModifiedTime
 private val DD=false
 
 object KCache{
-    private val hashmapImages: MutableMap<String,ImageBitmap> = HashMap()
+    val hashmapImages: MutableMap<String,ImageBitmap> = HashMap()
 
     fun storeInCache(sNameFile: String, scontent: String){
-        val  sf= App.lcontext.filesDir.absolutePath
+        val sf=App.lcontext.filesDir.absolutePath
         Timber.d("STORE IN CACHE $sf ${scontent.length}")
-
         try {
             Files.write(Paths.get(sf+"/$sNameFile"),scontent.toByteArray())
             //Files.write(Paths.get(sf+"/ERROR.BGM"),"ok namefile:$sNameFile  size ${scontent.length}\n".toByteArray(),StandardOpenOption.APPEND,StandardOpenOption.CREATE,StandardOpenOption.WRITE)
@@ -36,21 +36,24 @@ object KCache{
     }
 
     fun writeError(serr:String){
-        val  sf= App.lcontext.filesDir.absolutePath
+        val sf=App.lcontext.filesDir.absolutePath
+//        val  sf= App.lcontext.filesDir.absolutePath
 
         Files.write(Paths.get(sf+"/ERROR.BGM"),"err ${serr}\n".toByteArray(),StandardOpenOption.APPEND,StandardOpenOption.CREATE,StandardOpenOption.WRITE)
 
     }
 
     fun readErrors():String{
-        val  sf= App.lcontext.filesDir.absolutePath
+        val sf=App.lcontext.filesDir.absolutePath
+//        val  sf= App.lcontext.filesDir.absolutePath
         if(!fileExistsAndNotEmpty("/ERROR.BGM","")) return "no errors logged"
         return String(Files.readAllBytes(Paths.get(sf+"/ERROR.BGM")))
         //return Files.readAllLines(Paths.get(sf+"/ERROR.BGM")).joinToString { "\n" }
     }
 
     fun clearErrors(){
-        val  sf= App.lcontext.filesDir.absolutePath
+        val sf=App.lcontext.filesDir.absolutePath
+ //       val  sf= App.lcontext.filesDir.absolutePath
         try {
             Files.delete(Paths.get("$sf/ERROR.BGM"))
         } catch (e: Exception) {
@@ -61,21 +64,23 @@ object KCache{
     fun storeImageInFile(sNameFile: String, zimage: ByteArray){
         Timber.d("STORE IMAGE IN CACHE $sNameFile   with size ${zimage.size}")
         if(zimage.size==0) return
-        val  sf=App.lcontext.filesDir.absolutePath + "/Images/$sNameFile"
+        val sf=App.lcontext.filesDir.absolutePath+ "/Images/$sNameFile"
         Files.write(Paths.get(sf),zimage)
         Timber.d("end write $sf size ${zimage.size}")
     }
 
-     fun loadFromCache(sNameFile: String):String{   //= withContext(Dispatchers.IO){
-        val  sf="${App.lcontext.filesDir.absolutePath}/$sNameFile"
+      fun loadFromCache(sNameFile: String):String{   //= withContext(Dispatchers.IO){
+          val sf="${App.lcontext.filesDir.absolutePath}/$sNameFile"
+        //val  sf="${App.lcontext.filesDir.absolutePath}/$sNameFile"
         val str=
         try {
-            String(Files.readAllBytes(Paths.get(sf)))
+            val str=String(Files.readAllBytes(Paths.get(sf)))
+            Timber.d("File raw $sf length(${str.length})->' ${str.substring(0,minOf(str.length,29))}....'")
+            return  str
         } catch (e: Exception) {
-            Timber.d("exception $e")
+            Timber.e("exception $e <-QQ")
             ""//"error loadFromCache ${e.message}"
         }
-        Timber.d("File raw $sf ->' ${str.substring(0,minOf(str.length,29))}....'")
         return str
     }
 
@@ -87,7 +92,8 @@ object KCache{
     }
 
     fun makeDir(nameDir:String){
-        val  sf=App.lcontext.filesDir.absolutePath + "/$nameDir"
+        val sf=App.lcontext.filesDir.absolutePath+ "/$nameDir"
+        //val  sf=App.lcontext.filesDir.absolutePath + "/$nameDir"
         val file=File(sf)
         if(file.mkdir()){
             Timber.d("directory $nameDir created")
@@ -96,34 +102,53 @@ object KCache{
         }
     }
     fun checkDirExist(sdirname:String):Boolean{
-        val  sf=App.lcontext.filesDir.absolutePath + "/$sdirname"
+        val sf=App.lcontext.filesDir.absolutePath+ "/$sdirname"
+        //val  sf=App.lcontext.filesDir.absolutePath + "/$sdirname"
         val file=File(sf)
         return file.exists()
     }
 
-    fun addImageInMemory(sNameImg:String,img:ImageBitmap){
-        hashmapImages[sNameImg] = img
+    fun addImageInMemory(sNameImg:String,img:ImageBitmap){   //= withContext(Dispatchers.IO){
+        //hashmapImages[sNameImg] = img
+//        Timber.d("put $sNameImg")
+        hashmapImages.put(sNameImg,img)
     }
 
-    fun findImageInFile(sNameFile: String):ImageBitmap? {
-        /* val l=findImageInFile( sNameImg)
-        Timber.d("$sNameImg    size ${l.size}")
-        if(l.size>0) {
-            val s = BitmapFactory.decodeByteArray(l, 0, l.size).asImageBitmap()
-            hashmapImages[sNameImg] = s
-             s
-        }*/
-        //val zimage:ByteArray
+    suspend fun findImgInFile(sNameFile: String):ImageBitmap? = withContext(Dispatchers.IO){
+//        Timber.d("finImgInFile x $sNameFile")
+        findImageInFile(sNameFile)
+    }
+
+
+    suspend fun findImgInFile2(sNameFile: String):ImageBitmap?= withContext(Dispatchers.IO) {
+        //Timber.d("finImgInFile2 x $sNameFile")
         try {
-            val  sf=App.lcontext.filesDir.absolutePath + "/Images/${sNameFile}"
+            val sf=App.lcontext.filesDir.absolutePath+ "/Images/${sNameFile}"
+            //val  sf=App.lcontext.filesDir.absolutePath + "/Images/${sNameFile}"
             val zimage = Files.readAllBytes(Paths.get(sf))
             val s = BitmapFactory.decodeByteArray(zimage, 0, zimage.size).asImageBitmap()
+            Timber.d("findImgInFile2 ($sNameFile) found  ${zimage.size}")
+            s
+        //    return@withContext s
+        } catch (e: Exception) {
+            Timber.e("findImgInFile2($sNameFile) exception reading file  $e")
+            null
+            //return@withContext null //ByteArray(0)
+        }
+    }
+
+
+    fun findImageInFile(sNameFile: String):ImageBitmap? {
+        try {
+            val sf=App.lcontext.filesDir.absolutePath+ "/Images/${sNameFile}"
+            val zimage = Files.readAllBytes(Paths.get(sf))
+            val s = BitmapFactory.decodeByteArray(zimage, 0, zimage.size).asImageBitmap()
+//            Timber.d("found $sNameFile  ${zimage.size}")
             return s
         } catch (e: Exception) {
-            Timber.d("cache exception finding $sNameFile $e")
+            Timber.e("cache exception finding $sNameFile $e")
             return  null //ByteArray(0)
         }
-        //return  zimage
     }
 
     fun getBitmapImage2(sNameImg: String, ms: MutableState<ImageBitmap>){
@@ -137,22 +162,15 @@ object KCache{
         }
      }
 
-
-   suspend  fun getBitmapImageFromMemCache(sNameImg: String): ImageBitmap?= withContext(Dispatchers.IO) {
-        return@withContext hashmapImages[sNameImg]
-       //Timber.d("get BitmapImage")
-        //if(bmp!=null) {
-        //    return@withContext bmp
-        //}
-       /* val l=findImageInFile( sNameImg)
-        Timber.d("$sNameImg    size ${l.size}")
-        if(l.size>0) {
-            val s = BitmapFactory.decodeByteArray(l, 0, l.size).asImageBitmap()
-            hashmapImages[sNameImg] = s
-             s
-        }*/
-        //else  null
+    inline fun getBitmapImageFromMemCache(sNameImg: String): ImageBitmap?{
+        //Timber.d("->$sNameImg")
+        return hashmapImages[sNameImg]
     }
+
+   /*suspend  fun getBitmapImageFromMemCache2(sNameImg: String): ImageBitmap?= withContext(Dispatchers.IO+CoroutineName("ZOPA")) {
+       Timber.d("$sNameImg")
+       return@withContext hashmapImages[sNameImg]
+    }*/
 
     /*fun filesInDir(dir:String){
         val  sf="${App.lcontext.filesDir.absolutePath}/$dir"
@@ -163,7 +181,8 @@ object KCache{
 
 
     fun fileExistsAndNotEmpty(sNameFile: String, sDirectory: String):Boolean{
-        val  sf=App.lcontext.filesDir.absolutePath +"$sDirectory/$sNameFile"
+        val sf=App.lcontext.filesDir.absolutePath+"$sDirectory/$sNameFile"
+        //val  sf=App.lcontext.filesDir.absolutePath +"$sDirectory/$sNameFile"
         try {
             val f=Files.size(Paths.get(sf))
             if(f==0L) return false
@@ -179,6 +198,7 @@ object KCache{
 //@ExperimentalPathApi
 fun listAllFiles():List<String>{
         val root=App.lcontext.filesDir.absolutePath
+        //val root=App.lcontext.filesDir.absolutePath
         val path = Paths.get(root)
         var result: List<Path?>
 
@@ -199,7 +219,8 @@ fun listAllFiles():List<String>{
     }
 
     fun listDirectory(sDir:String):String{
-        val path=Paths.get("${App.lcontext.filesDir.absolutePath}/$sDir")
+        val sf=App.lcontext.filesDir.absolutePath
+        val path=Paths.get("${sf}/$sDir")
         val fd = Files.list(path).collect(Collectors.toList())
         //val s=StringBuilder()
         val l= mutableListOf("")
@@ -306,3 +327,6 @@ fun listAllFiles():List<String>{
     }
 
 }
+
+
+//Max 311

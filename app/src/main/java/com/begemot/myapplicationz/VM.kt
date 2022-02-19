@@ -3,7 +3,6 @@ package com.begemot.myapplicationz
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
-import com.begemot.myapplicationz.App.Companion.sApp
 import com.begemot.myapplicationz.model.*
 
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,7 +11,7 @@ import timber.log.Timber
 
 
 class VM : ViewModel() {
-    val newsPapers: newsPapers = newsPapers()
+    val newsPapers: NewsPapers = NewsPapers()
 
     val headLines: headLines = headLines()
 
@@ -43,6 +42,7 @@ class mesages() {
 
     fun setMsg2(sAux: String) {
 //        Timber.d("setMsg2 = $sAux")
+        _message.value = sAux
         LMSG.add(sAux)
     }
     fun cls(){

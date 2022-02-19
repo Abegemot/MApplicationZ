@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  plugins {
      id("com.android.application")
      kotlin("android")
-     kotlin("plugin.serialization") version "1.5.30"
+     kotlin("plugin.serialization") version "1.6.10"
      id("com.google.gms.google-services")
      id("com.google.firebase.crashlytics")
 
@@ -18,13 +18,13 @@ android {
             keyPassword = "edmund"
         }
     }
-    compileSdk =30
+    compileSdk =31
      defaultConfig {
         applicationId="com.begemot.myapplicationz"
         minSdk = 26
         targetSdk= 30
-        versionCode= 37
-        versionName= "0.4.4"
+        versionCode= 41
+        versionName= "0.4.8"
 //        testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
@@ -63,7 +63,8 @@ android {
         // kotlinCompilerVersion = "1.3.70-dev-withExperimentalGoogleExtensions-20200424"
         //kotlinCompilerVersion="1.4.0-dev-withExperimentalGoogleExtensions-20200720"
        // kotlinCompilerVersion="1.4.21-2"
-        kotlinCompilerExtensionVersion = "1.0.3"
+       //  kotlinCompilerExtensionVersion = "1.0.5"
+        kotlinCompilerExtensionVersion = "1.2.0-alpha03"
     }
 
 
@@ -98,8 +99,20 @@ android {
      kotlinOptions {
         // languageVersion="1.4"
          jvmTarget = JavaVersion.VERSION_1_8.toString()
+         freeCompilerArgs = listOf("-Xopt-in=kotlin.RequiresOptIn")
         // freeCompilerArgs = listOf("-Xallow-jvm-ir-dependencies", "-Xskip-prerelease-check","-Xskip-metadata-version-check")
      }
+ }
+ subprojects{
+     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>{
+         kotlinOptions {
+             // languageVersion="1.4"
+             jvmTarget = JavaVersion.VERSION_1_8.toString()
+             freeCompilerArgs = listOf("-Xopt-in=kotlin.RequiresOptIn")
+             // freeCompilerArgs = listOf("-Xallow-jvm-ir-dependencies", "-Xskip-prerelease-check","-Xskip-metadata-version-check")
+         }
+     }
+
  }
 
 
@@ -107,12 +120,12 @@ android {
  //    isExperimental=true
 // }
 
- repositories{
-     maven {
-         url=uri("https://dl.bintray.com/kotlin/kotlin-eap/")
-         url=uri( "https://kotlin.bintray.com/kotlinx")
+ /*repositories{
+     //maven {
+        // url=uri("https://dl.bintray.com/kotlin/kotlin-eap/")
+        // url=uri( "https://kotlin.bintray.com/kotlinx")
 
-     }
+     //}
      mavenLocal(){
          metadataSources {
              mavenPom()
@@ -122,20 +135,26 @@ android {
      }
      mavenCentral()
      google()
- }
+
+ }*/
 
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
 
-    implementation(platform("com.google.firebase:firebase-bom:28.4.1"))
+    implementation(platform("com.google.firebase:firebase-bom:29.1.0"))
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-crashlytics-ktx")
 
 
-    implementation(platform("com.begemot.knewsplatform-bom:deps:0.0.1"))
+    //implementation(platform("com.begemot.knewsplatform-bom:deps:0.0.1"))
     implementation("com.jakewharton.timber:timber")
     debugImplementation("com.squareup.leakcanary:leakcanary-android")
+
+    implementation("com.google.android.play:core")
+    implementation("com.google.android.play:core-ktx")
+
+
 
     //implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
@@ -145,8 +164,11 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
 
     implementation( "androidx.compose.runtime:runtime")
+    implementation("androidx.compose.compiler:compiler")
+
     //implementation("androidx.core:core-ktx")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx")
+    implementation("androidx.compose.material:material-icons-extended")
 
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     //implementation("androidx.activity:activity-compose")

@@ -1,6 +1,7 @@
 package com.begemot.myapplicationz
 
 import androidx.lifecycle.viewModelScope
+import com.begemot.myapplicationz.App.Companion.prefs
 import kotlinx.coroutines.*
 import timber.log.Timber
 import javax.mail.*
@@ -11,6 +12,7 @@ fun sendmail(msg:String,popup:Boolean = true){
     Timber.d("XSEND MAIL  $msg")
     if(msg.isEmpty() || msg.isBlank()) return
     val scope= App.sApp.vm.viewModelScope+Dispatchers.IO
+
     scope.launch(Dispatchers.IO) {
         sendmail2(msg,popup)
     }

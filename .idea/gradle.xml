@@ -7,15 +7,16 @@
         <compositeConfiguration>
           <compositeBuild compositeDefinitionSource="SCRIPT">
             <builds>
+              <build path="H:/prg/KnewsPlatform2" name="KnewsPlatform2">
+                <projects>
+                  <project path="H:/prg/KnewsPlatform2" />
+                  <project path="H:/prg/KnewsPlatform2/sharedlibrary" />
+                </projects>
+              </build>
               <build path="$PROJECT_DIR$/../KCLib" name="KCLib">
                 <projects>
                   <project path="$PROJECT_DIR$/../KCLib" />
                   <project path="$PROJECT_DIR$/../KCLib/kclib" />
-                </projects>
-              </build>
-              <build path="H:/prg/KnewsPlatform" name="KnewsPlatform">
-                <projects>
-                  <project path="H:/prg/KnewsPlatform" />
                 </projects>
               </build>
               <build path="H:/prg/KNewsClient" name="KNewsClient">
@@ -40,11 +41,10 @@
             <option value="$PROJECT_DIR$/../KCLib/kclib" />
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
-            <option value="$PROJECT_DIR$/buildSrc" />
             <option value="H:/prg/KNewsClient" />
             <option value="H:/prg/KNewsCommon" />
-            <option value="H:/prg/KnewsPlatform" />
-            <option value="H:/prg/KnewsPlatform/buildSrc" />
+            <option value="H:/prg/KnewsPlatform2" />
+            <option value="H:/prg/KnewsPlatform2/sharedlibrary" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

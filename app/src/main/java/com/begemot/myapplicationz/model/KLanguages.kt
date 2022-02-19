@@ -25,6 +25,7 @@ class KLAnguanges(){
     }
 
     fun save(){
+
         if(!changed) return
         val sAux= Json.encodeToString(langContainer.serializer(),langContainer("pse",lMap))
         Timber.d(sAux)
@@ -38,14 +39,14 @@ class KLAnguanges(){
 
 
     suspend fun load(){
-        Timber.d("KLanguages")
+        Timber.d("KLanguages $namefile")
         try {
             val lp= KCache.loadFromCache(namefile)
             if(lp.length==0) return
             val ss= Json.decodeFromString<langContainer>(lp)
             lMap=ss.lMap
         } catch (e: Exception) {
-             Timber.d("except ${e.message}")
+             Timber.e("except ${e.message}")
         }
     }
     /*fun getListSelected():List<dLang>{

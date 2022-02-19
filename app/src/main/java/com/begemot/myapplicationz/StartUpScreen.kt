@@ -115,3 +115,34 @@ suspend fun allReadyInstalled(statusApp: StatusApp) {
     }
     Timber.d("END")
 }
+suspend fun isInstalled():Boolean{
+    //KCache.deleteFiles()
+    //KCache.setUp()
+
+    return if(KCache.fileExistsAndNotEmpty("knews.json","")) {
+        try {
+            App.sApp.vm.newsPapers.getLocalNewsPapers(App.sApp)
+            Timber.d("INSTALLED")
+            true
+        } catch (e: Exception) {
+            Timber.e("NOT INSTALLED $e")
+            false
+        }
+    }else{
+        Timber.e("knews.json does not exist")
+        false
+    }
+
+
+    /* if(KCache.fileExistsAndNotEmpty("knews.json","")){
+         try{
+             App.sApp.vm.newsPapers.getLocalNewsPapers(App.sApp)
+         }catch (e:Exception){
+             Timber.e("NOT INSTALLED")
+             return false
+         }
+         Timber.d("ALREADY INSTALLED")
+         return true
+     }
+     return false*/
+}

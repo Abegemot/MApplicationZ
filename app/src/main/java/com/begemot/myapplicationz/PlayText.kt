@@ -697,6 +697,7 @@ fun dragablesquare(pTP: PlayTextParams,cs2:CoroutineScope, children: @Composable
 fun SelectableText(pTP: PlayTextParams) {
         //Timber.d("BB->$txt")
         val scope = rememberCoroutineScope()
+
         FlowRowX(mainAxisSpacing = 2.dp) {
             pTP.lSOnpy.lSO.forEach {
                 TextX(

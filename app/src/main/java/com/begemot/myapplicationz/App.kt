@@ -1,90 +1,96 @@
  package com.begemot.myapplicationz
 
-//import androidx.ui.text.Locale
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.util.Log
-import android.util.Log.DEBUG
-import androidx.datastore.core.DataStore
 import androidx.lifecycle.viewModelScope
-//import androidx.ui.intl.Locale
-import com.begemot.myapplicationz.App.Companion.sApp
-//import io.ktor.util.*
-//import io.ktor.util.*
 import kotlinx.coroutines.*
 
 import timber.log.Timber
 import java.util.*
-//import kotlin.io.path.ExperimentalPathApi
-//import mu.KotlinLogging
 
- //private val logger = KotlinLogging.logger {}
-
- class LineNumberDebugTree : Timber.DebugTree() {
+class LineNumberDebugTree : Timber.DebugTree() {
     override fun createStackElementTag(element: StackTraceElement): String? {
-        val head="*NKZ [${Thread.currentThread().name}](${element.fileName}:${element.lineNumber})->".padEnd(28,' ')
-        val tail="${element.className}.${element.methodName}".substring(27)
-        return "${head} $tail"
+        val s="NKZ [${Thread.currentThread().name}] (${element.fileName}:${element.lineNumber}) ${element.methodName}"
+        return s.padEnd(71,'-')
     }
 }
 
  class App:Application(){
-    companion object {
-        //val preferenceDataStore: DataStore<Preferences> = createDataStore(name = "profile")
-        val sApp by lazy { StatusApp(Screens.SetUpScreen,Screens.QuitScreen) }
-        lateinit var instance:App
-        val lcontext by lazy { App.instance }
-    }
-
-  //  @ExperimentalPathApi
-    override fun onCreate() {
-        super.onCreate()
-        instance=this
-        if(BuildConfig.DEBUG){
-
-            Timber.plant(LineNumberDebugTree())
-            //Timber.plant(Timber.DebugTree())
+      companion object{
+         lateinit var lcontext: Context
+           //var ctx:Context? = null
+         val prefs: Preferences by lazy {
+               Preferences(App.lcontext)
         }
-        //logger.debug { "JO PRIMER" }
+        val sApp by lazy { StatusApp(Screens.SetUpScreen,Screens.QuitScreen,AppStatus.Loading) }
+     }
+
+     override fun onCreate() {
+        super.onCreate()
+        lcontext = applicationContext
+        //ctx = applicationContext
+
+        if(BuildConfig.DEBUG){
+            System.setProperty("kotlinx.coroutines.debug", "on" )
+            Timber.plant(LineNumberDebugTree())
+        }
         Timber.d("begin  ${sApp.status()}")
         //checkWifi(App.instance)
         setUP()
         Timber.d("end  ${sApp.status()}")
         //sApp.setMsg2("App end OnCreate")
-
+         //if(App.myactivity != null) checkAPPUpdates(this, App.myactivity!!)
+         //App.myactivity?.let { checkAPPUpdates(this, it) }
+        //if(mAct==null) Timber.d("NUUUUUUUUUUUUUUUUUUUUUUUUUULLLLLLLLLLLLLLLLL  LLLLLLLLLLLLLLLL")
+        // App.mAct.let { checkAPPUpdates(this, it!!) }
+         //this.mAct?.let{checkAPPUpdates(this, it)}
     }
 
 
     //@ExperimentalPathApi
     fun setUP(){
         //val scope=sApp.vm.viewModelScope+Dispatchers.IO
+        Timber.d("setUP")
         val scope= CoroutineScope(Dispatchers.IO)
         sApp.setMsg2("SETUP")
 
-        scope.launch(Dispatchers.IO) {
+        scope.launch(Dispatchers.IO+CoroutineName("setup")) {
             sApp.currentStatus.value = AppStatus.Loading
-            delay(1000)
-      //      KCache.deleteFiles()
+            //sApp.setMsg2("ENTERING SET UP")
+            //delay(2000)
+            //      KCache.deleteFiles()
             Timber.d("setUP coroutine begin")
 
-            val newInstall = if(prefs.userId.equals("")){
+            val newInstall = if (prefs.userId.equals("")) {
                 Timber.d("User ID not set")
-                prefs.userId=UUID.randomUUID().toString()
+                prefs.userId = UUID.randomUUID().toString()
                 true
-            }else  false
+            } else false
             //newInstall=true
 
+            val res = if (newInstall) {
+                NewInstalation()
+            } else
+                UpdateInstalation()
+            //sApp.setMsg2("LEAVING SETUP")
+            if(res){
+                sApp.currentStatus.value = AppStatus.Idle
+                sApp.currentScreen.value = Screens.NewsPapersScreen
+            }
+
+/*
             if(newInstall) { sApp.setMsg2("SETING USER"); delay(1000)}
             KCache.setUp()
             if(newInstall) { sApp.setMsg2("SETING DIRECTORIES");delay(1000)}
 
-            /*val lf=KCache.listAllFiles()
-            lf.forEach{
-                Timber.d(it)
-            }*/
+            //val lf=KCache.listAllFiles()
+            //lf.forEach{
+            //    Timber.d(it)
+            //}
             if(newInstall) { sApp.setMsg2("SETING TONE AND PITCH"); delay(1000)}
             sApp.vm.toneAndPitchMap.load()
 
@@ -99,7 +105,7 @@ import java.util.*
                 if(newInstall) { sApp.setMsg2("NEWS PAPERS LOADED");delay(1000) }
 
             }else{
-                sApp.currentScreen.value=Screens.NewsPapersScreen
+               // sApp.currentScreen.value=Screens.NewsPapersScreen
                 scope.launch {
                     sApp.setMsg2("CHEKING NEWS PAPER UPDATES = ${sApp.vm.newsPapers.toString().substring(0,10)}...")
                     sApp.vm.newsPapers.checkUpdates(sApp)
@@ -110,21 +116,88 @@ import java.util.*
             //sApp.setMsg2("LEAVING SET UP coroutines")
 
             if(newInstall) { sApp.setMsg2("INSTALATION OK");delay(1000)}
-            sApp.vm.msg.cls()
-            sApp.currentStatus.value = AppStatus.Idle
-            sApp.currentScreen.value = Screens.NewsPapersScreen
+            //sApp.vm.msg.cls()
+            //sApp.currentStatus.value = AppStatus.Idle
+  //          sApp.currentScreen.value = Screens.NewsPapersScreen
             if(newInstall) sendmail("New Instalation",false)
-            Timber.d("END SETUP")
+            delay(1000)
+            //sApp.currentScreen.value = Screens.NewsPapersScreen
+            Timber.d("END SETUP ${sApp.currentScreen.value}")
 
+        }*/
         }
-        //sApp.setMsg2("LEAVING SETUP")
     }
 
-}
-val prefs: Preferences by lazy {
-      Preferences(App.lcontext)
+     suspend fun NewInstalation():Boolean{
+        var OK=true
+         val scope=CoroutineScope(Dispatchers.IO+CoroutineName("NEWINSTALLATION"))
+         val j=scope.launch(eHandler) {
+             Timber.d("BEGIN NEW INSTALLATION")
+             sApp.setMsg2("NEW INSTALLATION")
+             delay(1000)
+             sApp.setMsg2("SETING USER")
+             delay(1000)
+             KCache.setUp()
+             sApp.setMsg2("SETING DIRECTORIES")
+             delay(1000)
+             sApp.setMsg2("GETING NEWS PAPERS")
+             sApp.vm.newsPapers.checkUpdates(sApp)
+             Timber.d("END NEW INSTALATION")
+             sApp.setMsg2("END INSTALLATION")
+             sendmail("New Instalation ${sApp.userID}")
+         }
+         j.invokeOnCompletion { throwable->
+             if(throwable !=null){
+                 OK=false
+                 Timber.e("ERROR: ${throwable.message}")
+                 sApp.setMsg2("SORRY CAN'T INSTALL PPLICATION RETRY LATER")
+                 sApp.shallIquit=true
+             }
+         }
+         j.join()
+
+         return OK
+     }
+
+     val eHandler= CoroutineExceptionHandler{_,exception->
+         Timber.e("eHandler1  $exception")
+     }
+
+     suspend fun UpdateInstalation():Boolean{
+         Timber.d("BEGIN UPDATE INSTALLATION")
+         var OK=true
+         sApp.setMsg2("UPDATE INSTALLATION")
+         val scope=CoroutineScope(Dispatchers.IO+CoroutineName("UPDATEINSTALL"))
+         val j=scope.launch(eHandler) {
+              sApp.vm.toneAndPitchMap.load()
+              sApp.vm.newsPapers.getLocalNewsPapers(sApp)
+
+         }
+         j.invokeOnCompletion { throwable->
+             if(throwable !=null){
+                 OK=false
+                 Timber.e("ERROR: ${throwable.message}")
+                 sApp.setMsg2("SORRY CAN'T RUN THE APPLICATION RETRY LATER")
+                 sApp.shallIquit=true
+             }
+         }
+         j.join()
+         if(OK){
+             Timber.d("CHECK UPDATES")
+             sApp.vm.viewModelScope.launch {
+                 sApp.vm.newsPapers.checkUpdates(sApp, sApp.vm.newsPapers.Npversion)
+             }
+         }
+         Timber.d("ZZ END UPDATE INSTALLATION")
+         return OK
+     }
+
 
 }
+
+
+
+
 
 
 fun isOnline(context: Context): Boolean {
@@ -194,10 +267,10 @@ class Preferences(context:Context){
 }
 
 
- suspend fun startUp(){
+/* suspend fun startUp(){
      if(isInstalled()){
           Timber.d("already INSTALLED")
-         sApp.vm.msg.setMsg2("IS INSTALLED")
+          sApp.vm.msg.setMsg2("IS INSTALLED")
          val scope=sApp.vm.viewModelScope+Dispatchers.IO
            scope.launch {
                delay(2000)
@@ -225,20 +298,8 @@ class Preferences(context:Context){
      }
 
 
- }
+ }*/
 
 
- suspend fun isInstalled():Boolean{
-     //KCache.deleteFiles()
-     //KCache.setUp()
-     if(KCache.fileExistsAndNotEmpty("knews.json","")){
-         try{
-             sApp.vm.newsPapers.getLocalNewsPapers(sApp)
-         }catch (e:Exception){
-             return false
-         }
-         return true
-     }
-     return false
- }
 
+//Max 321

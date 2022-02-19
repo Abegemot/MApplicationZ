@@ -5,16 +5,13 @@ package com.begemot.myapplicationz
 
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
 
 //import androidx.compose.foundation.layout.ColumnScope.gravity
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 
 import androidx.compose.ui.platform.LocalContext
 //import androidx.compose.ui.VerticalAlignmentLine
@@ -43,6 +41,7 @@ import com.begemot.kclib.KWindow
 import com.begemot.knewsclient.KNews
 import com.begemot.knewscommon.GetHeadLines
 import com.begemot.knewscommon.KResult2
+import com.begemot.myapplicationz.App.Companion.prefs
 import kotlinx.coroutines.launch
 
 import timber.log.Timber
@@ -197,7 +196,7 @@ fun tabRomanization(sApp: StatusApp, prefParams: PrefsParams) {
                 Text(
                     text = text,
                     style = MaterialTheme.typography.body1.merge(),
-                    modifier = Modifier.padding(start = 26.dp)
+                    modifier = Modifier.padding(start = 26.dp).align(Alignment.CenterVertically)
                 )
             }
         }
@@ -237,14 +236,21 @@ fun tabLanguage(statusApp: StatusApp, prefParams: PrefsParams) {
         selectedOption = text
         printStat("before on change current lang", prefParams, statusApp)
         prefParams.localCurrentLang.value = text.substringAfterLast("(").substringBefore(")")
-        printStat("after on change current lang", prefParams, statusApp)
-        Ok(prefParams,statusApp)
+//        statusApp.userlang=prefParams.localCurrentLang.value
+//        printStat("after on change current lang", prefParams, statusApp)
+        prefs.kLang = prefParams.localCurrentLang.value
+        if (statusApp.userlang != prefs.kLang) statusApp.vm.headLines.reinicializeHeadLines() //If lang changes force reload <-
+        statusApp.userlang = prefs.kLang
+        statusApp.selectLang.value = false
+        //Ok(prefParams,statusApp)
     }
 
     Column {
         radioOptions.forEach { text ->
             Row(Modifier
                 .fillMaxWidth()
+                //.border(2.dp, Color.Green)
+                //.align(Alignment.CenterHorizontally)
                 .selectable(
                     selected = (text == selectedOption),
                     onClick = { onSelectedChange(text) }
@@ -258,7 +264,7 @@ fun tabLanguage(statusApp: StatusApp, prefParams: PrefsParams) {
                 Text(
                     text = text,
                     style = MaterialTheme.typography.body1.merge(),
-                    modifier = Modifier.padding(start = 26.dp)
+                    modifier = Modifier.padding(start = 26.dp).align(Alignment.CenterVertically)
                 )
             }
         }
@@ -316,6 +322,7 @@ fun tabAbout(sApp: StatusApp){
             ) { Text("vCache") }
             Button(onClick = {
                 //KCache.deleteFile("ERROR.BGM")
+                KCache.deleteDirectory("Images")
                 KCache.deleteDirectory("Articles")
                 KCache.deleteDirectory("Headlines")
                 KCache.deleteFile("ERROR.BGM")
@@ -326,7 +333,13 @@ fun tabAbout(sApp: StatusApp){
             Button(onClick = {  txt=KCache.readErrors() },Modifier.padding(top = 10.dp,start = 5.dp)) {
                 Text("vErrors")
             }
-
+            Button(onClick = {  sc.launch {
+                sApp.vm.headLines.checkUpdates(sApp)
+                txt = "patata sopa papallona vergonya"
+            }
+                             },Modifier.padding(top = 10.dp,start = 5.dp)) {
+                Text("tUPD")
+            }
 
         }
     }
@@ -399,7 +412,7 @@ fun Ok(prefParams: PrefsParams, statusApp: StatusApp) {
     statusApp.userlang = prefParams.localCurrentLang.value
     printStat("Leaving OK select langs ", prefParams, statusApp)
     //  Timber.d("selectedLang : ${prefs.selectedLang}")
-    statusApp.selectLang.value = false
+    //statusApp.selectLang.value = false
 }
 
 fun setSelectedLang() {
@@ -571,7 +584,7 @@ fun oncheckLang(checked: MutableState<Boolean>,it:KLocale,prefParams: PrefsParam
 
 @Composable
 fun rowlang(it: KLocale, statusApp: StatusApp, context: Context, prefParams: PrefsParams) {
-    var checked = mutableStateOf(it.checked)
+    var checked = remember { mutableStateOf(it.checked) } //?havans estava sense remember
     val context = LocalContext.current
     Row(
         Modifier

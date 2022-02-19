@@ -1,6 +1,7 @@
 package com.begemot.myapplicationz
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.os.PersistableBundle
 import android.view.WindowManager
@@ -42,18 +43,24 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.preferencesDataStore
 //import com.begemot.inreader.layout.FlowRowX
 import com.begemot.knewscommon.*
+import com.begemot.myapplicationz.App.Companion.prefs
 import com.begemot.myapplicationz.screens.ArticleScreen
 import com.begemot.myapplicationz.screens.headlinesScreen
 import com.begemot.myapplicationz.screens.newsPapersScreen
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.google.android.play.core.appupdate.AppUpdateInfo
+import com.google.android.play.core.appupdate.AppUpdateManager
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.UpdateAvailability
+import com.google.android.play.core.tasks.Task
+import kotlinx.coroutines.*
 //import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.debounce
 //import androidx.datastore.preferences
 
 private const val USER_PREFERENCES_NAME = "user_preferences"
+private const val REQUEST_UPDATE = 100
+private const val APP_UPDATE_TYPE_SUPPORTED = AppUpdateType.IMMEDIATE
 
 val Context.dataStore by preferencesDataStore(
     name = USER_PREFERENCES_NAME
@@ -61,27 +68,64 @@ val Context.dataStore by preferencesDataStore(
 
 
 class MainActivity : ComponentActivity() {
-    lateinit var sApp: StatusApp
+//    lateinit var myApp:App
+   // lateinit var sApp: StatusApp
   //  val preferenceDataStore: DataStore<Preferences> by lazy {
   //      createDataStore(name = "profile")
   //  }
 
-    @ExperimentalComposeUiApi
-    @ExperimentalMaterialApi
+    //@ExperimentalMaterialApi
+    //@ExperimentalComposeUiApi
+
+    @OptIn(ExperimentalMaterialApi::class,ExperimentalComposeUiApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sApp = App.sApp
-         Timber.d(sApp.status())
+         Timber.d("CREATE MAIN ACTIVITY---------------${App.sApp.status()}-------------------")
+         //App.setActivity(this.applicationContext)
+         setContent { newsReaderApp(App.sApp) }
+         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+         checkForAppUpdates()
+    }
 
-        setContent { newsReaderApp(sApp) }
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
+
+    private fun checkForAppUpdates() {
+        //1
+        Timber.d("CHECK FOR APP UPDATES")
+        val appUpdateManager = AppUpdateManagerFactory.create(baseContext)
+        val appUpdateInfo = appUpdateManager.appUpdateInfo
+        appUpdateInfo.addOnSuccessListener {
+            //2
+            Timber.d("LISTENER")
+            handleUpdate(appUpdateManager, appUpdateInfo)
+        }
+    }
+    private fun handleUpdate(manager: AppUpdateManager, info: Task<AppUpdateInfo>) {
+            Timber.d("HANDLE UPDATES")
+            handleImmediateUpdate(manager, info)
+    }
+
+
+    private fun handleImmediateUpdate(manager: AppUpdateManager, info: Task<AppUpdateInfo>) {
+         Timber.d("HANDLE IMMEDIATE UPDATES  ${info.result.updateAvailability()}")
+        //1
+        manager.startUpdateFlowForResult(info.result, AppUpdateType.IMMEDIATE, this, REQUEST_UPDATE)
+
+        if ((info.result.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE ||
+                    //2
+                    info.result.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) &&
+            //3
+            info.result.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) {
+            //4
+            manager.startUpdateFlowForResult(info.result, AppUpdateType.IMMEDIATE, this, REQUEST_UPDATE)
+        }
 
     }
 
+
     override fun onDestroy() {
-        Timber.d("${sApp.status()}")
-        sApp.vm.toneAndPitchMap.save()
+        Timber.d(App.sApp.status())
+        App.sApp.vm.toneAndPitchMap.save()
         //sApp.currentScreen.value=Screens.NewsPapersScreen
         super.onDestroy()
     }
@@ -89,28 +133,33 @@ class MainActivity : ComponentActivity() {
     override fun onSaveInstanceState(outState: Bundle, outPersistentState: PersistableBundle) {
         Timber.d("------")
         super.onSaveInstanceState(outState, outPersistentState)
-        sApp.vm.toneAndPitchMap.save()
+        App.sApp.vm.toneAndPitchMap.save()
     }
 
+
     override fun onBackPressed() {
-        val sc=CoroutineScope(Dispatchers.Main)
-        Timber.d("${sApp.status()}")
-        if(sApp.currentScreen.value is Screens.FullArticleScreen){
-            if(sApp.modeBookMark) {
-                sApp.modeBookMark=false
+        val sc=CoroutineScope(Dispatchers.Main+CoroutineName("onBackPressed"))
+        Timber.d("${App.sApp.status()}")
+        if(App.sApp.currentScreen.value is Screens.FullArticleScreen){
+            if(App.sApp.modeBookMark) {
+                App.sApp.modeBookMark=false
                 sc.launch {
-                    Timber.d("holdingItem->${sApp.vm.article.holdingItem.value}")
-                    sApp.vm.article.listState?.scrollToItem(sApp.vm.article.holdingItem.value)
+                    Timber.d("holdingItem->${App.sApp.vm.article.holdingItem.value}")
+                    App.sApp.vm.article.listState?.scrollToItem(App.sApp.vm.article.holdingItem.value)
                 }
                 return
             }
-            sApp.vm.article.reinizializeArticle2()
+            App.sApp.vm.article.reinizializeArticle2()
 
         }
 
-        if (sApp.currentBackScreen == Screens.QuitScreen) {   finish(); sApp.currentScreen.value=Screens.NewsPapersScreen;}
-        sApp.currentStatus.value = AppStatus.Idle
-        sApp.currentScreen.value = sApp.currentBackScreen
+        if (App.sApp.currentBackScreen == Screens.QuitScreen) {
+            finish()
+            //App.sApp.currentScreen.value=Screens.NewsPapersScreen
+        }else
+            App.sApp.currentScreen.value = App.sApp.currentBackScreen
+        App.sApp.currentStatus.value = AppStatus.Idle
+        //
     }
 }
 
@@ -150,8 +199,10 @@ class StatusApp(
     currentScreen: Screens,
     currentBackScreen: Screens,
     currentStatus: AppStatus = AppStatus.Loading,
-) {
 
+
+) {
+    var shallIquit by mutableStateOf(false)
     var currentLink by mutableStateOf("")
     val fontSize = mutableStateOf(prefs.fontSize)
     var userlang by mutableStateOf(prefs.kLang)
@@ -225,11 +276,13 @@ class StatusApp(
 
 @Composable
 fun setat(){
-    SetUpScreen(sApp = App.sApp)
+    //SetUpScreen(sApp = App.sApp)
     //Text("SETAT")
 }
 
 
+//@ExperimentalComposeUiApi
+//@ExperimentalMaterialApi
 @ExperimentalComposeUiApi
 @ExperimentalMaterialApi
 @Composable
@@ -242,8 +295,17 @@ fun newsReaderApp(sApp: StatusApp) {
     val scaffoldState = remember { ScaffoldState(ds, SnackbarHostState()) }
     val contactdialog = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    if(sApp.currentScreen.value==Screens.SetUpScreen) { setat(); return }
+    //if(sApp.currentScreen.value==Screens.SetUpScreen) { setat(); return }
     MaterialTheme(colors = sApp.kt.value.theme, typography = appTypography) {
+        if(sApp.currentScreen.value==Screens.SetUpScreen){
+            /*Box(Modifier.width(100.dp).height(100.dp).background(Color.Transparent)){
+                Text("POS")
+            }*/
+            //return@MaterialTheme
+            SetUpScreen(sApp)
+            return@MaterialTheme
+        }
+//        return@MaterialTheme
         Scaffold(
             scaffoldState = scaffoldState,
             //  drawerContent = { Text("Drawer content") },
@@ -307,12 +369,11 @@ fun MAppBar2(sApp: StatusApp) {
                 //.width(276.dp)
                 .weight(1f)
                 .fillMaxHeight()
-                .align(Alignment.CenterVertically)
+                .align(Alignment.CenterVertically),
 
-                //.padding(start = 5.dp, top = 10.dp)
-                //.border(BorderStroke(1.dp,Color.White))
-            ,
-                //verticalArrangement = Arrangement.SpaceEvenly
+            //.padding(start = 5.dp, top = 10.dp)
+            //.border(BorderStroke(1.dp,Color.White))
+            //verticalArrangement = Arrangement.SpaceEvenly
         )
         {
             Row(
@@ -437,6 +498,7 @@ fun getTitles(sApp: StatusApp): List<String> {
 fun appIcons(sApp: StatusApp) {
     val sicon = 38.dp
     val scope = rememberCoroutineScope()
+
     FlowRowX(
         // modifier = Modifier.border(1.dp,Color.Black)
         //crossAxisSpacing = 25.dp,
@@ -609,8 +671,8 @@ fun screenDispatcher(contactdialog: MutableState<Boolean>, sApp: StatusApp) {
             is Screens.NewsPapersScreen ->   newsPapersScreen(sApp)
             is Screens.HeadLinesScreen -> headlinesScreen(sApp)
             is Screens.FullArticleScreen -> ArticleScreen(s.originalTransLink, sApp)
-            is Screens.SetUpScreen -> {}//SetUpScreen(sApp)
-            is Screens.QuitScreen -> newsPapersScreen(sApp)
+            is Screens.SetUpScreen ->{}//SetUpScreen(sApp)
+            is Screens.QuitScreen -> SetUpScreen(sApp) //newsPapersScreen(sApp)
         }
     }
 }
@@ -659,7 +721,7 @@ fun displayError(sError: String, e: Exception? = null, sApp: StatusApp) {
     }
 }
 
-
+//Max val 664
 
 
 

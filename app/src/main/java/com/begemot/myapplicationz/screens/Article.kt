@@ -73,7 +73,7 @@ fun bookMark2(index:Int,sApp: StatusApp):Modifier {
     if (bkmark && initial) col = Color.Magenta
     if (bkmark && !initial) col = Color.Cyan
     if (!bkmark && initial) col = Color.Red
-    return Modifier.border(  //then 
+    return Modifier.border(  //then
         BorderStroke(1.dp, col),
         RoundedCornerShape(6.dp)
     )

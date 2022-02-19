@@ -1,4 +1,4 @@
-package com.begemot.myapplicationz.screens
+ package com.begemot.myapplicationz.screens
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -42,6 +42,7 @@ fun headlinesScreen(statusApp: StatusApp) {
     statusApp.currentBackScreen = Screens.NewsPapersScreen
     Timber.d("->${statusApp.status()}")
     LaunchedEffect(statusApp.userlang) {
+        Timber.d("LaunchedEffect")
         statusApp.vm.headLines.getLines(statusApp,statusApp.currentNewsPaper)
     }
     val status = statusApp.currentStatus.value
