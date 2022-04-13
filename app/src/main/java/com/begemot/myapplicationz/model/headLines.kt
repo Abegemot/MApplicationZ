@@ -3,14 +3,11 @@ package com.begemot.myapplicationz.model
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import com.begemot.knewscommon.*
+import com.begemot.myapplicationz.*
+import kotlinx.coroutines.CoroutineName
 //import com.begemot.myapplicationz.App.Companion.sApp
-import com.begemot.myapplicationz.AppStatus
-import com.begemot.myapplicationz.KCache
-import com.begemot.myapplicationz.KProvider
-import com.begemot.myapplicationz.StatusApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.decodeFromString
 import timber.log.Timber
 import java.lang.Exception
 
@@ -26,22 +23,30 @@ class headLines() {
     val listHL: List<OriginalTransLink>
         get() = this.lHeadLines.value.lhl
 
+    fun getCurrentChapter():OriginalTransLink{
+        return lHeadLines.value.lhl[currChapter.value]
+    }
+    override fun toString():String{
+        return "HEADLINES: currChapter ${currChapter.value} hl $listHL"
+    }
+
+
     fun reinicializeHeadLines() {
         lHeadLines.value = THeadLines()
         //scrollposHL = 0
         //currChapter.value = 0 //loadSelectedChapter()
     }
 
-    fun loadSelectedChapter(sApp: StatusApp):Int{
+    suspend fun loadSelectedChapter(sApp: StatusApp):Int{
         if(sApp::currentNewsPaper ==null) return 0
-        val ii= KCache.loadFromCache("${sApp.currentNewsPaper.handler}.CCH")
+        val ii= KCache.loadStringFromCache("${sApp.currentNewsPaper.handler}.CCH")
         if(ii.isEmpty()){
-            Timber.d("ii empty")
+            Timber.d("no selected chapter/article")
             return 0
         }
         else{
             val u=ii.toInt()
-            Timber.d("ii not empty $u")
+            Timber.d("selected chapter/article = $u")
             return u
         }
 
@@ -52,9 +57,9 @@ class headLines() {
         KCache.storeInCache("${sApp.currentNewsPaper.handler}.CCH",index.toString())
     }
 
-    suspend fun getLines(sApp: StatusApp,np:NewsPaper)= withContext(Dispatchers.IO) {
-        Timber.d("${sApp.currentNewsPaper.handler} olang  ${sApp.currentNewsPaper.olang}  trans lang ${sApp.userlang}")
-        if (lHeadLines.value.lhl.isNotEmpty()) return@withContext //If they are already loaded ....
+    suspend fun getLines(sApp: StatusApp,np:NewsPaper)= withContext(Dispatchers.IO+CoroutineName("getheadlines")) {
+        if (lHeadLines.value.lhl.isNotEmpty()) {Timber.d("getLines(${sApp.getHeadLineParameters()}) They are allready loaded"); return@withContext} //If they are already loaded ....
+        Timber.d("(s) getLines ${sApp.currentNewsPaper.handler} olang  ${sApp.currentNewsPaper.olang}  trans lang ${sApp.userlang}")
         sApp.currentStatus.value = AppStatus.Loading
         lHeadLines.value = lHeadLines.value.copy(lhl = emptyList())
         //delay(2000)
@@ -63,7 +68,7 @@ class headLines() {
             is KResult2.Success -> {
                 sApp.currentStatus.value = AppStatus.Idle
                 lHeadLines.value = resp.t
-                Timber.d(lHeadLines.value.lhl.print("getlines"))
+                //Timber.d(lHeadLines.value.lhl.print("getlines"))
                 currChapter.value=loadSelectedChapter(sApp)
             }
             is KResult2.Error -> {

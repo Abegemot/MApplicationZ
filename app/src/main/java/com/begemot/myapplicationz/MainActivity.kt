@@ -41,9 +41,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.lifecycle.viewModelScope
 //import com.begemot.inreader.layout.FlowRowX
 import com.begemot.knewscommon.*
-import com.begemot.myapplicationz.App.Companion.prefs
+
+import com.begemot.myapplicationz.App.Companion.sApp
 import com.begemot.myapplicationz.screens.ArticleScreen
 import com.begemot.myapplicationz.screens.headlinesScreen
 import com.begemot.myapplicationz.screens.newsPapersScreen
@@ -54,6 +56,7 @@ import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.android.play.core.tasks.Task
 import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
 //import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.debounce
 //import androidx.datastore.preferences
@@ -80,28 +83,48 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterialApi::class,ExperimentalComposeUiApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-         Timber.d("CREATE MAIN ACTIVITY---------------${App.sApp.status()}-------------------")
-         //App.setActivity(this.applicationContext)
+         //Timber.d("CREATE MAIN ACTIVITY---------------${App.sApp.status()}-------------------")
+         Timber.d("CREATE MAIN ACTIVITY--------------- Set Up on his way current Screen ${sApp.currentScreen.value}")
+
+       val t=runBlocking(Dispatchers.Default) {
+            //val j=launch {  TestC() }
+            //j.join()
+            //TestC4()
+           // Timber.d("Done!  ")
+        }
+        //TestC4()
+        //TestC5()
+        // GlobalScope.launch { TestC4() }
+        //val s=GlobalScope.async {  TestC() }
+        Timber.d("AFTER TESTC ")
+
+
+        //App.setActivity(this.applicationContext)
          setContent { newsReaderApp(App.sApp) }
          window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-         checkForAppUpdates()
+         sApp.vm.viewModelScope.launch(IO+CoroutineName("GOOGLEUPDATE")) {
+             checkForAppUpdates()
+         }
+
     }
 
 
 
     private fun checkForAppUpdates() {
         //1
-        Timber.d("CHECK FOR APP UPDATES")
+        Timber.d("CHECK FOR APPLICATION UPDATES")
         val appUpdateManager = AppUpdateManagerFactory.create(baseContext)
         val appUpdateInfo = appUpdateManager.appUpdateInfo
         appUpdateInfo.addOnSuccessListener {
             //2
             Timber.d("LISTENER")
             handleUpdate(appUpdateManager, appUpdateInfo)
+
         }
+        Timber.d("END APPLICATION UPDATES")
     }
     private fun handleUpdate(manager: AppUpdateManager, info: Task<AppUpdateInfo>) {
-            Timber.d("HANDLE UPDATES")
+            Timber.d("HANDLE APPLICATION UPDATES")
             handleImmediateUpdate(manager, info)
     }
 
@@ -139,7 +162,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onBackPressed() {
         val sc=CoroutineScope(Dispatchers.Main+CoroutineName("onBackPressed"))
-        Timber.d("${App.sApp.status()}")
+        Timber.d("Going back to ${sApp.currentBackScreen} from ${sApp.currentScreen.value}  ${App.sApp.status()}")
+   //     Timber.d("${App.sApp.status()}")
         if(App.sApp.currentScreen.value is Screens.FullArticleScreen){
             if(App.sApp.modeBookMark) {
                 App.sApp.modeBookMark=false
@@ -197,35 +221,46 @@ fun pos(s: SStatusApp) {
 
 class StatusApp(
     currentScreen: Screens,
-    currentBackScreen: Screens,
+    var currentBackScreen: Screens,
     currentStatus: AppStatus = AppStatus.Loading,
+    //val cNPrefs by mutableStateOf(KNewsPrefs())
+    var currentNewPreferences: KNewsPrefs,
 
 
-) {
+    ) {
+
     var shallIquit by mutableStateOf(false)
     var currentLink by mutableStateOf("")
-    val fontSize = mutableStateOf(prefs.fontSize)
-    var userlang by mutableStateOf(prefs.kLang)
 
+    val fontSize = mutableStateOf(currentNewPreferences.fontsize)
+
+
+    var userlang by mutableStateOf(currentNewPreferences.lang)  //prefs.kLang)
+
+    //val kt = mutableStateOf(kTheme.values()[prefs.ktheme])
+    val kt = mutableStateOf(kTheme.values()[currentNewPreferences.ktheme])
+
+    val selectedNews = mutableStateOf(currentNewPreferences.selectedNews)
 
     val currentStatus = mutableStateOf(currentStatus)
 
-    var currentBackScreen = currentBackScreen
     val currentScreen = mutableStateOf(currentScreen)
 
     lateinit var currentNewsPaper: NewsPaper
-    val userID by lazy { prefs.userId }
+    val userID by lazy { currentNewPreferences.userid }
 
     var visibleInfoBar by mutableStateOf(false)
     val vm = VM()
-    val kt = mutableStateOf(kTheme.values()[prefs.ktheme])
     var selectLang = mutableStateOf(false)
 
-    var romanized by mutableStateOf(prefs.romanize)
+    var romanized by mutableStateOf(currentNewPreferences.romanize)
 
     var modeBookMark by mutableStateOf(false)
     var arethereBookMarks by mutableStateOf(false)
 
+    fun setNewPrefs(knp:KNewsPrefs){
+        currentNewPreferences=knp
+    }
 
 
     fun setMsg(sAux: String) {
@@ -257,7 +292,18 @@ class StatusApp(
     }
 
     fun status(): String =
-        "Appstatus->  status: ${currentStatus.value},screen: ${currentScreen.value},bkscreen: ${currentBackScreen},lang: $userlang,news paper : ${getNP()}, user: ${userID},"
+        """Appstatus->  
+           current screen: ${currentScreen.value} 
+           status: ${currentStatus.value}
+           bkscreen: ${currentBackScreen}
+           user lang $userlang
+           user: ${userID}
+           newPrefs ${sApp.currentNewPreferences} 
+           lanpitch ${sApp.vm.toneAndPitchMap}
+           newsPapersList ${sApp.vm.newsPapers}
+           currentNewPaper ${if(::currentNewsPaper.isInitialized) "$currentNewsPaper" else "NULL"}
+           selectedNews  ${selectedNews.value}
+           headlines   ${sApp.vm.headLines}<-end Appstatus"""
 
     fun getHeadLineParameters(): GetHeadLines {
         return GetHeadLines(
@@ -287,9 +333,6 @@ fun setat(){
 @ExperimentalMaterialApi
 @Composable
 fun newsReaderApp(sApp: StatusApp) {
-
-
-
     Timber.d("Runing!!  current screen ${sApp.currentScreen.value}")
     val ds = DrawerState(initialValue = DrawerValue.Closed)
     val scaffoldState = remember { ScaffoldState(ds, SnackbarHostState()) }
@@ -513,7 +556,7 @@ fun appIcons(sApp: StatusApp) {
             onClick = {
                 val sprevTheme=sApp.kt.value.name
                 sApp.kt.value = kTheme.next(sApp.kt.value)
-                prefs.ktheme = sApp.kt.value.ordinal
+                sApp.currentNewPreferences.ktheme = sApp.kt.value.ordinal
                 Timber.d("on change theme prev theme $sprevTheme current theme ${sApp.kt.value.name} ")
             },
             Modifier.size(sicon)
@@ -527,15 +570,7 @@ fun appIcons(sApp: StatusApp) {
         if(sApp.currentScreen.value is Screens.FullArticleScreen && !sApp.modeBookMark){
             IconButton(onClick = {
                 scope.launch {
-                    /*Timber.d("holding item 1 ${sApp.vm.article.holdingItem.value}")
-                    if(sApp.vm.article.nIndex.value!=25)                 sApp.vm.article.setNIndex(25)
-                    else sApp.vm.article.setNIndex(14)
-                    sApp.vm.article.holdingItem.value = 10 //sApp.vm.article.iInitialItem.value
-                    sApp.vm.article.iInitialItem.value = 10
-                    Timber.d("holding item 2 ${sApp.vm.article.holdingItem.value}")*/
-                   // sApp.vm.article.currentArticle++
-                   // sApp.vm.article.listState?.scrollToItem(sApp.vm.article.currentArticle)
-                    sApp.vm.article.listState?.scrollToItem(sApp.vm.article.iInitialItem.value)
+                     sApp.vm.article.listState?.scrollToItem(sApp.vm.article.iInitialItem.value)
 
                 }
             },Modifier.size(sicon)){
@@ -571,17 +606,13 @@ fun appIcons(sApp: StatusApp) {
                 }
             }, Modifier.size(sicon)) {
                 Icon(Icons.Filled.Refresh,contentDescription = "")
-               /* Icon(
-                    painterResource(id = R.drawable.ic_download_black_24dp),
-                    contentDescription = null,
-                )*/
             }
     }
 }
 
 @Composable
 fun MessageBar(sApp: StatusApp) {
-    val value: String by sApp.vm.msg.mesage.debounce(0L).collectAsState("")
+    val value: String by sApp.vm.msg.mesage.collectAsState("")
     if (value.isBlank()) return
     //Timber.d("msg  $value")
     //val visibleInfoBar = remember{ mutableStateOf(true)}
@@ -633,26 +664,15 @@ fun contactDialog(contactDialog: MutableState<Boolean>) {
         KWindow() {
             KHeader(txt = "Contact us", onClick = { contactDialog.value = false })
             KField2(txt = "holax", st = s1)
-            //KField("Your Message:", s1)
-            //Box(Modifier.preferredHeight(150.dp).fillMaxWidth(),backgroundColor = Color.Red){
-            // KField(txt = "lane", st = s1)
-            //FilledTextField(modifier = Modifier.fillMaxSize() ,value = txt, onValueChange ={txt=it},label={Text("label")} )
-
-            //      }
-            //}
             KButtonBar {
                 Button(onClick = {
                     sendmail(s1.value)
                     contactDialog.value = false
 
                 }) { Text(text = "Send") }
-
             }
-
         }
-
     }
-
 }
 
 
@@ -661,9 +681,7 @@ fun contactDialog(contactDialog: MutableState<Boolean>) {
 @ExperimentalComposeUiApi
 @Composable
 fun screenDispatcher(contactdialog: MutableState<Boolean>, sApp: StatusApp) {
-
-    //sApp.currentStatus.value=AppStatus.Loading
-    Timber.d(sApp.status())
+    Timber.d("${sApp.currentScreen.value}")
     if (contactdialog.value) contactDialog(contactdialog)
     if (sApp.selectLang.value) editPreferences(sApp)
     Surface {
@@ -710,18 +728,14 @@ fun displayError(sError: String, e: Exception? = null, sApp: StatusApp) {
             }
             val scrollState: ScrollState = rememberScrollState(0)
             Column(modifier=Modifier.verticalScroll(scrollState)) {
-
-                //Text("$sError\n${sApp.status()}\n")
-                //Text("$msg\n END STACK TRACE")
                 Text(sAux)
-                //Timber.d("stackTrace -> $msg")
                 Timber.d("END ERROR")
             }
         }
     }
 }
 
-//Max val 664
+//Max val 664,726,754,720
 
 
 

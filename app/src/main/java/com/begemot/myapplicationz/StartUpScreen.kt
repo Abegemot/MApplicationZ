@@ -102,7 +102,7 @@ suspend fun allReadyInstalled(statusApp: StatusApp) {
     Timber.d("BEgin")
     scope.launch {
         try {
-            statusApp.vm.newsPapers.getLocalNewsPapers(statusApp)
+            statusApp.vm.newsPapers.getNewsPapers()
             if (!statusApp.vm.newsPapers.checkUpdates(statusApp)) statusApp.vm.msg.setMsg(
                 statusApp,
                 "No News Papers Updates"
@@ -121,7 +121,7 @@ suspend fun isInstalled():Boolean{
 
     return if(KCache.fileExistsAndNotEmpty("knews.json","")) {
         try {
-            App.sApp.vm.newsPapers.getLocalNewsPapers(App.sApp)
+            App.sApp.vm.newsPapers.getNewsPapers()
             Timber.d("INSTALLED")
             true
         } catch (e: Exception) {

@@ -1,7 +1,7 @@
 package com.begemot.myapplicationz
 
 import androidx.lifecycle.viewModelScope
-import com.begemot.myapplicationz.App.Companion.prefs
+
 import kotlinx.coroutines.*
 import timber.log.Timber
 import javax.mail.*
@@ -41,7 +41,7 @@ private suspend fun sendmail2(msg:String,popup: Boolean)  = withContext(Dispatch
         val mm=MimeMessage(session)
         mm.setFrom(InternetAddress("marcbegemot@gmail.com"))
         mm.addRecipient(Message.RecipientType.TO,InternetAddress("marcha64@yahoo.com"))
-        mm.setSubject("NewsReader (${BuildConfig.VERSION_CODE}) : ${prefs.userId} ")
+        mm.setSubject("NewsReader (${BuildConfig.VERSION_CODE}) : ${PreferencesNEW.getNPrefs().userid} ")
         mm.setText(msg)
         Transport.send(mm)
         Timber.d("aparently send....")

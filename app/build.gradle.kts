@@ -64,7 +64,7 @@ android {
         //kotlinCompilerVersion="1.4.0-dev-withExperimentalGoogleExtensions-20200720"
        // kotlinCompilerVersion="1.4.21-2"
        //  kotlinCompilerExtensionVersion = "1.0.5"
-        kotlinCompilerExtensionVersion = "1.2.0-alpha03"
+        kotlinCompilerExtensionVersion = "1.2.0-alpha07"//""1.1.1"
     }
 
 
@@ -142,7 +142,7 @@ android {
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
 
-    implementation(platform("com.google.firebase:firebase-bom:29.1.0"))
+    implementation(platform("com.google.firebase:firebase-bom:29.3.0"))
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-crashlytics-ktx")
 
@@ -168,9 +168,11 @@ dependencies {
 
     //implementation("androidx.core:core-ktx")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx")
+    //implementation("androidx.lifecycle:lifecycle-runtime-ktx")
     implementation("androidx.compose.material:material-icons-extended")
 
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation ("androidx.datastore:datastore:1.0.0")
     //implementation("androidx.activity:activity-compose")
 
     //implementation("io.github.microutils:kotlin-logging-jvm")

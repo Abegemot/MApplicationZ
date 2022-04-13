@@ -4,10 +4,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import com.begemot.knewscommon.*
-import com.begemot.myapplicationz.AppStatus
-import com.begemot.myapplicationz.KCache
-import com.begemot.myapplicationz.KProvider
-import com.begemot.myapplicationz.StatusApp
+import com.begemot.myapplicationz.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.Serializable
@@ -65,57 +62,51 @@ class articleHandler(val nphandler:String="", val link:String="", val tlang:Stri
 }
 
 class article {
-    val qarticleHandler:MutableState<articleHandler> = mutableStateOf(articleHandler())
-    val lArticle : MutableState<List<OriginalTrans>> = mutableStateOf(emptyList())
-    val iInitialItem :MutableState<Int> = mutableStateOf(0)
-    val bookMarks:MutableState<BookMark2> = mutableStateOf(BookMark2())
-    var listState:LazyListState? = null
+    val qarticleHandler: MutableState<articleHandler> = mutableStateOf(articleHandler())
+    val lArticle: MutableState<List<OriginalTrans>> = mutableStateOf(emptyList())
+    val iInitialItem: MutableState<Int> = mutableStateOf(0)
+    val bookMarks: MutableState<BookMark2> = mutableStateOf(BookMark2())
+    var listState: LazyListState? = null
     var currentArticle = 0
     private val _nIndex = MutableStateFlow(0)
-    val nIndex :StateFlow<Int> = _nIndex
-    fun setNIndex(i:Int){
-        _nIndex.value=i
+    val nIndex: StateFlow<Int> = _nIndex
+    fun setNIndex(i: Int) {
+        _nIndex.value = i
     }
 
     //var lzls  = LazyListState()
-    var holdingItem : MutableState<Int> = mutableStateOf(0)
+    var holdingItem: MutableState<Int> = mutableStateOf(0)
 
-    fun reinizializeArticle2(){
-        lArticle.value        = emptyList()
+    fun reinizializeArticle2() {
+        lArticle.value = emptyList()
         listState = null
     }
 
-    fun reinicializeArticle(q:articleHandler,alistState: LazyListState) {
+    suspend fun reinicializeArticle(q: articleHandler, alistState: LazyListState) {
         qarticleHandler.value = q
-        lArticle.value        = emptyList()
-       // bookMarks.value       =
-       // lzls  = LazyListState()
+        lArticle.value = emptyList()
+        // bookMarks.value       =
+        // lzls  = LazyListState()
         loadBookMarks()
         listState = alistState
     }
 
-     fun loadBookMarks(){
-        val lP = KCache.loadFromCache(qarticleHandler.value.nameFileBooMarksAndLast()+".BKM")
-        if(lP.isEmpty()) bookMarks.value=BookMark2()
-        else {
-            val l = kjson.decodeFromString<BookMark2>(lP)
-            bookMarks.value = l
-        }
-        val ii=KCache.loadFromCache(qarticleHandler.value.nameFileBooMarksAndLast()+".LIN")
-        if(ii.isEmpty()){
-            Timber.d("ii empty")
-            iInitialItem.value=0
-        }
-        else{
-            val u=ii.toInt()
-            Timber.d("ii not empty $u")
-            iInitialItem.value=u
-        }
-        //return l.iBookMark }
+    suspend fun loadBookMarks() {
+        //Timber.d("...........Load start")
+        val lP2 = KCache.load<BookMark2>("${qarticleHandler.value.nameFileBooMarksAndLast()}.BKM")
+        bookMarks.value = lP2
+        //Timber.d("Book Marks ${bookMarks.value.bkMap}")
+        val ii = KCache.load<Int>("${qarticleHandler.value.nameFileBooMarksAndLast()}.LIN")
+        iInitialItem.value = ii
+        Timber.d("Loaded Book Marks ${bookMarks.value.bkMap} initial Item = ${iInitialItem.value}")
+        //Timber.d("........Load end")
     }
 
-    fun storeLastIndex(index:Int){
-        KCache.storeInCache(qarticleHandler.value.nameFileBooMarksAndLast()+".LIN",index.toString())
+    fun storeLastIndex(index: Int) {
+        KCache.storeInCache(
+            qarticleHandler.value.nameFileBooMarksAndLast() + ".LIN",
+            index.toString()
+        )
     }
 
     /*fun isbookmark(i:Int):Boolean{
@@ -123,7 +114,7 @@ class article {
         return false
     }*/
 
-   /* fun  saveBookMark(i:Int,sApp: StatusApp,link: String){
+    /* fun  saveBookMark(i:Int,sApp: StatusApp,link: String){
         val s = articleHandler(sApp.currentNewsPaper.handler,link,sApp.lang).nameFileArticle()+".BKM"
         //val s = nameFilefromLink(sApp.currentNewsPaper.handler,link,sApp.lang)+".BKM"
         //storeBookMark(s,i)
@@ -134,26 +125,25 @@ class article {
     }*/
 
 
-    suspend fun getTransArt(ah: articleHandler,sApp: StatusApp) {
+    suspend fun getTransArt(ah: articleHandler, sApp: StatusApp) {
 
 //        suspend fun getTransArt(sApp: StatusApp, otl: OriginalTransLink) {
-        Timber.d("getTransArt ${ah.nphandler}  ${ah.tlang}")
         sApp.currentStatus.value = AppStatus.Loading
         //iInitialItem.value = findBookMark(ah.nameFileArticle()+".BKM")
         //iInitialItem.value = findBookMark(nameFilefromLink(ah.nphandler,ah.link,ah.tlang)+".BKM")
         //throw Exception("BOOM")
         //val q=articleHandler(sApp.currentNewsPaper.handler,otl.kArticle.link,sApp.lang)
-        val resp=KProvider.getArticle(ah)
+        val resp = KProvider.getArticle(ah)
         //val resp = KNews().getArticle(sApp.currentNewsPaper.handler, otl.kArticle.link, sApp.lang)
-        Timber.d("getTransArt ${resp.timeInfo()}")
+        Timber.d("(s) NewsPaper ${ah.nphandler} chapter/link ${ah.link}  lang ${ah.tlang} time elapsed ${resp.timeInfo()}")
         when (resp) {
             is KResult2.Success -> {
-                Timber.d("size ${resp.t.size}")
+                //Timber.d("size ${resp.t.size}")
                 sApp.currentStatus.value = AppStatus.Idle
                 lArticle.value = resp.t
-         //         Timber.d(lArticle.value.print("article"))
-                if(resp.t.size==0){
-                     lArticle.value=listOf(OriginalTrans("Article only for subscriptors"))
+                //         Timber.d(lArticle.value.print("article"))
+                if (resp.t.size == 0) {
+                    lArticle.value = listOf(OriginalTrans("Article only for subscriptors"))
                 }
             }
             is KResult2.Error -> {
@@ -163,3 +153,4 @@ class article {
         }
     }
 }
+//Max 177

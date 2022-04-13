@@ -40,7 +40,7 @@ import timber.log.Timber
 @Composable
 fun headlinesScreen(statusApp: StatusApp) {
     statusApp.currentBackScreen = Screens.NewsPapersScreen
-    Timber.d("->${statusApp.status()}")
+//    Timber.d("->${statusApp.status()}")
     LaunchedEffect(statusApp.userlang) {
         Timber.d("LaunchedEffect")
         statusApp.vm.headLines.getLines(statusApp,statusApp.currentNewsPaper)
@@ -52,7 +52,7 @@ fun headlinesScreen(statusApp: StatusApp) {
         is AppStatus.Idle    -> Draw_Headlines(statusApp)
         is AppStatus.Refreshing -> {}
     }
-    Timber.d("<- ${status.toString()}")
+//    Timber.d("<- ${status.toString()}")
 }
 
 
@@ -63,7 +63,7 @@ fun headlinesScreen(statusApp: StatusApp) {
 fun Draw_Headlines(sApp: StatusApp) {
     //val lstate = rememberLazyListState(sApp.vm.headLines.scrollposHL)
     val lstate = rememberLazyListState(sApp.vm.headLines.currChapter.value)
-    Timber.d("${sApp.status()}  NItems ${sApp.vm.headLines.listHL.size}")
+    Timber.d("N Headlines ${sApp.vm.headLines.listHL.size}")
     //if(statusApp.currentStatus==AppStatus.Loading) return
     val cs = rememberCoroutineScope()
     val original = remember { mutableStateOf(true) }

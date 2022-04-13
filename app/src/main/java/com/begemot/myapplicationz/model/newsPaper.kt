@@ -1,9 +1,11 @@
 package com.begemot.myapplicationz.model
 
 import com.begemot.knewscommon.*
+import com.begemot.myapplicationz.App.Companion.sApp
 import com.begemot.myapplicationz.AppStatus
 import com.begemot.myapplicationz.KProvider
 import com.begemot.myapplicationz.StatusApp
+import kotlinx.coroutines.delay
 //import io.ktor.util.*
 import timber.log.Timber
 
@@ -19,27 +21,31 @@ class NewsPapers() {
 
     override fun toString(): String {
         //return "X version ${newsPapers.version} newspapers ${newsPapers.newspaper}"
-        return "${newsPapers.toString2()}"
+        return "$newsPapers" //"${newsPapers.toString2()}"
     }
+suspend fun getNewsPapers2(){
+    delay(1000)
+}
 
-    suspend fun getLocalNewsPapers(sApp: StatusApp){
-        Timber.d("start getLocalNewsPapers")
-        when(val np=KProvider.getLocalNewsPapers()){
+    suspend fun getNewsPapers(){
+        val np=KProvider.getNewsPapers()
+        when(np){
 
-            is KResult2.Success->{
-                Timber.d("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-                Timber.d("2 resp succes : ${np.t.toString().substring(0,15)}")
+            is KResult3.Success->{
+               Timber.d("OK getNewsPapers= ${np.timeInfo()} ${np.t.toString()}")
                 //statusApp.vm.setNPapers(resp.t)
                 newsPapers = np.t
-                Timber.d("2 size news papers: ${newsPapers.newspaper.size}")
                 sApp.currentStatus.value = AppStatus.Idle
                 //throw  Exception("CACA OF THE COW")
             }
-            is KResult2.Error->{
+            is KResult3.Error->{
                 Timber.e("2 resp error  : exception -> ${np.msg}")
                 sApp.currentStatus.value = AppStatus.Error("getLocalNewsPapers Error: ${np.msg}", null)
             }
         }
+        Timber.e("end getLocalNewsPapers")
+        //Timber.d("ÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑ")
+        //delay(1000)
     }
 
 /*    suspend fun getLocalNewsPapers2(sApp: StatusApp) {
@@ -127,3 +133,5 @@ class NewsPapers() {
 
 
 }
+
+//Max 134

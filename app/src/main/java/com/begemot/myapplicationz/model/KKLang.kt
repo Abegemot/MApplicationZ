@@ -1,14 +1,16 @@
 package com.begemot.myapplicationz.model
 
 
-import com.begemot.myapplicationz.App.Companion.prefs
+import com.begemot.myapplicationz.App
+
+import com.begemot.myapplicationz.App.Companion.sApp
 import timber.log.Timber
 
 
 class KKLang() {
     fun getSelectedLangs(Olng:String,Tlng:String):List<KLocale2>{
         val lExcudedLang = listOf(Olng,Tlng)
-        val lSelected = prefs.selectedLang.split(",")  //"ca,en" ...
+        val lSelected = sApp.currentNewPreferences.selectedLangs.split(",")  //"ca,en" ...
         val sele = lKLocales3.filterKeys { lSelected.contains(it) and !lExcudedLang.contains(it) }
         //val sele = lKLocales3.filterKeys { lSelected.contains(it) and !it.equals(Tlng) }
         Timber.d("Olng=$Olng  Tlng=$Tlng ....sele=$sele")

@@ -37,27 +37,19 @@ import timber.log.Timber
 @Composable
 fun ArticleScreen(originalTransLink: OriginalTransLink, sApp: StatusApp) {
     val lstate= rememberLazyListState(sApp.vm.article.iInitialItem.value)
-
-    Timber.d("link ->${originalTransLink.kArticle.link}  ${sApp.vm.article.iInitialItem.value}")
+    val q = articleHandler(sApp.currentNewsPaper.handler,originalTransLink.kArticle.link,sApp.userlang)
+    Timber.d("${sApp.currentNewsPaper.desc} ${q.nameFileArticle()} link ->${originalTransLink.kArticle.link}  initial position ${sApp.vm.article.iInitialItem.value}")
     sApp.currentBackScreen = Screens.HeadLinesScreen
 
     LaunchedEffect(sApp.userlang) {
         sApp.currentStatus.value = AppStatus.Loading
-        val q = articleHandler(sApp.currentNewsPaper.handler,originalTransLink.kArticle.link,sApp.userlang)
         sApp.vm.article.reinicializeArticle(q,lstate)
         sApp.currentLink = originalTransLink.kArticle.link
-
         sApp.arethereBookMarks = !sApp.vm.article.bookMarks.value.bkMap.isEmpty()
         sApp.vm.article.getTransArt(q,sApp)
         //delay(2000)
         lstate.scrollToItem(sApp.vm.article.iInitialItem.value)
-        //sApp.vm.article.lzls.scrollToItem(sApp.vm.article.iInitialItem.value)
-        Timber.d("current last Index ${sApp.vm.article.iInitialItem.value}")
     }
-    Timber.d("setting rememberLazyListStateTo : ${sApp.vm.article.iInitialItem.value}")
-
-    //val lstate= remember{ LazyListState(sApp.vm.article.iInitialItem.value) }
-    //Timber.d("lstate=${lstate.firstVisibleItemIndex}")
     val status = sApp.currentStatus.value
     when (status) {
         is AppStatus.Loading -> drawArticle(sApp = sApp,originalTransLink,lstate )
@@ -83,19 +75,12 @@ fun bookMark2(index:Int,sApp: StatusApp):Modifier {
 @ExperimentalMaterialApi
 @Composable
 fun drawArticle(sApp: StatusApp,otl:OriginalTransLink, lstate: LazyListState) {
-    Timber.d("zz  initial position ${sApp.vm.article.iInitialItem.value}")
-    //val lstate= rememberLazyListState(sApp.vm.article.iInitialItem.value)
-    //lstate.scrollToItem(sApp.vm.article.iInitialItem.value)
+    val lItems = sApp.vm.article.lArticle.value
+    Timber.d("Start Draw  initial position ${sApp.vm.article.iInitialItem.value} nItems=${lItems.size}")
     val cs = rememberCoroutineScope()
-
-//    val i=sApp.vm.article.nIndex.collectAsState().value
-//    Timber.d("i $i")
-//    LaunchedEffect(key1 = sApp.vm.article.iInitialItem, block ={lstate.scrollToItem(sApp.vm.article.iInitialItem.value)} )
     LaunchedEffect(key1 = sApp.vm.article.iInitialItem, block ={lstate.scrollToItem(sApp.vm.article.iInitialItem.value)} )
     resfreshWraper(sApp.currentStatus.value == AppStatus.Loading) {
         val original = remember { mutableStateOf(true) }
-        val lItems = sApp.vm.article.lArticle.value
-        // val lstate = remember{ sApp.lzls }
         LazyColumn(state = lstate,modifier = ListModifier()) {
             itemsIndexed(lItems) { index, it ->
                 if(sApp.modeBookMark) {
@@ -109,13 +94,13 @@ fun drawArticle(sApp: StatusApp,otl:OriginalTransLink, lstate: LazyListState) {
              }
         }
     }
+    Timber.d("End Draw")
 }
 
 @ExperimentalComposeUiApi
 @ExperimentalMaterialApi
 @Composable
 fun articleCard2(index:Int,sApp: StatusApp,original:MutableState<Boolean>,it:OriginalTrans,cs:CoroutineScope,lstate: LazyListState){
-    //val sc= rememberCoroutineScope()
     myCard(
         //shape = RoundedCornerShape(8.dp),
         //elevation = 1.dp,
@@ -130,9 +115,9 @@ fun articleCard2(index:Int,sApp: StatusApp,original:MutableState<Boolean>,it:Ori
         DrawArticleOT(cs = cs, sApp =sApp , index =index , original =original , bplaytext = bplaytext, lstate =lstate , it =it,true )
         DrawArticleOT(cs = cs, sApp =sApp , index =index , original =original , bplaytext = bplaytext, lstate =lstate , it =it ,false)
         if (bplaytext.value) {
-            cs.launch {
+               LaunchedEffect(key1 = index){
                 lstate.scrollToItem(index)
-            }
+               }
             PlayText(sApp , bplaytext  , true , index  , original.value  , SourcePTP.article,lstate,cs  )
         }
 
@@ -157,10 +142,10 @@ fun DrawArticleOT(cs: CoroutineScope, sApp: StatusApp, index: Int, original: Mut
                     Timber.d("single tap $index")
                     onclikcard(sApp, cs, index, original, bplaytext, onClickBookMark = {
                         val cv = CoroutineScope(Dispatchers.Main)
-                          cv.launch {
+                        cv.launch {
                             lstate.scrollToItem(it)
                         }
-                    },original2)
+                    }, original2)
                 }
 
             )
@@ -203,4 +188,4 @@ suspend fun onDoubleTapcard(sApp: StatusApp,index:Int){
 
 }
 
-//Max 222 256
+//Max 222 256 206 211 191

@@ -554,7 +554,11 @@ fun SoundPitch(sp: ClikedSoundPitch, pTP: PlayTextParams) {
             Text("Speed",modifier = Modifier.width(50.dp))
             Slider(
                 value = curlang.speed,//sliderRate.value,//curlang.speed,
-                onValueChange = { curlang.speed = it; sliderRate.value = it ;Timber.d("onvaluechange $it") },
+                onValueChange = {
+                    curlang.speed = it; sliderRate.value = it
+                    Timber.d("onvaluechange $it")
+                    pTP.sApp.vm.toneAndPitchMap.setChanged()
+                    },
                 valueRange = 0.1f..2.0f
             )
         }

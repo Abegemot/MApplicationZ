@@ -1,6 +1,9 @@
 package com.begemot.myapplicationz.model
 
 import com.begemot.myapplicationz.KCache
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -25,8 +28,11 @@ class KLAnguanges(){
     }
 
     fun save(){
-
-        if(!changed) return
+        Timber.d("Save Tone and Pitch")
+        if(!changed) {
+            Timber.d("Save Tone and Pitch NOT CHANGED NOT SAVED")
+            return
+        }
         val sAux= Json.encodeToString(langContainer.serializer(),langContainer("pse",lMap))
         Timber.d(sAux)
         KCache.storeInCache("/$namefile",sAux)
@@ -39,15 +45,21 @@ class KLAnguanges(){
 
 
     suspend fun load(){
-        Timber.d("KLanguages $namefile")
-        try {
-            val lp= KCache.loadFromCache(namefile)
-            if(lp.length==0) return
-            val ss= Json.decodeFromString<langContainer>(lp)
-            lMap=ss.lMap
-        } catch (e: Exception) {
-             Timber.e("except ${e.message}")
-        }
+        //withContext(Dispatchers.IO) {
+            Timber.d("KLanguages load start $namefile")
+           // delay(1000)
+            try {
+                val lp = KCache.loadStringFromCache(namefile)
+                if (lp.length == 0) return
+                val ss = Json.decodeFromString<langContainer>(lp)
+                Timber.d("KLanguages load OK end $namefile")
+                lMap = ss.lMap
+
+            } catch (e: Exception) {
+                //Timber.d("KLanguages load end $namefile")
+                Timber.e("KLanguages load exception ${e.message}")
+            }
+        //}
     }
     /*fun getListSelected():List<dLang>{
         val lselected=lMap.toList()
