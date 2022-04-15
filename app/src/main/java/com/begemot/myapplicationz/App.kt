@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import androidx.compose.runtime.MutableState
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.*
 import androidx.datastore.preferences.core.Preferences
@@ -11,19 +12,19 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.viewModelScope
+import com.begemot.knewscommon.KResult3
 import com.begemot.knewscommon.KTimer
 import com.begemot.myapplicationz.App.Companion.sApp
 import com.begemot.myapplicationz.PreferencesNEW.TT.ccc2
 
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.NonCancellable.join
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 import timber.log.Timber
+import java.lang.Exception
 import java.util.*
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -50,227 +51,32 @@ class LineNumberDebugTree : Timber.DebugTree() {
     }
 }
 
-
-
-
- fun execZ(msg:String,sc:CoroutineScope,afun:suspend ()->Unit){
-     val job1=sc.launch(IO+CoroutineName(msg)) {
-
-         val t = measureTimeMillis {
-             Timber.e("START JOB $msg")
-             afun()
-         }
-         Timber.e("END JOB $msg in ($t) ms")
-     }
-
- }
-
- fun execZZ(msg:String,sc:CoroutineScope,afun:suspend ()->Unit):Deferred<Unit>{
-     val sc1= CoroutineScope(IO)
-     val job1=sc.async {
-
-         val t = measureTimeMillis {
-             Timber.e("START JOB $msg")
-             afun()
-         }
-         Timber.e("END JOB $msg in ($t) ms")
-     }
-     return job1
- }
-
- suspend fun C(){ delay(320);   Timber.d("end C inside")}
- suspend fun B(){ delay(100);  Timber.d("end B inside")}
- suspend fun A(){ delay(420);  Timber.d("end A inside")}
-
- suspend fun KLauncher(name:String,cs:CoroutineScope,afun: suspend () -> Unit):Job{
-     val j:Job
-     val kt=KTimer()
-     val t= measureTimeMillis {
-         j = cs.launch(CoroutineName("Klauncher")) {
-             Timber.d("start job")
-             afun()
-             Timber.d("end job $name computed in (${kt.getElapsed()}) ms")
-         }
-     }
-     return j
- }
-
- fun TestC2(){
-     val t = measureTimeMillis {
-         runBlocking() {
-             Timber.d("start tc2")
-
-             val j = launch() {
-                 //launch { A()}
-                 launch { A() }
-                 launch { B() }
-                 launch { C() }
-             }
-             //j.children.forEach { it.join() } //Ok
-             j.join()   //Ok
-         }
-     }
-     Timber.d("io end testC2 in ($t) ms")
- }
- fun TestC3(){
-     val t = measureTimeMillis {
-         runBlocking() {
-             Timber.d("start")
-             coroutineScope {
-                 launch { A()}
-                 launch { B() }
-                 launch { C() }
-             }
-         }
-     }
-     Timber.d("io end testC3 in ($t) ms")
- }
-
- fun TestC4(){
-     val t = measureTimeMillis {
-         runBlocking() {
-             Timber.d("start")
-
-             withContext(coroutineContext){}.let {
-                 withContext(coroutineContext) {
-                     launch() { A() }
-                     launch { B() }
-                     launch { C() }
-                 }
-             }
-         }
-     }
-     //Timber.d("io end testC4 in ($t) ms")
- }
-
- fun TestC5(){
-     var t=0L
-     runBlocking(IO) {
-         t = measureTimeMillis {
-             runBlocking() {
-                 Timber.d("start")
-                         KLauncher("A",this) { A() }
-                         KLauncher("B",this) { B() }
-                         KLauncher("C",this) { C() }
-             }
-         }
-         Timber.d("io end testT5 in ($t) ms")
-
-     }
-     Timber.d("io end testT5 THAT'S ALL FOLKS in ($t) ms")
- }
-typealias lOfAsyncFuncs = List<suspend ()->Unit>
-
-typealias lOfAsyncFuncs22 = List<Pair<suspend ()->Unit,String>>
-val lfo2=listOf(suspend{A()}, suspend{B()}, suspend{->C()})
-
- fun f(a:List<suspend ()->Unit>,b:String){}
-
- val vv=listOf(Pair(::A,::A.name), Pair(::B,""))
-
- val LFO= listOfAsyncFuncs(listOf(suspend{->A()}, suspend{->B()}, suspend{->C()}))
-
- val lfo=listOf(suspend{->A()}, suspend{->B()}, suspend{->C()})
-
- fun listOfAsyncFuncs(x:List<suspend ()->Unit>):String{
-     return ""
- }
- fun executeListOfAsyncFuncs2(disp:CoroutineDispatcher= IO, lfuncs:lOfAsyncFuncs22){
-     var t=0L
-     runBlocking(disp+CoroutineName("execlistoffuncs")) {
-         Timber.d("start ex list of funcs")
-         t = measureTimeMillis {
-             runBlocking() {
-                 var n=0
-                 lfuncs.forEach {
-                     //${it.javaClass.name}
-                     KLauncher("A ->${it.second}<- ${n++}",this) { it.first.invoke() }
-                 }
-             }
-         }
-         Timber.d("end io end Execute list of funcs in ($t) ms")
-     }
-     Timber.d("io end Execute list of f THAT'S ALL FOLKS! in ($t) ms")
- }
-
- fun executeListOfAsyncFuncs(disp:CoroutineDispatcher= IO, lfuncs:lOfAsyncFuncs){
-     var t=0L
-
-     runBlocking(disp+CoroutineName("execlistoffuncs")) {
-         Timber.d("start ex list of funcs")
-         t = measureTimeMillis {
-             runBlocking() {
-                 var n=0
-                 lfuncs.forEach {
-                     //${it.javaClass.name}
-                     KLauncher("A ->${it.javaClass.name}<- ${n++}",this) { it.invoke() }
-                 }
-             }
-         }
-         Timber.d("end io end Execute list of funcs in ($t) ms")
-     }
-     Timber.d("io end Execute list of f THAT'S ALL FOLKS! in ($t) ms")
- }
-
- fun TestC() {
-
-     //Timber.d("Start Test C")
-     val kt = KTimer()
-     //launch { A() }
-     //launch { B() }
-     //launch { C() }
-     //runBlocking {
-     //val sc= CoroutineScope(Default+CoroutineName("WHOLE"))
-     runBlocking {
-         val sc = CoroutineScope(IO)
-
-         val j = launch {
-             val j1 = execZZ("A", sc) { A() }
-             val j2 = execZZ("B", sc) { B() }
-             val j3 = execZZ("C", sc) { C() }
-             j1.await()
-             j2.await()
-             j3.await()
-             Timber.d("End await  (${kt.getElapsed()}) ms")
-         }
-         Timber.d("join")
-         j.join()
-     }
-
-     //j.invokeOnCompletion { Timber.d("END TEST C  (${kt.getElapsed()})ms") }
-
-     //Timber.d("End Test C (${kt.getElapsed()})ms")
-
- }
-
-
-
-
  class App:Application(){
 
       companion object{
          lateinit var lcontext: Context
 
-        val sApp:StatusApp by lazy {
-            Timber.d("creating sApp by lazy")
-            StatusApp(Screens.SetUpScreen,Screens.QuitScreen,AppStatus.Loading,getCurrentPrefsNews())
+        @OptIn(InternalCoroutinesApi::class)
+        val sApp:StatusApp by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
+            Timber.e("creating sApp by lazy")
+            runBlocking(IO) {
+                Timber.d("init sApp")
+                //delay(10)
+                StatusApp(
+                    Screens.SetUpScreen,
+                    Screens.QuitScreen,
+                    AppStatus.Loading,
+                    PreferencesNEW.newPrefsFlow.first()
+                )//getCurrentPrefsNews())
+            }
         }
+
+
 
         val fPath:String by lazy { "${lcontext.filesDir.absolutePath}/" }
 
-          @OptIn(ExperimentalTime::class)
-          fun getCurrentPrefsNews():KNewsPrefs{
-            val np = measureTimedValue {
-            runBlocking {
-                //TestC()
-                //KNewsPrefs()
-                //PreferencesNEW.newPrefsFlow.first()
 
-            }
-            }
-            Timber.d("Reading new preffs : ${np.value}  (${np.duration})")
-            return KNewsPrefs() // np.value
-          }
+
 
       }
 
@@ -286,45 +92,40 @@ val lfo2=listOf(suspend{A()}, suspend{B()}, suspend{->C()})
         }
         Timber.d("begin Create App ")// ${sApp.status()}")
         //checkWifi(App.instance)
-        Timber.d("fontsize =${App.sApp.fontSize}")
+
+
+
+//        Timber.d("fontsize =${App.sApp.fontSize}")
         KCache.fP= fPath  //"${lcontext.filesDir.absolutePath}/"
         //val t= measureTimeMillis {
         //TestC5()
         //--> val s=App.sApp.vm.newsPapers.ge
        // executeListOfAsyncFuncs(Dispatchers.IO, listOf({::sApp.get().vm.newsPapers.getNewsPapers().javaClass.name},{sApp.vm.toneAndPitchMap.load()}))
-        executeListOfAsyncFuncs2(Dispatchers.IO,listOf(Pair(::A,"Amigo"),Pair(::B,::B.name),Pair(::C,"Capullete"),Pair(::ONO,"s")))
+        Timber.d("  START")
+
+         //val p=executeListOfAsyncFuncsZ(listOf(toFN(StatusApp.vm2.newsPapers::getNewsPapers),toFN(StatusApp.vm2.toneAndPitchMap::load)))
+         val p=executeListOfAsyncFuncsZ( listOf(toFN(::A), toFN(::B), toFN(::C)))
+         if(p is KResult3.Success) Timber.d("Succes!!")
+         if(p is KResult3.VoidSucces) Timber.d("Void Succes !!!")
+         else Timber.e("Error :${p.msg()}z")
+         Timber.d("    END in ${p.msg()}z")
+       // Timber.d(" END (${p.first})ms ${p.second}")
          //  execZ("GETNEWSPAPERS",scope){ sApp.vm.newsPapers.getNewsPapers()}
        //  execZ("GETTONEANDPITCH",scope){sApp.vm.toneAndPitchMap.load()}
             //TestC()
         //}
          //Timber.d("TestC run in ($t) ms")
+         //val p=toFN(StatusApp.vm2.newsPapers::getNewsPapers)
+         //val q=toFN(StatusApp.vm2.toneAndPitchMap::load)
+
+
         setUP()
         Timber.d("end  Create  App  ${sApp.currentNewPreferences.userid}")
      }
 
-     suspend fun ONO(){
-          sApp.vm.newsPapers.getNewsPapers()
+     suspend fun TonePitch(){
+         sApp.vm.toneAndPitchMap.load()
      }
-
-
-    @OptIn(ExperimentalTime::class)
-    fun<T> Transparent(msg:String, afun:suspend ()->T):T{
-         var o:T?=null
-         val t= measureTimedValue {
-             val sc= CoroutineScope(IO+CoroutineName("oa"))
-             val j=sc.launch {
-                 sApp.vm.viewModelScope.launch(IO + CoroutineName("urss")) {
-                     o=afun()
-                 }
-
-             }
-
-         }
-
-         Timber.e("$msg Executed in (${t.duration.inWholeMilliseconds}) ms")
-         return o!!
-     }
-
 
 
 
@@ -339,7 +140,7 @@ val lfo2=listOf(suspend{A()}, suspend{B()}, suspend{->C()})
             //      KCache.deleteFiles()
             Timber.d("setUP coroutine begin")
 
-            val newInstall = if (PreferencesNEW.getNPrefs().userid.isEmpty()) {
+            val newInstall = if (sApp.currentNewPreferences.userid.isEmpty()) {
                 Timber.d("User ID not set")
                 sApp.currentNewPreferences.userid=(UUID.randomUUID().toString())
                 //PreferencesNEW.updateUserid(UUID.randomUUID().toString())
@@ -348,6 +149,7 @@ val lfo2=listOf(suspend{A()}, suspend{B()}, suspend{->C()})
 
             val res = if (newInstall) NewInstalation() else  UpdateInstalation()
             if(res){
+                Timber.d("AFTER UPDATE INSTALATION PASSED")
                 sApp.currentStatus.value = AppStatus.Idle
                 if(sApp.currentNewPreferences.selectedNews>-1) {
                     sApp.currentNewsPaper = sApp.vm.newsPapers.lNewsPapers[sApp.currentNewPreferences.selectedNews]
@@ -413,6 +215,8 @@ val lfo2=listOf(suspend{A()}, suspend{B()}, suspend{->C()})
              val j = scope.launch(eHandler) {
                  execZ("GETNEWSPAPERS",scope){ sApp.vm.newsPapers.getNewsPapers()}
                  execZ("GETTONEANDPITCH",scope){sApp.vm.toneAndPitchMap.load()}
+                 //execZ("TEST EXECZ",scope){delay(1000)}
+                 //delay(2000)
              }
              j.invokeOnCompletion { throwable ->
                  if (throwable != null) {
@@ -433,7 +237,7 @@ val lfo2=listOf(suspend{A()}, suspend{B()}, suspend{->C()})
          if(OK){
              //Timber.d("2 ${sApp.status()}")
 
-             Timber.d("END UPDATE INSTALATION OK, CHECK FOR UPDATES")
+             Timber.d("END UPDATE INSTALATION OK, CHECK FOR UPDATES current version=${sApp.vm.newsPapers.Npversion}")
              sApp.vm.viewModelScope.launch(IO +CoroutineName("POSTUPDATE")) {
                  sApp.vm.newsPapers.checkUpdates(sApp, sApp.vm.newsPapers.Npversion)
              }
@@ -469,6 +273,24 @@ fun isOnline(context: Context): Boolean {
     return false
 }
 
+ class DelegateMutables< T : Any>(t: MutableState<T>) : ReadWriteProperty<Any?,MutableState<T>> {
+     var  s:MutableState<T> = t
+     override fun getValue(thisRef: Any?, property: KProperty<*>): MutableState<T> {
+         //Timber.e("GET VALUE")
+         return s
+     }
+     override fun setValue(thisRef: Any?, property: KProperty<*>, value: MutableState<T>) {
+         //Timber.e("SET VALUE  $value")
+         if(s.value==value.value){
+             // Timber.e("SKIP VALUE!!! $value")
+             return
+         }
+         s.value=value.value
+         PreferencesNEW.upk2(ccc2(property.name),value.value)
+         //Timber.d("HOSTI TU TIU !!!!!!!!!!!!!!")
+     }
+ }
+
  class DelegatePrefsString<T : Any>(t:T) : ReadWriteProperty<Any?,T> {
       var  s:T=t
      override fun getValue(thisRef: Any?, property: KProperty<*>): T {
@@ -486,6 +308,8 @@ fun isOnline(context: Context): Boolean {
          //Timber.d("HOSTI TU TIU !!!!!!!!!!!!!!")
      }
  }
+
+
 
  class KNewsPrefs(selectedNews:Int=-1, userid:String="", fontsize:Int=20, lang:String="", ktheme:Int=2, preftab:Int=0, selectedLangs:String=Locale.getDefault().language,romanize:Int=2) {
      var selectedNews: Int by DelegatePrefsString(selectedNews)
@@ -518,6 +342,7 @@ fun isOnline(context: Context): Boolean {
     companion object TT{
         val newPrefsFlow: Flow<KNewsPrefs> =    App.lcontext.dataStore.data
             .map { preferences ->
+                Timber.e("newprefsflow")
                 val selectedNews=preferences[PrefKeys.SELECTEDNEWS]?:-1
                 val userid=preferences[PrefKeys.USERID]?:""
                 val fontsize=preferences[PrefKeys.FONTSIZE]?: 20
@@ -541,7 +366,9 @@ fun isOnline(context: Context): Boolean {
              KNewsPrefs::romanize.name to PrefKeys.ROMANIZE
             )
         fun  ccc2(c: String):Preferences.Key<*>{
-             return n.getOrDefault(c,PrefKeys.SELECTEDNEWS)
+             val pk=n[c]
+             if(pk==null)throw Exception("$c not Found Need to add Key in KNewsPrefs !!")
+             return pk
         }
 
         suspend fun getNPrefs():KNewsPrefs{
@@ -559,4 +386,4 @@ fun isOnline(context: Context): Boolean {
     }
 }
 
-//Max 321,353,382,399,427,438,443,470, 549, 563, 313, 515,562
+//Max 321,353,382,399,427,438,443,470, 549, 563, 313, 515,562, 366,387

@@ -295,7 +295,7 @@ fun tabText(statusApp: StatusApp, localFontSize: MutableState<Int>) {
             onValueChange = {
                 sliderPosition.value = it
                 statusApp.fontSize.value = it.toInt()
-                statusApp.currentNewPreferences.fontsize=it.toInt()
+                //statusApp.currentNewPreferences.fontsize=it.toInt()
                 //PreferencesNEW.upk(PreferencesNEW.TT.Comp.Fontsize,it.toInt())
                             },
             valueRange = 10f..35f

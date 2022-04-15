@@ -8,6 +8,7 @@ import com.begemot.myapplicationz.StatusApp
 import kotlinx.coroutines.delay
 //import io.ktor.util.*
 import timber.log.Timber
+import java.lang.Exception
 
 
 class NewsPapers() {
@@ -23,11 +24,10 @@ class NewsPapers() {
         //return "X version ${newsPapers.version} newspapers ${newsPapers.newspaper}"
         return "$newsPapers" //"${newsPapers.toString2()}"
     }
-suspend fun getNewsPapers2(){
-    delay(1000)
-}
+
 
     suspend fun getNewsPapers(){
+
         val np=KProvider.getNewsPapers()
         when(np){
 
@@ -36,9 +36,11 @@ suspend fun getNewsPapers2(){
                 //statusApp.vm.setNPapers(resp.t)
                 newsPapers = np.t
                 sApp.currentStatus.value = AppStatus.Idle
+                //throw Exception("JRONYA QUE JRONYA")
                 //throw  Exception("CACA OF THE COW")
             }
             is KResult3.Error->{
+
                 Timber.e("2 resp error  : exception -> ${np.msg}")
                 sApp.currentStatus.value = AppStatus.Error("getLocalNewsPapers Error: ${np.msg}", null)
             }

@@ -85,27 +85,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
          //Timber.d("CREATE MAIN ACTIVITY---------------${App.sApp.status()}-------------------")
          Timber.d("CREATE MAIN ACTIVITY--------------- Set Up on his way current Screen ${sApp.currentScreen.value}")
-
-       val t=runBlocking(Dispatchers.Default) {
-            //val j=launch {  TestC() }
-            //j.join()
-            //TestC4()
-           // Timber.d("Done!  ")
-        }
-        //TestC4()
-        //TestC5()
-        // GlobalScope.launch { TestC4() }
-        //val s=GlobalScope.async {  TestC() }
-        Timber.d("AFTER TESTC ")
-
-
-        //App.setActivity(this.applicationContext)
          setContent { newsReaderApp(App.sApp) }
          window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
          sApp.vm.viewModelScope.launch(IO+CoroutineName("GOOGLEUPDATE")) {
              checkForAppUpdates()
          }
-
     }
 
 
@@ -229,13 +213,26 @@ class StatusApp(
 
     ) {
 
+    companion object RR{
+        val  vm2 = VM()
+        fun getvm2():VM=vm2
+    }
+
+    lateinit var  vm:VM
+    init {
+        vm=VM()
+    }
+
+    fun getVM():VM=vm
+
     var shallIquit by mutableStateOf(false)
     var currentLink by mutableStateOf("")
 
     val fontSize = mutableStateOf(currentNewPreferences.fontsize)
 
+    //var fontSize by DelegateMutables(mutableStateOf(currentNewPreferences.fontsize))
 
-    var userlang by mutableStateOf(currentNewPreferences.lang)  //prefs.kLang)
+    var userlang by  mutableStateOf(currentNewPreferences.lang)  //prefs.kLang)
 
     //val kt = mutableStateOf(kTheme.values()[prefs.ktheme])
     val kt = mutableStateOf(kTheme.values()[currentNewPreferences.ktheme])
@@ -250,7 +247,7 @@ class StatusApp(
     val userID by lazy { currentNewPreferences.userid }
 
     var visibleInfoBar by mutableStateOf(false)
-    val vm = VM()
+
     var selectLang = mutableStateOf(false)
 
     var romanized by mutableStateOf(currentNewPreferences.romanize)

@@ -21,7 +21,7 @@ object KProvider {
     @OptIn(ExperimentalTime::class)
     suspend fun getNewsPapers():KResult3<NewsPaperVersion> {
         Timber.e("start getNewsPapers")
-        delay(2000)
+        //delay(2000)
         val sFileName="knews.json"
         val np = measureTimedValue {
             KCache.load<NewsPaperVersion>(sFileName)
@@ -29,7 +29,7 @@ object KProvider {
         if(np.value.newspaper.isNotEmpty()){
             Timber.e("----------ZZZZZZZZZZZZZZZ----------------")
             Timber.d("loaded local News papers in (${np.duration.inWholeMilliseconds} ms)")
-            return KResult3.Success(np.value,np.duration.inWholeMilliseconds,0)
+            return KResult3.Success(np.value,np.duration.inWholeMilliseconds, 0)
         }
         else
         Timber.e("local News papers $sFileName NOT FOUND (${np.duration})")
