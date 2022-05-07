@@ -99,19 +99,19 @@ fun draw_newsPapers(sApp: StatusApp) {
                     //Timber.d(" -> CURRENT SELECTED NEWS $index")//  $sApp.currentNewPreferences.value?.selectedNews")
        //             Timber.d("$index")
                     Surface(
-                        color = if(sApp.selectedNews.value!=index) Color.LightGray else Color.Gray,
+                        color = if(sApp.selectedNews!=index) Color.LightGray else Color.Gray,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp).pointerInput(Unit){
                             detectTapGestures(
                                 onDoubleTap = {  ita->
-                                        if(sApp.selectedNews.value==index) {
+                                        if(sApp.selectedNews==index) {
                                             Timber.d("O A")
-                                            sApp.selectedNews.value = -1
-                                            sApp.currentNewPreferences.selectedNews=-1
+                                            sApp.selectedNews = -1
+                                           // sApp.currentNewPreferences.selectedNews=-1
                                         }
                                         else {
                                             Timber.d("O B")
-                                            sApp.selectedNews.value = index
-                                            sApp.currentNewPreferences.selectedNews=index
+                                            sApp.selectedNews = index
+                                            //sApp.currentNewPreferences.selectedNews=index
                                         }
                                               },
                                 onTap={  ita->

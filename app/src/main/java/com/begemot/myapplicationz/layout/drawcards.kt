@@ -14,7 +14,6 @@ import com.begemot.kclib.FlowRowX
 import com.begemot.kclib.KText2
 import com.begemot.knewscommon.ListPinyin
 import com.begemot.myapplicationz.StatusApp
-import com.begemot.myapplicationz.screens.detectDoubleTap
 import timber.log.Timber
 
 @ExperimentalMaterialApi
@@ -62,12 +61,12 @@ fun DrawText(text:String,lPy:ListPinyin,sApp: StatusApp){
 @Composable
 fun DrawPinyn(translated: String, sApp: StatusApp, lPy: ListPinyin) {
 //    Timber.d("drawpinyin mode ${sApp.romanized}  olang lang ${sApp.lang}")
-    if (sApp.userlang != "zh" && sApp.userlang != "zh-TW") {
+    if (sApp.lang != "zh" && sApp.lang != "zh-TW") {
         //       DrawPinynNone(translated, sApp, lPy); return
     }  //To be solved!
-    if (sApp.romanized == 0) DrawPinynSimple(translated, sApp, lPy)
-    if (sApp.romanized == 1) DrawPinynComplete(translated, sApp, lPy)
-    if (sApp.romanized == 2) DrawPinynNone(translated, sApp, lPy)
+    if (sApp.romanize == 0) DrawPinynSimple(translated, sApp, lPy)
+    if (sApp.romanize == 1) DrawPinynComplete(translated, sApp, lPy)
+    if (sApp.romanize == 2) DrawPinynNone(translated, sApp, lPy)
 }
 
 
@@ -91,7 +90,7 @@ fun DrawPinynComplete(translated: String, sApp: StatusApp, lPy: ListPinyin) {
                     Text(
                         it.w,
                         style = MaterialTheme.typography.h5,
-                        fontSize = sApp.fontSize.value.sp
+                        fontSize = sApp.fontsize.sp
                         //fontSize = TextUnitType.Sp(sApp.fontSize.value),
                         //textAlign = TextAlign.Center
                         //textAlign = TextAlign.End
@@ -99,7 +98,7 @@ fun DrawPinynComplete(translated: String, sApp: StatusApp, lPy: ListPinyin) {
                     Text(
                         it.r.replace("\\s".toRegex(), ""), //fuck white spaces
                         style = MaterialTheme.typography.h5,
-                        fontSize = sApp.fontSize.value.sp
+                        fontSize = sApp.fontsize.sp
                     )
                 }
             }
@@ -115,7 +114,7 @@ fun ListModifier():Modifier{
 fun DrawPinynNone(translated: String, sApp: StatusApp, lPy: ListPinyin) {
     //Column() {
     if(!translated.isEmpty())
-        KText2(txt = translated, size = sApp.fontSize.value)
+        KText2(txt = translated, size = sApp.fontsize)
     //}
 }
 
@@ -126,8 +125,8 @@ fun DrawPinynNone(translated: String, sApp: StatusApp, lPy: ListPinyin) {
 fun DrawPinynSimple(translated: String, sApp: StatusApp, lPy: ListPinyin) {
     Timber.d("drawPinyin Simple")//  ${sApp.romanized}")
     Column() {
-        KText2(txt = translated, size = sApp.fontSize.value)
-        KText2(txt = getOnlyPinyin(lPy), size = sApp.fontSize.value)
+        KText2(txt = translated, size = sApp.fontsize)
+        KText2(txt = getOnlyPinyin(lPy), size = sApp.fontsize)
     }
 }
 

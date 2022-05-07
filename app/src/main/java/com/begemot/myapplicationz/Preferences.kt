@@ -30,7 +30,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewModelScope
 
 
 import com.begemot.kclib.KButtonBar
@@ -40,6 +39,7 @@ import com.begemot.kclib.KWindow
 import com.begemot.knewsclient.KNews
 import com.begemot.knewscommon.GetHeadLines
 import com.begemot.knewscommon.KResult2
+import com.begemot.knewscommon.KResult3
 
 
 import com.begemot.myapplicationz.App.Companion.sApp
@@ -51,21 +51,20 @@ import kotlin.collections.HashMap
 
 class PrefsParams {
     //val l:MutableState<Int> = mutableStateOf(prefsNew.fontsize)
-    val localFontSize: MutableState<Int> = mutableStateOf(sApp.currentNewPreferences.fontsize)
-    val localCurrentLang: MutableState<String> = mutableStateOf(sApp.currentNewPreferences.lang) //prefs.kLang)
-    val tabstate: MutableState<Int> = mutableStateOf(sApp.currentNewPreferences.preftab)
-    val localSelectedLang: MutableState<String> = mutableStateOf(sApp.currentNewPreferences.selectedLangs)
-    val localromanize: MutableState<Int> = mutableStateOf(sApp.currentNewPreferences.romanize)
-
+    val localFontSize: MutableState<Int> = mutableStateOf(sApp.fontsize)
+    val localCurrentLang: MutableState<String> = mutableStateOf(sApp.lang) //prefs.kLang)
+    val tabstate: MutableState<Int> = mutableStateOf(sApp.preftab)
+    val localSelectedLang: MutableState<String> = mutableStateOf(sApp.selectedLangs)
+    val localromanize: MutableState<Int> = mutableStateOf(sApp.romanize)
     val selectLocales: MutableState<Boolean> = mutableStateOf(false)
 }
 
 fun printStat(msg: String, prefParams: PrefsParams, statusApp: StatusApp) {
     Timber.d("printStat : $msg")
-    Timber.d("current font size ${sApp.fontSize.value}")
+    Timber.d("current font size ${sApp.fontsize}")
     Timber.d("localCurrentLang ${prefParams.localCurrentLang.value}")
     Timber.d("localSelectedLang ${prefParams.localSelectedLang.value}")
-    Timber.d("statusApp.lang  ${statusApp.userlang}")
+    Timber.d("statusApp.lang  ${statusApp.lang}")
     Timber.d("localCurrent Romanize ${prefParams.localromanize.value}")
 }
 
@@ -86,7 +85,7 @@ fun editPreferences(sApp: StatusApp) {
                     //statusApp.fontSize.value = prefParams.localFontSize.value
                     //prefs.fontSize = prefParams.localFontSize.value
                     //prefs.fontSize = sApp.fontSize.value
-                    sApp.currentNewPreferences.fontsize=sApp.fontSize.value
+                    //sApp.currentNewPreferences.fontsize=sApp.fontSize.value
                     //sApp.vm.viewModelScope.launch {
                         //updateFontsize(sApp.fontSize.value)
                         //updateLang(prefParams.localCurrentLang.value) //prefs.kLang = prefParams.localCurrentLang.value
@@ -96,11 +95,11 @@ fun editPreferences(sApp: StatusApp) {
                     sApp.selectLang.value = false
 
                     //if (sApp.userlang != prefs.kLang) sApp.vm.headLines.reinicializeHeadLines() //If lang changes force reload <-
-                    if(sApp.userlang != sApp.currentNewPreferences.lang) sApp.vm.headLines.reinicializeHeadLines()
+                    //if(sApp.lang != sApp.currentNewPreferences.lang) sApp.vm.headLines.reinicializeHeadLines()
                     //sApp.userlang = prefs.kLang
-                    sApp.userlang = sApp.currentNewPreferences.lang
-                    sApp.currentNewPreferences.romanize = prefParams.localromanize.value
-                    sApp.romanized=sApp.currentNewPreferences.romanize
+                    //sApp.lang = sApp.currentNewPreferences.lang
+                    sApp.romanize = prefParams.localromanize.value
+                    //sApp.romanize=sApp.currentNewPreferences.romanize
                     printStat("After OK edit Preferences ", prefParams, sApp)
 
                 }) {
@@ -151,7 +150,7 @@ fun tabPreferences(sApp: StatusApp, prefParams: PrefsParams) {
                     content = { Text(title) },
                     onClick = {
                         prefParams.tabstate.value = index
-                        sApp.currentNewPreferences.preftab = prefParams.tabstate.value
+                        sApp.preftab = prefParams.tabstate.value
                     }
                 )
             }
@@ -232,9 +231,9 @@ fun tabLanguage(statusApp: StatusApp, prefParams: PrefsParams) {
     //val r= lKLocales.find { it.acronim==statusApp.lang }
     //var indx=radioOptions.indexOf("${r?.displayName}  (${r?.acronim})")
 
-    Timber.e("tab language ${statusApp.userlang}  ${getOptions[statusApp.userlang]}")
+    Timber.e("tab language ${statusApp.lang}  ${getOptions[statusApp.lang]}")
 
-    val v = getOptions[statusApp.userlang]
+    val v = getOptions[statusApp.lang]
     val z = getOptions.getKey(v!!)
     val comb = "$v  ($z)"
     var indx = radioOptions.indexOf(comb)
@@ -250,10 +249,12 @@ fun tabLanguage(statusApp: StatusApp, prefParams: PrefsParams) {
         printStat("before on change current lang", prefParams, statusApp)
         prefParams.localCurrentLang.value = text.substringAfterLast("(").substringBefore(")")
         //prefs.kLang = prefParams.localCurrentLang.value
-
-        sApp.currentNewPreferences.lang = prefParams.localCurrentLang.value
-        if (statusApp.userlang != sApp.currentNewPreferences.lang) statusApp.vm.headLines.reinicializeHeadLines() //If lang changes force reload <-
-        statusApp.userlang = sApp.currentNewPreferences.lang //prefs.kLang
+        if(statusApp.lang!=prefParams.localCurrentLang.value) {
+            statusApp.vm.headLines.reinicializeHeadLines() //If lang changes force reload <-
+            sApp.lang = prefParams.localCurrentLang.value
+        }
+        //if (statusApp.lang != sApp.currentNewPreferences.lang) statusApp.vm.headLines.reinicializeHeadLines() //If lang changes force reload <-
+        //statusApp.lang = sApp.currentNewPreferences.lang //prefs.kLang
         statusApp.selectLang.value = false
         //Ok(prefParams,statusApp)
     }
@@ -288,13 +289,13 @@ fun tabLanguage(statusApp: StatusApp, prefParams: PrefsParams) {
 @Composable
 fun tabText(statusApp: StatusApp, localFontSize: MutableState<Int>) {
     Column() {
-        KText2("Text Size", size = statusApp.fontSize.value)
-        var sliderPosition = remember{ mutableStateOf(statusApp.fontSize.value.toFloat()) }
+        KText2("Text Size", size = statusApp.fontsize)
+        var sliderPosition = remember{ mutableStateOf(statusApp.fontsize.toFloat()) }
         Slider(
             value = sliderPosition.value,
             onValueChange = {
                 sliderPosition.value = it
-                statusApp.fontSize.value = it.toInt()
+                statusApp.fontsize = it.toInt()
                 //statusApp.currentNewPreferences.fontsize=it.toInt()
                 //PreferencesNEW.upk(PreferencesNEW.TT.Comp.Fontsize,it.toInt())
                             },
@@ -392,10 +393,10 @@ suspend fun testIns():String{
     //    s+="Succes ${r.t}"
     //}
     val r2=KNews().getHeadLines(GetHeadLines("LV","es",0))
-    if(r2 is KResult2.Error){
+    if(r2 is KResult3.Error){
         s+="error ${r2.msg}\n"
     }
-    if(r2 is KResult2.Success){
+    if(r2 is KResult3.Success){
         s+="Succes ${r2.t}"
     }
 
@@ -422,9 +423,9 @@ fun Ok(prefParams: PrefsParams, statusApp: StatusApp) {
     val lSelectedLocales = getLocalesZ().filter { it -> it.checked }
     val lnames = lSelectedLocales.map { it.acronim }
     val s = lnames.joinToString(",")
-    sApp.currentNewPreferences.selectedLangs = lnames.joinToString(",")
+    sApp.selectedLangs = lnames.joinToString(",")
     prefParams.selectLocales.value = false
-    statusApp.userlang = prefParams.localCurrentLang.value
+    statusApp.lang = prefParams.localCurrentLang.value
     printStat("Leaving OK select langs ", prefParams, statusApp)
     //  Timber.d("selectedLang : ${prefs.selectedLang}")
     //statusApp.selectLang.value = false
@@ -432,7 +433,7 @@ fun Ok(prefParams: PrefsParams, statusApp: StatusApp) {
 
 fun setSelectedLang() {
     val lAllLocales = getLocalesZ()
-    sApp.currentNewPreferences.selectedLangs.split(",").forEach {
+    sApp.selectedLangs.split(",").forEach {
         lAllLocales.find { lang -> it.equals(lang.acronim) }?.checked = true
     }
 }
@@ -452,7 +453,7 @@ fun getSelectedLang(): BiHashMap<String, String> {
     //  val r=Locale.getDefault()
     //  val kLocale = lAllLocales.find { it->it.acronim.equals(Locale.getDefault().language) }
     //  kLocale?.checked=true
-    val lSelected = sApp.currentNewPreferences.selectedLangs.split(",")  //"ca,en" ...
+    val lSelected = sApp.selectedLangs.split(",")  //"ca,en" ...
    //  if(!lSelected.contains(sApp.userlang)){
    //       lSelected.toMutableList().add(sApp.userlang)
    //  }
@@ -795,7 +796,7 @@ fun getLocalesZ2(): List<KLocale> {
     lKLocales.forEach { it.checked = false }
     // val kLocale = lKLocales.find { it->it.acronim.equals(Locale.getDefault().language) }
     // kLocale?.checked=true
-    val lSelected = sApp.currentNewPreferences.selectedLangs.split(",")  //"ca,en" ...
+    val lSelected = sApp.selectedLangs.split(",")  //"ca,en" ...
 
     //if(lSelected.find {it->it.equals(Locale.getDefault().language) }==null){
     //    lS.add(kLocale!!)

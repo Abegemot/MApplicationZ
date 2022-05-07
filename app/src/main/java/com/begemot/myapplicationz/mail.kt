@@ -13,8 +13,7 @@ fun sendmail(msg:String,popup:Boolean = true){
     if(msg.isEmpty() || msg.isBlank()) return
     val scope= App.sApp.vm.viewModelScope+Dispatchers.IO
 
-    scope.launch(Dispatchers.IO) {
-        sendmail2(msg,popup)
+    scope.launch(Dispatchers.IO) { sendmail2(msg,popup)
     }
 }
 

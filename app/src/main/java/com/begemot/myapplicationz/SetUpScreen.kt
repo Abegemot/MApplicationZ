@@ -24,7 +24,7 @@ import timber.log.Timber
 
 @Composable
 fun SetUpScreen(sApp: StatusApp) {
-    //Timber.d("hey ya")
+    Timber.w("hey ya")
     //return
     resfreshWraper(true) {
         val scrollState: ScrollState = rememberScrollState(0)

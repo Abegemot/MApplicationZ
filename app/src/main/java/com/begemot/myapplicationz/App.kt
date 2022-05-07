@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.*
 import androidx.datastore.preferences.core.Preferences
@@ -13,9 +14,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.viewModelScope
 import com.begemot.knewscommon.KResult3
-import com.begemot.knewscommon.KTimer
 import com.begemot.myapplicationz.App.Companion.sApp
-import com.begemot.myapplicationz.PreferencesNEW.TT.ccc2
+import com.begemot.myapplicationz.PreferencesNEW.TT.stringToPrefKey
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
@@ -33,7 +33,7 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
 
-class LineNumberDebugTree : Timber.DebugTree() {
+ class LineNumberDebugTree : Timber.DebugTree() {
     override fun createStackElementTag(element: StackTraceElement): String? {
         val s="NKZ [${Thread.currentThread().name}] (${element.fileName}:${element.lineNumber}) ${element.methodName}"
         val el=element.methodName
@@ -45,123 +45,91 @@ class LineNumberDebugTree : Timber.DebugTree() {
         smethod=el.padStart(20,'-')
         val st =if(Thread.currentThread().name[0]=='D') "DD${Thread.currentThread().name.substringAfter("DefaultDispatcher")}" else "${Thread.currentThread().name}"
         val bs="NKZ [$st] (${element.fileName}:${element.lineNumber})".padEnd(54,'-')
-        return "$bs$smethod"
-       // return "NKZ [$st] (${element.fileName}:${element.lineNumber})".padEnd(84,'-')
-       // return "NKZ [${Thread.currentThread().name}] (${element.fileName}:${element.lineNumber})".padEnd(84,'-')
+        return "${bs}${smethod}"
     }
-}
+
+ }
+
+ class KT{
+     enum class LEVEL{ENTERING,LEAVING,STAYING}
+     companion object{
+         var i:Int=0
+     }
+ }
+
+ inline fun KTimber(msg:String,level: KT.LEVEL=KT.LEVEL.STAYING){
+     if(level==KT.LEVEL.ENTERING) KT.i++
+     if(level==KT.LEVEL.LEAVING)  KT.i--
+     if(KT.i==-1) KT.i=0
+     Timber.d("${"     ".repeat(KT.i)}->$msg")
+ }
+ inline fun KTimbere(msg:String="",level: KT.LEVEL=KT.LEVEL.STAYING){
+     if(level==KT.LEVEL.ENTERING) KT.i++
+     if(level==KT.LEVEL.LEAVING)  KT.i--
+     if(msg.isNotEmpty())
+     Timber.e("${"     ".repeat(KT.i)}$msg->")
+ }
+
 
  class App:Application(){
 
       companion object{
          lateinit var lcontext: Context
-
-        @OptIn(InternalCoroutinesApi::class)
-        val sApp:StatusApp by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
-            Timber.e("creating sApp by lazy")
-            runBlocking(IO) {
-                Timber.d("init sApp")
-                //delay(10)
-                StatusApp(
-                    Screens.SetUpScreen,
-                    Screens.QuitScreen,
-                    AppStatus.Loading,
-                    PreferencesNEW.newPrefsFlow.first()
-                )//getCurrentPrefsNews())
-            }
-        }
-
-
-
-        val fPath:String by lazy { "${lcontext.filesDir.absolutePath}/" }
-
-
-
-
+         lateinit var sApp2:StatusApp
+         val sApp:StatusApp by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED)  {  createsApp()   }
+         val fPath:String by lazy { "${lcontext.filesDir.absolutePath}/" }
       }
-
-
 
      override fun onCreate() {
         super.onCreate()
         lcontext = applicationContext
 
         if(BuildConfig.DEBUG){
-            System.setProperty("kotlinx.coroutines.debug", "on" )
+            //System.setProperty("kotlinx.coroutines.debug", "on" )
+            System.setProperty(kotlinx.coroutines.DEBUG_PROPERTY_NAME,"on")
             Timber.plant(LineNumberDebugTree())
         }
-        Timber.d("begin Create App ")// ${sApp.status()}")
+        Timber.d("START ALL")
         //checkWifi(App.instance)
-
-
-
-//        Timber.d("fontsize =${App.sApp.fontSize}")
-        KCache.fP= fPath  //"${lcontext.filesDir.absolutePath}/"
-        //val t= measureTimeMillis {
-        //TestC5()
-        //--> val s=App.sApp.vm.newsPapers.ge
-       // executeListOfAsyncFuncs(Dispatchers.IO, listOf({::sApp.get().vm.newsPapers.getNewsPapers().javaClass.name},{sApp.vm.toneAndPitchMap.load()}))
-        Timber.d("  START")
-
-         //val p=executeListOfAsyncFuncsZ(listOf(toFN(StatusApp.vm2.newsPapers::getNewsPapers),toFN(StatusApp.vm2.toneAndPitchMap::load)))
-         val p=executeListOfAsyncFuncsZ( listOf(toFN(::A), toFN(::B), toFN(::C)))
-         if(p is KResult3.Success) Timber.d("Succes!!")
-         if(p is KResult3.VoidSucces) Timber.d("Void Succes !!!")
-         else Timber.e("Error :${p.msg()}z")
-         Timber.d("    END in ${p.msg()}z")
-       // Timber.d(" END (${p.first})ms ${p.second}")
-         //  execZ("GETNEWSPAPERS",scope){ sApp.vm.newsPapers.getNewsPapers()}
-       //  execZ("GETTONEANDPITCH",scope){sApp.vm.toneAndPitchMap.load()}
-            //TestC()
-        //}
-         //Timber.d("TestC run in ($t) ms")
-         //val p=toFN(StatusApp.vm2.newsPapers::getNewsPapers)
-         //val q=toFN(StatusApp.vm2.toneAndPitchMap::load)
-
-
+        KCache.fP= fPath
         setUP()
-        Timber.d("end  Create  App  ${sApp.currentNewPreferences.userid}")
-     }
-
-     suspend fun TonePitch(){
-         sApp.vm.toneAndPitchMap.load()
+        Timber.d("END ALL")
      }
 
 
 
-    //@ExperimentalPathApi
+
+     //@ExperimentalPathApi
     fun setUP(){
         Timber.d(" --->begin setUP".padStart(65,' '))
         val scope= CoroutineScope(IO)
         sApp.setMsg2("SETUP")
-
         scope.launch(IO +CoroutineName("setup")) {
+
             sApp.currentStatus.value = AppStatus.Loading
+            //delay(3000)
             //      KCache.deleteFiles()
             Timber.d("setUP coroutine begin")
 
-            val newInstall = if (sApp.currentNewPreferences.userid.isEmpty()) {
-                Timber.d("User ID not set")
-                sApp.currentNewPreferences.userid=(UUID.randomUUID().toString())
-                //PreferencesNEW.updateUserid(UUID.randomUUID().toString())
+            val newInstall = if (sApp.userid.isEmpty()) {
+                Timber.d("User ID not set :New Installation")
+                sApp.userid=(UUID.randomUUID().toString())
                 true
             } else false
 
-            val res = if (newInstall) NewInstalation() else  UpdateInstalation()
+            val res = if (newInstall) NewInstalation() else  LoadInstalation()
             if(res){
-                Timber.d("AFTER UPDATE INSTALATION PASSED")
                 sApp.currentStatus.value = AppStatus.Idle
-                if(sApp.currentNewPreferences.selectedNews>-1) {
-                    sApp.currentNewsPaper = sApp.vm.newsPapers.lNewsPapers[sApp.currentNewPreferences.selectedNews]
+                if(sApp.selectedNews >-1) {
+                    sApp.currentNewsPaper = sApp.vm.newsPapers.lNewsPapers[sApp.selectedNews]
                     sApp.vm.headLines.getLines(sApp, sApp.currentNewsPaper)
-                    sApp.currentScreen.value = Screens.FullArticleScreen(sApp.vm.headLines.getCurrentChapter())
+                    sApp.setCurrentScreen(Screens.FullArticleScreen(sApp.vm.headLines.getCurrentChapter()))
                 }
                 else {
-                    Timber.d("setting current screen = news papers screen !!")
-                    sApp.currentScreen.value = Screens.NewsPapersScreen
+                    sApp.setCurrentScreen(Screens.NewsPapersScreen)
                 }
             }
-            Timber.d("${sApp.status()}")
+            //Timber.d("${sApp.status()}")
             Timber.d("    end Set Up<---".padStart(65,' '))
         }
     }
@@ -182,7 +150,7 @@ class LineNumberDebugTree : Timber.DebugTree() {
              sApp.vm.newsPapers.checkUpdates(sApp)
              Timber.d("END NEW INSTALATION")
              sApp.setMsg2("END INSTALLATION")
-             sendmail("New Instalation ${sApp.userID}")
+             sendmail("New Instalation ${sApp.userid}")
          }
          j.invokeOnCompletion { throwable->
              if(throwable !=null){
@@ -201,57 +169,65 @@ class LineNumberDebugTree : Timber.DebugTree() {
          Timber.e("eHandler1  $exception")
      }
 
+suspend fun checkServerUpdates() {
+    Timber.d("CHECK FOR SERVER UPDATES current version=${sApp.vm.newsPapers.Npversion}")
+    sApp.vm.viewModelScope.launch(IO + CoroutineName("POSTUPDATE")) {
+        sApp.vm.newsPapers.checkUpdates(sApp, sApp.vm.newsPapers.Npversion)
+
+    }
+}
 
      @OptIn(ExperimentalTime::class)
-     suspend fun UpdateInstalation():Boolean{
-         Timber.e("BEGIN UPDATE INSTALLATION !!!!!")
-         val kt=KTimer()
+     suspend fun LoadInstalation():Boolean{
+         Timber.e("BEGIN LOAD INSTALLATION !!!!!")
          var OK=true
-         sApp.setMsg2("UPDATE INSTALLATION")
-         val t= measureTimeMillis {
+         sApp.setMsg2("LOAD INSTALLATION")
 
-             val scope = CoroutineScope(IO + CoroutineName("UINSTALL"))
-             Timber.e("START GET NEWS PAPERS AND PITCH IN APP")
-             val j = scope.launch(eHandler) {
-                 execZ("GETNEWSPAPERS",scope){ sApp.vm.newsPapers.getNewsPapers()}
-                 execZ("GETTONEANDPITCH",scope){sApp.vm.toneAndPitchMap.load()}
-                 //execZ("TEST EXECZ",scope){delay(1000)}
-                 //delay(2000)
-             }
-             j.invokeOnCompletion { throwable ->
-                 if (throwable != null) {
-                     OK = false
-                     Timber.e("ERROR: ${throwable.message}")
-                     sApp.setMsg2("SORRY CAN'T RUN THE APPLICATION RETRY LATER")
-                     sApp.shallIquit = true
-                 }
-                 Timber.e("1 tone and pitch and News Papers LOADED duration: (?) ms")
-             }
-             Timber.d("JOIN 1")
-             j.join()
-             Timber.d("JOIN 2")
+         val p= executeListOfAsyncFuncs2<Unit>(listOf(toFN2<Unit>(sApp.vm.toneAndPitchMap::loadToneandPitch2 ),toFN2<Unit>(App.sApp.vm.newsPapers::getNewsPapers2)))
+         if(p is KResult3.Success) Timber.d("xEND ${p.msg()}  time (${p.clientTime}) ms ${p.t}")
+         if(p is KResult3.Error) {
+             Timber.e("END ${p.msg()}  time (${p.clientTime}) ms")
+             OK=false
          }
-
-         Timber.e("2 tone and pitch and News Papers LOADED duration: ($t) ms  (${kt.getElapsed()}) ms")
-         //Timber.d("1 ${sApp.status()}")
          if(OK){
-             //Timber.d("2 ${sApp.status()}")
-
-             Timber.d("END UPDATE INSTALATION OK, CHECK FOR UPDATES current version=${sApp.vm.newsPapers.Npversion}")
-             sApp.vm.viewModelScope.launch(IO +CoroutineName("POSTUPDATE")) {
-                 sApp.vm.newsPapers.checkUpdates(sApp, sApp.vm.newsPapers.Npversion)
-             }
+             checkServerUpdates()
          }else{
+             sApp.setMsg2("CAN'T START APP")
+             sApp.setMsg2("ERROR LOADING APP!!!")
              Timber.e("ERROR LOADING APP !!")
          }
-
-         Timber.e("END UPDATE INSTALLATION !!!!!!!!!")
-
+         Timber.e("END LOAD INSTALLATION !!!!!!!!!")
          return OK
      }
 }
 
-fun isOnline(context: Context): Boolean {
+
+
+ @OptIn(ExperimentalTime::class)
+ fun createsApp():StatusApp{
+     val ss:StatusApp
+     val t= measureTimeMillis {
+         runBlocking(IO) {
+             Timber.d("init sApp")
+             val prefs:KNewsPrefs //=KNewsPrefs()
+             val tm= measureTimedValue {
+                 prefs = PreferencesNEW.newPrefsFlow.first()
+             }
+             Timber.d("got prefs in (${tm.duration.inWholeMilliseconds}) ms prefs=$prefs" )
+             //delay(10)
+             ss = StatusApp(
+                 Screens.SetUpScreen,
+                 Screens.QuitScreen,
+                    AppStatus.Loading,
+                 prefs //PreferencesNEW.newPrefsFlow.first()
+             )//getCurrentPrefsNews())
+         }
+     }
+     Timber.d("sApp created in ($t) ms")
+     return ss
+ }
+
+ fun isOnline(context: Context): Boolean {
     val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     if (connectivityManager != null) {
@@ -273,53 +249,33 @@ fun isOnline(context: Context): Boolean {
     return false
 }
 
- class DelegateMutables< T : Any>(t: MutableState<T>) : ReadWriteProperty<Any?,MutableState<T>> {
-     var  s:MutableState<T> = t
-     override fun getValue(thisRef: Any?, property: KProperty<*>): MutableState<T> {
-         //Timber.e("GET VALUE")
-         return s
+ class DelegateMutables2< T : Any>(t: T) : ReadWriteProperty<Any?,T> {
+     var  s:MutableState<T> = mutableStateOf(t)
+     override fun getValue(thisRef: Any?, property: KProperty<*>): T {
+        // Timber.e("GET VALUE from ${property.name} : ${s.value}")
+         return s.value
      }
-     override fun setValue(thisRef: Any?, property: KProperty<*>, value: MutableState<T>) {
-         //Timber.e("SET VALUE  $value")
-         if(s.value==value.value){
+     override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+        // Timber.e("SET NEW VALUE =  $value current value=${s.value}")
+         if(s.value==value){
              // Timber.e("SKIP VALUE!!! $value")
              return
          }
-         s.value=value.value
-         PreferencesNEW.upk2(ccc2(property.name),value.value)
+         s.value=value
+         PreferencesNEW.updatePrefKey<T>(property.name,value)
+
          //Timber.d("HOSTI TU TIU !!!!!!!!!!!!!!")
      }
  }
 
- class DelegatePrefsString<T : Any>(t:T) : ReadWriteProperty<Any?,T> {
-      var  s:T=t
-     override fun getValue(thisRef: Any?, property: KProperty<*>): T {
-         //Timber.e("GET VALUE")
-         return s
-     }
-     override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
-         //Timber.e("SET VALUE  $value")
-         if(s==value){
-            // Timber.e("SKIP VALUE!!! $value")
-             return
-         }
-         s=value
-         PreferencesNEW.upk2(ccc2(property.name),value)
-         //Timber.d("HOSTI TU TIU !!!!!!!!!!!!!!")
-     }
- }
-
-
-
- class KNewsPrefs(selectedNews:Int=-1, userid:String="", fontsize:Int=20, lang:String="", ktheme:Int=2, preftab:Int=0, selectedLangs:String=Locale.getDefault().language,romanize:Int=2) {
-     var selectedNews: Int by DelegatePrefsString(selectedNews)
-     var userid: String by DelegatePrefsString(userid)
-     var fontsize: Int by DelegatePrefsString<Int>(fontsize)
-     var lang: String by DelegatePrefsString<String>(lang)
-     var ktheme:Int by DelegatePrefsString(ktheme)
-     var preftab:Int by DelegatePrefsString(preftab)
-     var selectedLangs: String by DelegatePrefsString(selectedLangs)
-     var romanize:Int by DelegatePrefsString(romanize)
+ class KNewsPrefs(val selectedNews:Int=-1,
+                  val userid:String="",
+                  val fontsize:Int=20,
+                  val lang:String="",
+                  val ktheme:Int=2,
+                  val preftab:Int=0,
+                  val selectedLangs:String=Locale.getDefault().language,
+                  val romanize:Int=2) {
      override fun toString(): String {
          return  "selectedNews $selectedNews ,fontSize $fontsize ,lang $lang, ktheme $ktheme, preftab $preftab, selectedLangs $selectedLangs, romanize $romanize, userid $userid"
      }
@@ -365,25 +321,31 @@ fun isOnline(context: Context): Boolean {
              KNewsPrefs::selectedLangs.name to PrefKeys.SELECTEDLANGS,
              KNewsPrefs::romanize.name to PrefKeys.ROMANIZE
             )
-        fun  ccc2(c: String):Preferences.Key<*>{
+
+        fun<T>  stringToPrefKey(c: String):Preferences.Key<T>{
              val pk=n[c]
-             if(pk==null)throw Exception("$c not Found Need to add Key in KNewsPrefs !!")
-             return pk
+             if(pk==null) {
+                 Timber.e("$c Key not found!!")
+                 throw Exception("$c not Found Add Key in KNewsPrefs !!")
+             }
+            // Timber.d("key=${pk.name}")
+             return pk as Preferences.Key<T>
         }
 
         suspend fun getNPrefs():KNewsPrefs{
             return newPrefsFlow.first()
         }
 
-        fun<T> upk2(c: Preferences.Key<T>, t: Any, msg:String=""){
+        fun<T> updatePrefKey(nameKey:String , t: Any, msg:String=""){
+            val c = stringToPrefKey<T>(nameKey)
             sApp.vm.viewModelScope.launch(IO +CoroutineName("datastore")) {
                 Timber.d("update key [$c]  with [$t] msg=$msg")
                 App.lcontext.dataStore.edit { preferences ->
-                    preferences[c]=t as T // as String
+                    preferences[c] = t as T
                 }
             }
         }
     }
 }
 
-//Max 321,353,382,399,427,438,443,470, 549, 563, 313, 515,562, 366,387
+//Max 321,353,382,399,427,438,443,470, 549, 563, 313, 515,562, 366,387,403,420,535,540,367,351

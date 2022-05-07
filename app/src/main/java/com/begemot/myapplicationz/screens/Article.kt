@@ -2,21 +2,18 @@ package com.begemot.myapplicationz.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
 import com.begemot.kclib.KText2
 import com.begemot.knewscommon.*
 import com.begemot.myapplicationz.*
@@ -26,7 +23,6 @@ import com.begemot.myapplicationz.layout.myCard
 import com.begemot.myapplicationz.model.articleHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 import timber.log.Timber
@@ -37,11 +33,11 @@ import timber.log.Timber
 @Composable
 fun ArticleScreen(originalTransLink: OriginalTransLink, sApp: StatusApp) {
     val lstate= rememberLazyListState(sApp.vm.article.iInitialItem.value)
-    val q = articleHandler(sApp.currentNewsPaper.handler,originalTransLink.kArticle.link,sApp.userlang)
+    val q = articleHandler(sApp.currentNewsPaper.handler,originalTransLink.kArticle.link,sApp.lang)
     Timber.d("${sApp.currentNewsPaper.desc} ${q.nameFileArticle()} link ->${originalTransLink.kArticle.link}  initial position ${sApp.vm.article.iInitialItem.value}")
     sApp.currentBackScreen = Screens.HeadLinesScreen
 
-    LaunchedEffect(sApp.userlang) {
+    LaunchedEffect(sApp.lang) {
         sApp.currentStatus.value = AppStatus.Loading
         sApp.vm.article.reinicializeArticle(q,lstate)
         sApp.currentLink = originalTransLink.kArticle.link
@@ -85,7 +81,7 @@ fun drawArticle(sApp: StatusApp,otl:OriginalTransLink, lstate: LazyListState) {
             itemsIndexed(lItems) { index, it ->
                 if(sApp.modeBookMark) {
                     if (sApp.vm.article.bookMarks.value.isBookMark(index) ) {
-                        KText2(txt = "$index",size=sApp.fontSize.value)
+                        KText2(txt = "$index",size=sApp.fontsize)
                         articleCard2(index, sApp, original, it, cs, lstate)
                     }
                 }

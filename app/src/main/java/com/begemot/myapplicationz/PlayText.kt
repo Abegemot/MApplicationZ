@@ -15,7 +15,6 @@ import androidx.compose.material.*
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
@@ -33,12 +32,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
 import com.begemot.myapplicationz.model.TText
 import com.begemot.myapplicationz.model.TransClass
 import com.begemot.kclib.FlowRowX
 import com.begemot.kclib.KWindow2
+import com.begemot.kclib.kTheme
 import com.begemot.knewscommon.*
 import com.begemot.myapplicationz.screens.OpenBrowser
 import kotlinx.coroutines.*
@@ -56,8 +54,8 @@ enum class SourcePTP{
 class PlayTextParams(val sApp: StatusApp,val bookmarkable: Boolean,index:Int=0,val original: Boolean,val source:SourcePTP,val listState: LazyListState) {
     var larrselected by mutableStateOf(false)
     var rarrselected by mutableStateOf(false)
-    var oLang by mutableStateOf(if (original) sApp.currentNewsPaper.olang else sApp.userlang)
-    var tLang by mutableStateOf(if (original) sApp.userlang else sApp.currentNewsPaper.olang)
+    var oLang by mutableStateOf(if (original) sApp.currentNewsPaper.olang else sApp.lang)
+    var tLang by mutableStateOf(if (original) sApp.lang else sApp.currentNewsPaper.olang)
     var isSoundParamsEnabled by mutableStateOf(false)
     var tXXTransClass by mutableStateOf(TText())
 
@@ -184,7 +182,7 @@ fun getTransClass(sApp: StatusApp,index:Int,original: Boolean,source: SourcePTP)
             else
                 return TransClass.NoPinYin(origtrans.original.split(" "))
         } else {
-            if (sApp.userlang.equals("zh"))
+            if (sApp.lang.equals("zh"))
                 return TransClass.WithPinYin(origtrans.romanizedt.lPy)
             else
                 return TransClass.NoPinYin(origtrans.translated.split(" "))
@@ -200,7 +198,7 @@ fun getTransClass(sApp: StatusApp,index:Int,original: Boolean,source: SourcePTP)
             else
                 return TransClass.NoPinYin(origtranslink.kArticle.title.split(" "))
         } else {
-            if (sApp.userlang.equals("zh"))
+            if (sApp.lang.equals("zh"))
                 return TransClass.WithPinYin(origtranslink.romanizedt.lPy)
             else
                 return TransClass.NoPinYin(origtranslink.translated.split(" "))
@@ -289,7 +287,7 @@ fun BottomPlayText(
 fun BookMarkIcon(pTP: PlayTextParams){
     //var isBookMark by remember { mutableStateOf(pTP.sApp.vm.article.bookMarks.value.isBookMark(pTP.aIndex)) }
     var isBookMark = pTP.sApp.vm.article.bookMarks.value.isBookMark(pTP.aIndex)
-    val colorNoBookMarks = if(pTP.sApp.kt.value.theme.isLight) Color.Black else Color.White
+    val colorNoBookMarks = if(kTheme.fromInt(pTP.sApp.ktheme).theme.isLight) Color.Black else Color.White
     val cs=rememberCoroutineScope()
     if(pTP.bookmarkable) {
         Box(modifier = Modifier.clickable {
@@ -430,7 +428,7 @@ fun OpenGoogle(ctx:Context,pTP: PlayTextParams,trans:Boolean){
 fun SoundControl(pTP: PlayTextParams) {
     val crs= rememberCoroutineScope()//  CoroutineScope(Dispatchers.IO)
     var currentJob by remember { mutableStateOf<Job?>(null) }
-    val colorSpeaker = if(pTP.sApp.kt.value.theme.isLight) Color.Black else Color.White
+    val colorSpeaker = if(kTheme.fromInt(pTP.sApp.ktheme).theme.isLight) Color.Black else Color.White
     val tup = if (pTP.tSelected.equals("")) pTP.tOriginal else pTP.tSelected
     val tintL = if(pTP.larrselected) Color(0xFFEC407A ) else colorSpeaker
     val tintR = if(pTP.rarrselected) Color(0xFFEC407A ) else colorSpeaker
@@ -591,7 +589,7 @@ fun SoundPitch(sp: ClikedSoundPitch, pTP: PlayTextParams) {
                     }
                     is TransClass.NoPinYin -> {
                         Timber.d("DrawNoPinYin  ${tt.getText()}")
-                        TextX(tt.getText(), pTP.sApp.fontSize.value, true)
+                        TextX(tt.getText(), pTP.sApp.fontsize, true)
                     }
                     else -> {
                     }
@@ -706,7 +704,7 @@ fun SelectableText(pTP: PlayTextParams) {
             pTP.lSOnpy.lSO.forEach {
                 TextX(
                     it.x.first,
-                    pTP.sApp.fontSize.value,
+                    pTP.sApp.fontsize,
                     it.x.second.value,
                     Modifier.clickable( onClick = { onClickText2(pTP,pTP.lSOnpy,it,scope)} )
                 )
@@ -728,12 +726,12 @@ fun SelectableText(pTP: PlayTextParams) {
                 ) {
                     TextX(
                         it.getObject().w,
-                        pTP.sApp.fontSize.value,
+                        pTP.sApp.fontsize,
                         it.isselected(),
                     )
                     TextX(
                         it.getObject().r.replace("\\s".toRegex(), ""),
-                        pTP.sApp.fontSize.value,
+                        pTP.sApp.fontsize,
                         it.isselected(),
                     )
                 }
@@ -753,13 +751,13 @@ fun DrawPy(lPy: List<Pinyin>, sApp: StatusApp) {
                 ) {
                     TextX(
                         it.w,
-                        sApp.fontSize.value,
+                        sApp.fontsize,
                         true,
                         Modifier.clickable(onClick = { })
                     )
                     TextX(
                         it.r.replace("\\s".toRegex(), ""),
-                        sApp.fontSize.value,
+                        sApp.fontsize,
                         true,
                         Modifier.clickable(onClick = { })
                     )

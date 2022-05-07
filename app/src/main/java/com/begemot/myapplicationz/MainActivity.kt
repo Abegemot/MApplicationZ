@@ -1,7 +1,6 @@
 package com.begemot.myapplicationz
 
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.os.PersistableBundle
 import android.view.WindowManager
@@ -11,7 +10,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
 import androidx.compose.material.*
@@ -33,13 +31,11 @@ import timber.log.Timber
 
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.viewModelScope
 //import com.begemot.inreader.layout.FlowRowX
@@ -57,9 +53,8 @@ import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.android.play.core.tasks.Task
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
-//import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.flow.debounce
-//import androidx.datastore.preferences
+import java.lang.Integer.max
+import java.lang.Integer.min
 
 private const val USER_PREFERENCES_NAME = "user_preferences"
 private const val REQUEST_UPDATE = 100
@@ -71,28 +66,17 @@ val Context.dataStore by preferencesDataStore(
 
 
 class MainActivity : ComponentActivity() {
-//    lateinit var myApp:App
-   // lateinit var sApp: StatusApp
-  //  val preferenceDataStore: DataStore<Preferences> by lazy {
-  //      createDataStore(name = "profile")
-  //  }
-
-    //@ExperimentalMaterialApi
-    //@ExperimentalComposeUiApi
-
     @OptIn(ExperimentalMaterialApi::class,ExperimentalComposeUiApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
          //Timber.d("CREATE MAIN ACTIVITY---------------${App.sApp.status()}-------------------")
-         Timber.d("CREATE MAIN ACTIVITY--------------- Set Up on his way current Screen ${sApp.currentScreen.value}")
+         Timber.w("CREATE MAIN ACTIVITY--------------- Set Up on his way current Screen ${sApp.currentScreen.value}")
          setContent { newsReaderApp(App.sApp) }
          window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
          sApp.vm.viewModelScope.launch(IO+CoroutineName("GOOGLEUPDATE")) {
              checkForAppUpdates()
          }
     }
-
-
 
     private fun checkForAppUpdates() {
         //1
@@ -193,72 +177,32 @@ sealed class AppStatus {
     override fun toString() = this.javaClass.simpleName
 }
 
-/*object SStatusApp {
-    val fontSize = mutableStateOf(prefs.fontSize)
-    var lang by mutableStateOf(prefs.kLang)
-}
-
-fun pos(s: SStatusApp) {
-    Timber.d(s.lang)
-}*/
-
 
 class StatusApp(
     currentScreen: Screens,
     var currentBackScreen: Screens,
     currentStatus: AppStatus = AppStatus.Loading,
-    //val cNPrefs by mutableStateOf(KNewsPrefs())
-    var currentNewPreferences: KNewsPrefs,
-
-
+    currentNewPreferences: KNewsPrefs,
     ) {
-
-    companion object RR{
-        val  vm2 = VM()
-        fun getvm2():VM=vm2
-    }
-
-    lateinit var  vm:VM
-    init {
-        vm=VM()
-    }
-
-    fun getVM():VM=vm
-
-    var shallIquit by mutableStateOf(false)
-    var currentLink by mutableStateOf("")
-
-    val fontSize = mutableStateOf(currentNewPreferences.fontsize)
-
-    //var fontSize by DelegateMutables(mutableStateOf(currentNewPreferences.fontsize))
-
-    var userlang by  mutableStateOf(currentNewPreferences.lang)  //prefs.kLang)
-
-    //val kt = mutableStateOf(kTheme.values()[prefs.ktheme])
-    val kt = mutableStateOf(kTheme.values()[currentNewPreferences.ktheme])
-
-    val selectedNews = mutableStateOf(currentNewPreferences.selectedNews)
+    val  vm:VM = VM()
+    var shallIquit    by mutableStateOf(false)
+    var currentLink   by mutableStateOf("")
+    var fontsize      by DelegateMutables2(currentNewPreferences.fontsize)
+    var lang          by DelegateMutables2(currentNewPreferences.lang)  //prefs.kLang)
+    var ktheme        by DelegateMutables2(currentNewPreferences.ktheme)
+    var selectedNews  by DelegateMutables2(currentNewPreferences.selectedNews)
+    var romanize      by DelegateMutables2(currentNewPreferences.romanize)
+    var selectedLangs by DelegateMutables2(currentNewPreferences.selectedLangs)
+    var preftab       by DelegateMutables2(currentNewPreferences.preftab)
+    var userid        by DelegateMutables2(currentNewPreferences.userid) //Var only for setup first time
 
     val currentStatus = mutableStateOf(currentStatus)
-
     val currentScreen = mutableStateOf(currentScreen)
-
     lateinit var currentNewsPaper: NewsPaper
-    val userID by lazy { currentNewPreferences.userid }
-
     var visibleInfoBar by mutableStateOf(false)
-
     var selectLang = mutableStateOf(false)
-
-    var romanized by mutableStateOf(currentNewPreferences.romanize)
-
     var modeBookMark by mutableStateOf(false)
     var arethereBookMarks by mutableStateOf(false)
-
-    fun setNewPrefs(knp:KNewsPrefs){
-        currentNewPreferences=knp
-    }
-
 
     fun setMsg(sAux: String) {
         vm.msg.setMsg(this, sAux)
@@ -267,25 +211,23 @@ class StatusApp(
         vm.msg.setMsg2(sAux)
     }
 
-
+    fun setCurrentScreen(screen:Screens){
+        Timber. w("Setting current screen to ${screen} !!")
+        currentScreen.value=screen
+    }
 
     override fun toString(): String {
         return """
                                                                  Current Screen ${currentScreen.toString()}
                                                                  Current Back Screen ${currentBackScreen}
                                                                  Current Status ${currentStatus}
-                                                                 Current Lang   ${userlang}
+                                                                 Current Lang   ${lang}
         """.padStart(50, 'u')
     }
 
-    fun getNP():String{
-        if(!::currentNewsPaper.isInitialized) return "not set"
-        return currentNewsPaper.name
-    }
-
     fun getLangTxt():String{
-        if(currentScreen.value==Screens.NewsPapersScreen) return "  ($userlang)"
-        return if(::currentNewsPaper.isInitialized) "  (${currentNewsPaper.olang})->($userlang)" else "  ($userlang)"
+        if(currentScreen.value==Screens.NewsPapersScreen) return "  (${lang})"
+        return if(::currentNewsPaper.isInitialized) "  (${currentNewsPaper.olang})->(${lang})" else "  (${lang})"
     }
 
     fun status(): String =
@@ -293,50 +235,36 @@ class StatusApp(
            current screen: ${currentScreen.value} 
            status: ${currentStatus.value}
            bkscreen: ${currentBackScreen}
-           user lang $userlang
-           user: ${userID}
-           newPrefs ${sApp.currentNewPreferences} 
+           user lang $lang
+           user: $userid
+           *newPrefs  
            lanpitch ${sApp.vm.toneAndPitchMap}
-           newsPapersList ${sApp.vm.newsPapers}
+           newsPapersList ${sApp.vm.newsPapers.toString().substring(0,min(100,sApp.vm.newsPapers.toString().length))}
            currentNewPaper ${if(::currentNewsPaper.isInitialized) "$currentNewsPaper" else "NULL"}
-           selectedNews  ${selectedNews.value}
+           selectedNews  ${selectedNews}
            headlines   ${sApp.vm.headLines}<-end Appstatus"""
 
     fun getHeadLineParameters(): GetHeadLines {
         return GetHeadLines(
             currentNewsPaper.handler,
-            userlang,
+            lang,
             vm.headLines.dataHeadlines
         )
     }
-    fun setCurrentBookMark(i:Int){
-
-    }
-
 
 }
 
-
-@Composable
-fun setat(){
-    //SetUpScreen(sApp = App.sApp)
-    //Text("SETAT")
-}
-
-
-//@ExperimentalComposeUiApi
-//@ExperimentalMaterialApi
 @ExperimentalComposeUiApi
 @ExperimentalMaterialApi
 @Composable
 fun newsReaderApp(sApp: StatusApp) {
-    Timber.d("Runing!!  current screen ${sApp.currentScreen.value}")
+    Timber.w("Runing!!  current screen ${sApp.currentScreen.value}")
     val ds = DrawerState(initialValue = DrawerValue.Closed)
     val scaffoldState = remember { ScaffoldState(ds, SnackbarHostState()) }
     val contactdialog = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     //if(sApp.currentScreen.value==Screens.SetUpScreen) { setat(); return }
-    MaterialTheme(colors = sApp.kt.value.theme, typography = appTypography) {
+    MaterialTheme(colors = kTheme.fromInt(sApp.ktheme).theme, typography = appTypography) {
         if(sApp.currentScreen.value==Screens.SetUpScreen){
             /*Box(Modifier.width(100.dp).height(100.dp).background(Color.Transparent)){
                 Text("POS")
@@ -489,11 +417,6 @@ fun MAppBar2(sApp: StatusApp) {
     }
 }
 
-@Composable
-fun appIconsC(sApp: StatusApp){
-
-}
-
 
 fun getTitles(sApp: StatusApp): List<String> {
     if (sApp.currentScreen.value == Screens.NewsPapersScreen) return listOf(
@@ -551,10 +474,11 @@ fun appIcons(sApp: StatusApp) {
 
         IconButton(
             onClick = {
-                val sprevTheme=sApp.kt.value.name
-                sApp.kt.value = kTheme.next(sApp.kt.value)
-                sApp.currentNewPreferences.ktheme = sApp.kt.value.ordinal
-                Timber.d("on change theme prev theme $sprevTheme current theme ${sApp.kt.value.name} ")
+                val sprevTheme=kTheme.fromInt(sApp.ktheme).name
+                val s=kTheme
+                sApp.ktheme = kTheme.next2(sApp.ktheme)
+                //sApp.currentNewPreferences.ktheme = sApp.kt.value.ordinal
+                Timber.d("on change theme prev theme $sprevTheme current theme ${kTheme.fromInt(sApp.ktheme).name} ")
             },
             Modifier.size(sicon)
         ) {
@@ -678,7 +602,7 @@ fun contactDialog(contactDialog: MutableState<Boolean>) {
 @ExperimentalComposeUiApi
 @Composable
 fun screenDispatcher(contactdialog: MutableState<Boolean>, sApp: StatusApp) {
-    Timber.d("${sApp.currentScreen.value}")
+    Timber.w("Composable ${sApp.currentScreen.value}")
     if (contactdialog.value) contactDialog(contactdialog)
     if (sApp.selectLang.value) editPreferences(sApp)
     Surface {
@@ -732,7 +656,7 @@ fun displayError(sError: String, e: Exception? = null, sApp: StatusApp) {
     }
 }
 
-//Max val 664,726,754,720
+//Max val 664,726,754,720,737,668
 
 
 

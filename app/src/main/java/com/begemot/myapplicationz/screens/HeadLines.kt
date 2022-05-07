@@ -41,7 +41,7 @@ import timber.log.Timber
 fun headlinesScreen(statusApp: StatusApp) {
     statusApp.currentBackScreen = Screens.NewsPapersScreen
 //    Timber.d("->${statusApp.status()}")
-    LaunchedEffect(statusApp.userlang) {
+    LaunchedEffect(statusApp.lang) {
         Timber.d("LaunchedEffect")
         statusApp.vm.headLines.getLines(statusApp,statusApp.currentNewsPaper)
     }

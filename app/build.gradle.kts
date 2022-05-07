@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  plugins {
      id("com.android.application")
      kotlin("android")
-     kotlin("plugin.serialization") version "1.6.10"
+     kotlin("plugin.serialization") version "1.6.20"
      id("com.google.gms.google-services")
      id("com.google.firebase.crashlytics")
 
@@ -64,7 +64,7 @@ android {
         //kotlinCompilerVersion="1.4.0-dev-withExperimentalGoogleExtensions-20200720"
        // kotlinCompilerVersion="1.4.21-2"
        //  kotlinCompilerExtensionVersion = "1.0.5"
-        kotlinCompilerExtensionVersion = "1.2.0-alpha07"//""1.1.1"
+        kotlinCompilerExtensionVersion = "1.2.0-alpha08"//""1.1.1"
     }
 
 
@@ -141,8 +141,8 @@ android {
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
-
-    implementation(platform("com.google.firebase:firebase-bom:29.3.0"))
+    implementation(platform("com.begemota:sharedlibrary"))
+    implementation(platform("com.google.firebase:firebase-bom:29.3.1"))
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-crashlytics-ktx")
 

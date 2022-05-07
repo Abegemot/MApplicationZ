@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.lang.Exception
+import kotlin.time.measureTimedValue
 
 class headLines() {
     val lHeadLines: MutableState<THeadLines> = mutableStateOf<THeadLines>(THeadLines())
@@ -59,19 +60,21 @@ class headLines() {
 
     suspend fun getLines(sApp: StatusApp,np:NewsPaper)= withContext(Dispatchers.IO+CoroutineName("getheadlines")) {
         if (lHeadLines.value.lhl.isNotEmpty()) {Timber.d("getLines(${sApp.getHeadLineParameters()}) They are allready loaded"); return@withContext} //If they are already loaded ....
-        Timber.d("(s) getLines ${sApp.currentNewsPaper.handler} olang  ${sApp.currentNewsPaper.olang}  trans lang ${sApp.userlang}")
+        Timber.d("(s) getLines ${sApp.currentNewsPaper.handler} olang  ${sApp.currentNewsPaper.olang}  trans lang ${sApp.lang}")
         sApp.currentStatus.value = AppStatus.Loading
         lHeadLines.value = lHeadLines.value.copy(lhl = emptyList())
         //delay(2000)
+
         val resp = KProvider.getHeadLines(sApp.getHeadLineParameters())
         when (resp) {
-            is KResult2.Success -> {
+            is KResult3.Success -> {
                 sApp.currentStatus.value = AppStatus.Idle
                 lHeadLines.value = resp.t
+                Timber.d("getLines OK ${resp.timeInfo()}")
                 //Timber.d(lHeadLines.value.lhl.print("getlines"))
                 currChapter.value=loadSelectedChapter(sApp)
             }
-            is KResult2.Error -> {
+            is KResult3.Error -> {
                 Timber.d("SERVER ERROR!!!")
                 sApp.currentStatus.value =
                     AppStatus.Error("getLines ERROR\n${resp.msg}", Exception(resp.msg))
@@ -84,7 +87,7 @@ class headLines() {
         sApp.currentStatus.value = AppStatus.Loading
         val resp = KProvider.checkUpdates2(sApp.getHeadLineParameters())
         when (resp) {
-            is KResult2.Success -> {
+            is KResult3.Success -> {
                 Timber.d("changes '${resp.t}'")
                 if (resp.t.datal != 0L) {
                     lHeadLines.value = resp.t
@@ -93,7 +96,7 @@ class headLines() {
                 } else sApp.vm.msg.setMsg(sApp, "No new Headlines  !!")
                 sApp.currentStatus.value = AppStatus.Idle
             }
-            is KResult2.Error -> {
+            is KResult3.Error -> {
                 Timber.d("Aresp error : ${resp.msg}")
                 sApp.currentStatus.value =
                     AppStatus.Error("CHECK UPDATES ERROR\n${resp.msg}", Exception(resp.msg))

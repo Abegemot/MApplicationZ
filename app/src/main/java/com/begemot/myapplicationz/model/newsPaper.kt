@@ -9,6 +9,7 @@ import kotlinx.coroutines.delay
 //import io.ktor.util.*
 import timber.log.Timber
 import java.lang.Exception
+import kotlin.system.measureTimeMillis
 
 
 class NewsPapers() {
@@ -25,27 +26,56 @@ class NewsPapers() {
         return "$newsPapers" //"${newsPapers.toString2()}"
     }
 
-
-    suspend fun getNewsPapers(){
-
-        val np=KProvider.getNewsPapers()
-        when(np){
-
-            is KResult3.Success->{
-               Timber.d("OK getNewsPapers= ${np.timeInfo()} ${np.t.toString()}")
-                //statusApp.vm.setNPapers(resp.t)
-                newsPapers = np.t
-                sApp.currentStatus.value = AppStatus.Idle
-                //throw Exception("JRONYA QUE JRONYA")
-                //throw  Exception("CACA OF THE COW")
-            }
-            is KResult3.Error->{
-
-                Timber.e("2 resp error  : exception -> ${np.msg}")
-                sApp.currentStatus.value = AppStatus.Error("getLocalNewsPapers Error: ${np.msg}", null)
+    suspend fun getNewsPapers2():KResult3<Unit>{
+        val nr:KResult3<Unit>
+        val t= measureTimeMillis {
+            val np = KProvider.getNewsPapers()
+            nr=when(np){
+                is KResult3.Success->{
+                    //statusApp.vm.setNPapers(resp.t)
+                    newsPapers = np.t
+                    //Timber.d("OK getNewsPapers = provider time ${np.timeInfo()} ${np.t.toString().substring(0,100)}")
+                    //nr=np.toUnit()
+                    KResult3.Success(Unit,"getNewsPapers2 ",np.clientTime,np.serverTime)
+                }
+                is KResult3.Error->{
+                    Timber.e("2 resp error  : exception -> ${np.msg}")
+                    sApp.currentStatus.value = AppStatus.Error("getLocalNewsPapers Error: ${np.msg}", null)
+                    KResult3.Error(np.msg,"getNewsPapers2",np.clientTime,np.serverTime)
+                }
             }
         }
-        Timber.e("end getLocalNewsPapers")
+        Timber.d("iner time ($t) ms")
+        return nr
+    }
+
+
+    suspend fun getNewsPapers(){
+        //delay(50)
+        //sApp.currentStatus.value = AppStatus.Idle
+
+        val t= measureTimeMillis {
+            //val np = KProvider.getNewsPapers()
+            when(val np=KProvider.getNewsPapers()){
+                is KResult3.Success->{
+                    //statusApp.vm.setNPapers(resp.t)
+                    newsPapers = np.t
+                    Timber.d("OK getNewsPapers = provider time ${np.timeInfo()} ${np.t.toString().substring(0,50)}")
+                    //delay(500)
+                    // sApp.currentStatus.value = AppStatus.Idle
+                    //throw Exception("JRONYA QUE JRONYA")
+                    //throw  Exception("CACA OF THE COW")
+                }
+                is KResult3.Error->{
+                    Timber.e("2 resp error  : exception -> ${np.msg}")
+                    sApp.currentStatus.value = AppStatus.Error("getLocalNewsPapers Error: ${np.msg}", null)
+                }
+            }
+        }
+        Timber.d("iner time ($t) ms")
+        return
+        /**/
+//        Timber.e("end getLocalNewsPapers")
         //Timber.d("ÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑ")
         //delay(1000)
     }
@@ -111,7 +141,7 @@ class NewsPapers() {
     suspend fun checkUpdates(sApp: StatusApp, version:Int=0): Boolean {
         val nP=KProvider.getNewsPapersUpdates(version)//sApp.vm.newsPapers.Npversion)
         when(nP){
-            is KResult2.Success->{
+            is KResult3.Success->{
                 if(nP.t.version==0) {
                     Timber.d("resp succes : No updates = ${nP.t}")
                     return false
@@ -122,7 +152,7 @@ class NewsPapers() {
                     return true
                 }
             }
-            is KResult2.Error->{
+            is KResult3.Error->{
                 sApp.setMsg2("getNewsPapersUpdates ERROR e->${nP.msg} ")
                 Timber.e("resp error : msg->${nP.msg}  " )
                 sApp.currentStatus.value = AppStatus.Error("checkUpdates newspapers ${nP.msg}", null)
@@ -136,4 +166,4 @@ class NewsPapers() {
 
 }
 
-//Max 134
+//Max 134 169

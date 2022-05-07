@@ -65,7 +65,8 @@ object KCache{
     }
 
     @OptIn(ExperimentalTime::class)
-    inline suspend fun <reified T>   load(sNameFile: String):T{
+    //suspend
+   suspend inline fun <reified T>   load(sNameFile: String):T{
             //  return T::class.java.newInstance()
             val s = loadStringFromCache(sNameFile)
             if (s.isEmpty()) {
@@ -100,6 +101,22 @@ object KCache{
         }
           return@withContext str
     }
+
+
+    fun loadStringFromCache2(sNameFile: String):String{   //= withContext(Dispatchers.IO){
+        val str=
+            try {
+                val str=String(Files.readAllBytes(Paths.get(getCName(sNameFile))))
+                //Timber.d("File raw $sf length(${str.length})->' ${str.substring(0,minOf(str.length,69))}....'")
+                return str
+            } catch (e: Exception) {
+                //Timber.e("exception $e")
+                ""//"error loadFromCache ${e.message}"
+            }
+        return str
+    }
+
+
 
 
 
