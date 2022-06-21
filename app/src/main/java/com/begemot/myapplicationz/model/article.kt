@@ -3,6 +3,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import com.begemot.knewsclient.KNews
 import com.begemot.knewscommon.*
 import com.begemot.myapplicationz.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,6 +44,9 @@ class articleHandler(val nphandler:String="", val link:String="", val tlang:Stri
     fun nameFileBooMarksAndLast():String{
         return "Articles/$nphandler${link.takeLast(15).replace("/","")}"
     }
+    fun status():String{
+        return "($nphandler $link $tlang)"
+    }
 }
 
 class article {
@@ -59,6 +63,10 @@ class article {
     }
 
     var holdingItem: MutableState<Int> = mutableStateOf(0)
+
+    fun status(): String {
+        return "qarticleHandler = ${qarticleHandler.value.status()}"
+    }
 
     fun reinizializeArticle2() {
         lArticle.value = emptyList()
@@ -95,6 +103,8 @@ class article {
         sApp.currentStatus.value = AppStatus.Loading
         val resp = KProvider.getArticle(ah)
         Timber.d("(s) NewsPaper ${ah.nphandler} chapter/link ${ah.link}  lang ${ah.tlang} time elapsed ${resp.timeInfo()}")
+        Timber.d("sapp.current link ${sApp.currentLink} sapp current chapter ${sApp.vm.headLines.currChapter.value}")
+        Timber.d("Article handler ${sApp.vm.article.qarticleHandler.value.nameFileArticle()}")
         when (resp) {
             is KResult3.Success -> {
                 //Timber.d("size ${resp.t.size}")
@@ -104,12 +114,35 @@ class article {
                 if (resp.t.size == 0) {
                     lArticle.value = listOf(OriginalTrans("Article only for subscriptors"))
                 }
+                if (sApp.currentNewsPaper.mutable) {
+                    checkUpdatedArticle(sApp, ah)
+                }
             }
             is KResult3.Error -> {
                 Timber.d("error")
                 sApp.currentStatus.value = AppStatus.Error(resp.msg, Exception(resp.msg))
             }
         }
+    }
+
+
+    suspend fun checkUpdatedArticle(sApp: StatusApp, ah: articleHandler) {
+        val d = KCache.getFileDate(ah.nameFileArticle())
+        val gart = GetArticle(ah.nphandler, ah.tlang, ah.link, d)
+
+        when (val r = KNews().getUpdatedArticle(gart)) {
+            is KResult3.Success -> {
+                if (r.t.size == 0) Timber.d("NO UPDATES")
+                else {
+                    Timber.d("ARTICLE UPDATED")
+                    sApp.snack("Article Updated!!")
+                    lArticle.value=r.t
+                    KCache.storeInCache(ah.nameFileArticle(), toJStr(r.t))
+                }
+            }
+            is KResult3.Error -> {}
+        }
+
     }
 }
 

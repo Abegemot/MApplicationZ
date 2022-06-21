@@ -14,6 +14,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.viewModelScope
 import com.begemot.knewscommon.KResult3
+import com.begemot.knewscommon.KindOfNews
 import com.begemot.myapplicationz.App.Companion.sApp
 import com.begemot.myapplicationz.PreferencesNEW.TT.stringToPrefKey
 
@@ -92,6 +93,7 @@ import kotlin.time.measureTimedValue
         Timber.d("START ALL")
         //checkWifi(App.instance)
         KCache.fP= fPath
+        //KCache.makeDir("MP3")
         setUP()
         Timber.d("END ALL")
      }
@@ -103,7 +105,7 @@ import kotlin.time.measureTimedValue
     fun setUP(){
         Timber.d(" --->begin setUP".padStart(65,' '))
         val scope= CoroutineScope(IO)
-        sApp.setMsg2("SETUP")
+        //sApp.setMsg2("SETUP")
         scope.launch(IO +CoroutineName("setup")) {
 
             sApp.currentStatus.value = AppStatus.Loading
@@ -123,13 +125,17 @@ import kotlin.time.measureTimedValue
                 if(sApp.selectedNews >-1) {
                     sApp.currentNewsPaper = sApp.vm.newsPapers.lNewsPapers[sApp.selectedNews]
                     sApp.vm.headLines.getLines(sApp, sApp.currentNewsPaper)
+                    if(sApp.currentNewsPaper.kind==KindOfNews.BOOK)
                     sApp.setCurrentScreen(Screens.FullArticleScreen(sApp.vm.headLines.getCurrentChapter()))
+                    if(sApp.currentNewsPaper.kind==KindOfNews.SONGS)
+                        sApp.setCurrentScreen(Screens.SongScreen(sApp.vm.headLines.getCurrentChapter()))
                 }
                 else {
                     sApp.setCurrentScreen(Screens.NewsPapersScreen)
                 }
             }
             //Timber.d("${sApp.status()}")
+            sApp.vm.msg.cls() //+-
             Timber.d("    end Set Up<---".padStart(65,' '))
         }
     }
@@ -179,6 +185,7 @@ suspend fun checkServerUpdates() {
 
      @OptIn(ExperimentalTime::class)
      suspend fun LoadInstalation():Boolean{
+         //delay(3000)
          Timber.e("BEGIN LOAD INSTALLATION !!!!!")
          var OK=true
          sApp.setMsg2("LOAD INSTALLATION")
@@ -196,7 +203,9 @@ suspend fun checkServerUpdates() {
              sApp.setMsg2("ERROR LOADING APP!!!")
              Timber.e("ERROR LOADING APP !!")
          }
-         Timber.e("END LOAD INSTALLATION !!!!!!!!!")
+         Timber.e("END LOAD INSTALLATION !!!!!!!!! ${sApp.status()}")
+         sApp.setMsg2("END LOAD INSTALATION")
+         //delay(1000)
          return OK
      }
 }

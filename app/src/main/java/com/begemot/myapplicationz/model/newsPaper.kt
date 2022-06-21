@@ -146,14 +146,14 @@ class NewsPapers() {
                     Timber.d("resp succes : No updates = ${nP.t}")
                     return false
                 }else{
-                    sApp.setMsg("News Papers Update")
+                    sApp.snack("News Papers Updated")
                     Timber.d(" Updates  version=${nP.t.version}")
                     newsPapers = nP.t
                     return true
                 }
             }
             is KResult3.Error->{
-                sApp.setMsg2("getNewsPapersUpdates ERROR e->${nP.msg} ")
+                sApp.setMsg2("getNewsPapersUpdates ERROR e->${nP.msg} ")  //??
                 Timber.e("resp error : msg->${nP.msg}  " )
                 sApp.currentStatus.value = AppStatus.Error("checkUpdates newspapers ${nP.msg}", null)
                 return false

@@ -4,6 +4,7 @@ import android.graphics.BitmapFactory
 import android.text.format.Formatter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import com.begemot.knewscommon.fromJStr
 import com.begemot.knewscommon.kjson
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
@@ -63,6 +64,13 @@ object KCache{
         //throw Exception("patata !!!!!")
         //Timber.d("end write $sf size ${zimage.size}")
     }
+    fun storeMP3InFile(sNameFile: String,zimage: ByteArray){
+        val sf= getCName( "MP3/$sNameFile")
+        //Timber.d("STORE IMAGE IN CACHE $sf   with size ${zimage.size}")
+        if(zimage.size==0) {  Timber.e("empty mp3 from server $sf"); return }
+        Files.write(Paths.get(sf),zimage)
+    }
+
 
     @OptIn(ExperimentalTime::class)
     //suspend
@@ -84,8 +92,9 @@ object KCache{
                 }
 
             }
-            val l = kjson.decodeFromString<T>(s)
-            return l
+            return fromJStr<T>(s)
+            //val l = kjson.decodeFromString<T>(s)
+            //return l
     }
 
 // caller has to deal with empty values
@@ -122,6 +131,7 @@ object KCache{
 
 
     fun findImageInFile(sNameFile: String):ImageBitmap? {
+        if(sNameFile.isEmpty()) return null
         try {
             val sf= getCName( "Images/${sNameFile}")
             val zimage = Files.readAllBytes(Paths.get(sf))
@@ -129,7 +139,7 @@ object KCache{
 //            Timber.d("found $sNameFile  ${zimage.size}")
             return s
         } catch (e: Exception) {
-            Timber.e("cache exception finding $sNameFile $e")
+            Timber.e("cache exception finding '$sNameFile' $e")
             return  null //ByteArray(0)
         }
     }
@@ -141,6 +151,7 @@ object KCache{
         makeDir("Images")
         makeDir("Headlines")
         makeDir("Articles")
+        makeDir("MP3")
     }
 
     fun makeDir(nameDir:String){
@@ -218,6 +229,26 @@ object KCache{
     }*/
 
 
+    fun fileExist(sNameFile:String):Boolean{
+        val sf= getCName(sNameFile)
+        val b= File(sf).exists()
+        Timber.d("file exist $b of $sf")
+        return b
+    }
+
+    fun getFile(sNameFile: String):File{
+        val sf= getCName(sNameFile)
+        return File(sf)
+    }
+
+
+    fun getFileDate(sNameFile: String):Long{
+        val sf= getCName(sNameFile)
+        return File(sf).lastModified()
+    }
+
+
+
 
     fun fileExistsAndNotEmpty(sNameFile: String, sDirectory: String):Boolean{
         val sf= getCName("$sDirectory/$sNameFile")
@@ -287,6 +318,7 @@ fun listAllFiles():List<String>{
     }
 
     fun removeHeadLinesOf(handler:String){
+        Timber.d("removeHeadLinesOf:$handler")
         val F=File(getCName("Headlines"))
         F.listFiles()?.filter { it.name.substring(0,handler.length).equals(handler) }
             ?.forEach{
@@ -367,4 +399,4 @@ fun listAllFiles():List<String>{
 }
 
 
-//Max 311 342 359
+//Max 311 342 359 374

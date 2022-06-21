@@ -44,10 +44,10 @@ private suspend fun sendmail2(msg:String,popup: Boolean)  = withContext(Dispatch
         mm.setText(msg)
         Transport.send(mm)
         Timber.d("aparently send....")
-        if(popup) App.sApp.setMsg("message sent")
+        if(popup) App.sApp.snack("message sent")
     }catch (e:MessagingException){
         KCache.writeError("Error sending mail ${e.message}")
-        if(popup) App.sApp.setMsg("Sorry Message could not be sent ${e.message}")
+        if(popup) App.sApp.snack("Sorry Message could not be sent ${e.message}")
         Timber.d("Something went wrong !! $e")
         e.printStackTrace()
     }

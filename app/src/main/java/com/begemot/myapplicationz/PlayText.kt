@@ -306,12 +306,14 @@ fun BookMarkIcon(pTP: PlayTextParams){
         } ) {
             val tintHL = if (isBookMark) Color.Cyan
             else colorNoBookMarks
-            Icon(
-                painterResource(id = R.drawable.ic_bookmark_border_black_24dp),
-                contentDescription = null,
-                tint = tintHL,
-                modifier = Modifier.size(sizeicon)
-            )
+            if(pTP.sApp.currentNewsPaper.kind==KindOfNews.BOOK) {
+                Icon(
+                    painterResource(id = R.drawable.ic_bookmark_border_black_24dp),
+                    contentDescription = null,
+                    tint = tintHL,
+                    modifier = Modifier.size(sizeicon)
+                )
+            }
         }
     }
 }

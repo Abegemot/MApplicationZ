@@ -38,18 +38,19 @@ import timber.log.Timber
 @ExperimentalMaterialApi
 @ExperimentalComposeUiApi
 @Composable
-fun headlinesScreen(statusApp: StatusApp) {
-    statusApp.currentBackScreen = Screens.NewsPapersScreen
+fun headlinesScreen(sApp: StatusApp) {
+    sApp.currentBackScreen = Screens.NewsPapersScreen
 //    Timber.d("->${statusApp.status()}")
-    LaunchedEffect(statusApp.lang) {
+    Timber.d("HEADLINE SCREEN ${sApp.currentStatus.value}  Current news paper: ${sApp.currentNewsPaper}")
+    LaunchedEffect(sApp.lang) {
         Timber.d("LaunchedEffect")
-        statusApp.vm.headLines.getLines(statusApp,statusApp.currentNewsPaper)
+        sApp.vm.headLines.getLines(sApp,sApp.currentNewsPaper)
     }
-    val status = statusApp.currentStatus.value
+    val status = sApp.currentStatus.value
     when (status) {
-        is AppStatus.Loading -> Draw_Headlines(statusApp)
-        is AppStatus.Error   -> displayError(status.sError, status.e, statusApp)
-        is AppStatus.Idle    -> Draw_Headlines(statusApp)
+        is AppStatus.Loading -> Draw_Headlines(sApp)
+        is AppStatus.Error   -> displayError(status.sError, status.e, sApp)
+        is AppStatus.Idle    -> Draw_Headlines(sApp)
         is AppStatus.Refreshing -> {}
     }
 //    Timber.d("<- ${status.toString()}")
@@ -63,7 +64,7 @@ fun headlinesScreen(statusApp: StatusApp) {
 fun Draw_Headlines(sApp: StatusApp) {
     //val lstate = rememberLazyListState(sApp.vm.headLines.scrollposHL)
     val lstate = rememberLazyListState(sApp.vm.headLines.currChapter.value)
-    Timber.d("N Headlines ${sApp.vm.headLines.listHL.size}")
+    Timber.d("N Headlines ${sApp.vm.headLines.listHL.size}   <---------------------")
     //if(statusApp.currentStatus==AppStatus.Loading) return
     val cs = rememberCoroutineScope()
     val original = remember { mutableStateOf(true) }
@@ -191,9 +192,19 @@ fun DrawLink(sApp: StatusApp,index:Int,it:OriginalTransLink){
         modifier=Modifier.clickable(
             onClick = {
                 sApp.vm.headLines.scrollposHL = index
-                sApp.currentScreen.value = Screens.FullArticleScreen(it)
+                sApp.currentStatus.value=AppStatus.Loading  //?!
+                if(it.kArticle.l2.isEmpty()) {
+                    Timber.w("going to full Articl Screen to ${it.kArticle.title}")
+                    sApp.currentScreen.value = Screens.FullArticleScreen(it)
+                }
+                else{
+                    Timber.w("going to Song Screen to ${it.kArticle.title}")
+                    Timber.w("${sApp.status2()}")
+                    sApp.vm.headLines.currChapter.value=index         //!!!!!
+                    sApp.currentScreen.value = Screens.SongScreen(it)
+                }
             }),contentDescription = ""
     )
 }
 
-//Max 256
+//Max 256 199

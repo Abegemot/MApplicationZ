@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  plugins {
      id("com.android.application")
      kotlin("android")
-     kotlin("plugin.serialization") version "1.6.20"
+     kotlin("plugin.serialization") version "1.6.21"
      id("com.google.gms.google-services")
      id("com.google.firebase.crashlytics")
 
@@ -18,7 +18,7 @@ android {
             keyPassword = "edmund"
         }
     }
-    compileSdk =31
+    compileSdk =32
      defaultConfig {
         applicationId="com.begemot.myapplicationz"
         minSdk = 26
@@ -64,7 +64,7 @@ android {
         //kotlinCompilerVersion="1.4.0-dev-withExperimentalGoogleExtensions-20200720"
        // kotlinCompilerVersion="1.4.21-2"
        //  kotlinCompilerExtensionVersion = "1.0.5"
-        kotlinCompilerExtensionVersion = "1.2.0-alpha08"//""1.1.1"
+        kotlinCompilerExtensionVersion = "1.2.0-rc01"//""1.1.1"
     }
 
 
@@ -142,7 +142,7 @@ android {
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(platform("com.begemota:sharedlibrary"))
-    implementation(platform("com.google.firebase:firebase-bom:29.3.1"))
+    implementation(platform("com.google.firebase:firebase-bom:30.1.0"))
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-crashlytics-ktx")
 
@@ -182,7 +182,7 @@ dependencies {
     implementation("com.sun.mail:android-activation")
 
     implementation("com.begemot:KNewsClient")
-    implementation("com.begemot:kclib")
+    api("com.begemot:kclib")
     implementation("com.begemot:knewscommon")
 
     testImplementation("junit:junit")

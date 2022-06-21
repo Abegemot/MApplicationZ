@@ -38,7 +38,6 @@ import com.begemot.kclib.KText2
 import com.begemot.kclib.KWindow
 import com.begemot.knewsclient.KNews
 import com.begemot.knewscommon.GetHeadLines
-import com.begemot.knewscommon.KResult2
 import com.begemot.knewscommon.KResult3
 
 
@@ -250,12 +249,14 @@ fun tabLanguage(statusApp: StatusApp, prefParams: PrefsParams) {
         prefParams.localCurrentLang.value = text.substringAfterLast("(").substringBefore(")")
         //prefs.kLang = prefParams.localCurrentLang.value
         if(statusApp.lang!=prefParams.localCurrentLang.value) {
-            statusApp.vm.headLines.reinicializeHeadLines() //If lang changes force reload <-
+            if(statusApp.currentScreen.value==Screens.HeadLinesScreen)
+                 statusApp.vm.headLines.reinicializeHeadLines() //If lang changes force reload <-
             sApp.lang = prefParams.localCurrentLang.value
         }
         //if (statusApp.lang != sApp.currentNewPreferences.lang) statusApp.vm.headLines.reinicializeHeadLines() //If lang changes force reload <-
         //statusApp.lang = sApp.currentNewPreferences.lang //prefs.kLang
         statusApp.selectLang.value = false
+        Timber.w(statusApp.status2())
         //Ok(prefParams,statusApp)
     }
 
@@ -341,6 +342,7 @@ fun tabAbout(sApp: StatusApp){
                 KCache.deleteDirectory("Images")
                 KCache.deleteDirectory("Articles")
                 KCache.deleteDirectory("Headlines")
+                KCache.deleteDirectory("MP3")
                 KCache.deleteFile("ERROR.BGM")
                 txt=""
             },Modifier

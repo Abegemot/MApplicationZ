@@ -34,7 +34,7 @@ fun resfreshWraper2(loading: Boolean, children: @Composable() () -> Unit) {
 }
 
 @Composable
-fun resfreshWraper(loading: Boolean, children: @Composable() () -> Unit) {
+fun resfreshWraper(loading: Boolean,skip:Boolean=false, children: @Composable() () -> Unit) {
     //Timber.d("Z  Loading $loading")
     Box() {
         Box(
@@ -44,7 +44,7 @@ fun resfreshWraper(loading: Boolean, children: @Composable() () -> Unit) {
                 children()
             }
         }
-        if (loading)
+        if (loading && !skip )
             Box(
                 Modifier.fillMaxSize().background(Color.Transparent)
             ) {

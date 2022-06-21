@@ -38,13 +38,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.viewModelScope
+import com.begemot.knewsclient.KNews
 //import com.begemot.inreader.layout.FlowRowX
 import com.begemot.knewscommon.*
 
 import com.begemot.myapplicationz.App.Companion.sApp
+import com.begemot.myapplicationz.model.articleHandler
 import com.begemot.myapplicationz.screens.ArticleScreen
 import com.begemot.myapplicationz.screens.headlinesScreen
 import com.begemot.myapplicationz.screens.newsPapersScreen
+import com.begemot.myapplicationz.screens.SongScreen
 import com.google.android.play.core.appupdate.AppUpdateInfo
 import com.google.android.play.core.appupdate.AppUpdateManager
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
@@ -53,7 +56,6 @@ import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.android.play.core.tasks.Task
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
-import java.lang.Integer.max
 import java.lang.Integer.min
 
 private const val USER_PREFERENCES_NAME = "user_preferences"
@@ -130,8 +132,18 @@ class MainActivity : ComponentActivity() {
 
     override fun onBackPressed() {
         val sc=CoroutineScope(Dispatchers.Main+CoroutineName("onBackPressed"))
-        Timber.d("Going back to ${sApp.currentBackScreen} from ${sApp.currentScreen.value}  ${App.sApp.status()}")
+        Timber.d("Going back to ${sApp.currentBackScreen} from ${sApp.currentScreen.value}")
    //     Timber.d("${App.sApp.status()}")
+        /*        when(sApp.currentScreen.value){
+            Screens.HeadLinesScreen -> TODO()
+            Screens.NewsPapersScreen -> TODO()
+            Screens.QuitScreen -> TODO()
+            Screens.SetUpScreen -> TODO()
+           // is Screens.SongScreen -> TODO()
+            is Screens.FullArticleScreen -> TODO()
+        }*/
+
+
         if(App.sApp.currentScreen.value is Screens.FullArticleScreen){
             if(App.sApp.modeBookMark) {
                 App.sApp.modeBookMark=false
@@ -143,6 +155,10 @@ class MainActivity : ComponentActivity() {
             }
             App.sApp.vm.article.reinizializeArticle2()
 
+        }
+        if(sApp.currentScreen.value is Screens.SongScreen){
+            App.sApp.vm.article.reinizializeArticle2()
+            //return
         }
 
         if (App.sApp.currentBackScreen == Screens.QuitScreen) {
@@ -163,6 +179,7 @@ sealed class Screens {
     //object StartUpScreen:Screens()
     object SetUpScreen:Screens()
     class FullArticleScreen(val originalTransLink: OriginalTransLink) : Screens()
+    class SongScreen(val originalTransLink: OriginalTransLink) : Screens()
     object QuitScreen : Screens()
 
     override fun toString(): String = this.javaClass.simpleName
@@ -199,17 +216,17 @@ class StatusApp(
     val currentStatus = mutableStateOf(currentStatus)
     val currentScreen = mutableStateOf(currentScreen)
     lateinit var currentNewsPaper: NewsPaper
-    var visibleInfoBar by mutableStateOf(false)
     var selectLang = mutableStateOf(false)
     var modeBookMark by mutableStateOf(false)
     var arethereBookMarks by mutableStateOf(false)
 
-    fun setMsg(sAux: String) {
-        vm.msg.setMsg(this, sAux)
-    }
     fun setMsg2(sAux: String) {
         vm.msg.setMsg2(sAux)
     }
+    fun snack(sMsg:String){
+        vm.KK.showMessage(sMsg)
+    }
+
 
     fun setCurrentScreen(screen:Screens){
         Timber. w("Setting current screen to ${screen} !!")
@@ -230,6 +247,10 @@ class StatusApp(
         return if(::currentNewsPaper.isInitialized) "  (${currentNewsPaper.olang})->(${lang})" else "  (${lang})"
     }
 
+    fun status2():String{
+        val s= if(::currentNewsPaper.isInitialized) "${currentNewsPaper.handler} ${currentNewsPaper.kind}" else "current news paper not initialized"
+        return "${currentScreen.value} ${currentStatus.value} $s  hl->${sApp.vm.headLines}  article -> ${vm.article.status()}"
+    }
     fun status(): String =
         """Appstatus->  
            current screen: ${currentScreen.value} 
@@ -253,6 +274,34 @@ class StatusApp(
     }
 
 }
+@Composable
+fun DefaultSnackBar(snackbarHostState: SnackbarHostState,modifier: Modifier=Modifier,onDismiss: ()->Unit){
+        SnackbarHost(
+            modifier=modifier,
+            hostState = snackbarHostState,
+            snackbar= { data ->
+                Snackbar(
+                    modifier = Modifier.padding(16.dp),
+                    action = {
+                        data.actionLabel?.let { actionLabel ->
+                            TextButton(onClick = onDismiss) {
+                                Text(
+                                    text = data.actionLabel!!,
+                                    style = MaterialTheme.typography.body2,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    },
+                )
+            {
+                Text(data.message, style = MaterialTheme.typography.body2,color=Color.White)
+            }
+
+            }
+        )
+}
+
 
 @ExperimentalComposeUiApi
 @ExperimentalMaterialApi
@@ -260,22 +309,21 @@ class StatusApp(
 fun newsReaderApp(sApp: StatusApp) {
     Timber.w("Runing!!  current screen ${sApp.currentScreen.value}")
     val ds = DrawerState(initialValue = DrawerValue.Closed)
-    val scaffoldState = remember { ScaffoldState(ds, SnackbarHostState()) }
+    val scaffoldState2 = rememberScaffoldState()
+   // val scaffoldState = remember { ScaffoldState(ds, SnackbarHostState()) }
     val contactdialog = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    //if(sApp.currentScreen.value==Screens.SetUpScreen) { setat(); return }
+    sApp.vm.KK.scafoldstate=scaffoldState2
     MaterialTheme(colors = kTheme.fromInt(sApp.ktheme).theme, typography = appTypography) {
         if(sApp.currentScreen.value==Screens.SetUpScreen){
-            /*Box(Modifier.width(100.dp).height(100.dp).background(Color.Transparent)){
-                Text("POS")
-            }*/
-            //return@MaterialTheme
             SetUpScreen(sApp)
             return@MaterialTheme
         }
-//        return@MaterialTheme
-        Scaffold(
-            scaffoldState = scaffoldState,
+       Scaffold(
+            scaffoldState = scaffoldState2,
+            snackbarHost = {
+                           scaffoldState2.snackbarHostState
+            },
             //  drawerContent = { Text("Drawer content") },
             topBar = {
                 MAppBar2(sApp)
@@ -286,41 +334,28 @@ fun newsReaderApp(sApp: StatusApp) {
                     ExtendedFloatingActionButton(
                         text = { Text("+") },
                         onClick = {
-                            //KCache.removeHeadLinesOf("RT")
-                            //KCache.listFiles()
                             contactdialog.value = true
                         }
-
-
                     )
             },
             content = { modifier ->
-
-                //Column(modifier = Modifier.fillMaxSize()){
                 Box(modifier = Modifier.fillMaxSize()) {
-                    Box(modifier = Modifier
-                        .fillMaxWidth(1f)
-                        .fillMaxHeight(1f)) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(1f)
+                            .fillMaxHeight(1f)
+                    ) {
                         screenDispatcher(contactdialog, sApp)
                     }
-                    //.border(2.dp, Color.Cyan)
-                    if (sApp.visibleInfoBar)
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(1f)
-                                .fillMaxHeight(0.11f)
-                                .align(Alignment.BottomStart)
-                        ) {
-                            //Box(){
-                            MessageBar(sApp)
-                        }
+                    DefaultSnackBar(
+                        snackbarHostState = scaffoldState2.snackbarHostState,
+                        onDismiss = {},
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    )
                 }
-                // }
-
             }
         )
     }
-
 }
 
 //border(BorderStroke(1.dp,Color.White)).
@@ -358,6 +393,7 @@ fun MAppBar2(sApp: StatusApp) {
                     Alignment.CenterVertically)) {
                     val st =
                         if (ls[0].length < 10) MaterialTheme.typography.h6 else if (ls[0].length < 19) MaterialTheme.typography.h6 else MaterialTheme.typography.body1
+
                     Text(
                         text = ls[0],
                         style = st,
@@ -419,18 +455,14 @@ fun MAppBar2(sApp: StatusApp) {
 
 
 fun getTitles(sApp: StatusApp): List<String> {
-    if (sApp.currentScreen.value == Screens.NewsPapersScreen) return listOf(
-        "INews Reader",
-        " News papers"
-    )
-    if (sApp.currentScreen.value == Screens.HeadLinesScreen) {
-        var date =
-            "Head Lines (${sApp.vm.headLines.listHL.size})   ${strfromdateasLong(sApp.vm.headLines.dataHeadlines)}"
-        if (sApp.currentNewsPaper.kind == KindOfNews.BOOK) date =
-            " Chapters (${sApp.vm.headLines.listHL.size})"
-        return listOf(sApp.currentNewsPaper.name, date)
+    fun getTitlesHeadlines():List<String>{
+        return when(sApp.currentNewsPaper.kind){
+            KindOfNews.NEWS  -> listOf(sApp.currentNewsPaper.name," Head Lines (${sApp.vm.headLines.listHL.size})   ${strfromdateasLong(sApp.vm.headLines.dataHeadlines)}")
+            KindOfNews.BOOK  -> listOf(sApp.currentNewsPaper.name," Chapters (${sApp.vm.headLines.listHL.size})")
+            KindOfNews.SONGS -> listOf("Song List"," ${sApp.currentNewsPaper.name} (${sApp.vm.headLines.listHL.size})")
+        }
     }
-    if (sApp.currentScreen.value is Screens.FullArticleScreen) {
+    fun getTitlesFullArticleScreen():List<String>{
         var sNameWork = sApp.currentNewsPaper.name
         if (sApp.currentNewsPaper.kind == KindOfNews.BOOK) {
             if (sApp.modeBookMark) return listOf(
@@ -446,14 +478,23 @@ fun getTitles(sApp: StatusApp): List<String> {
             else return listOf("${sApp.currentNewsPaper.name}", " Article ")
 
         }
-    } else {
-        //sApp.currentScreen.value = Screens.NewsPapersScreen
-        //Timber.d("current screen :${sApp.currentScreen.value}")
-        Timber.d("${sApp.status()}")
-        return listOf("INews Reader", "Set Up")
+    }
+
+    fun getTitlesSong():List<String>{
+        Timber.e(sApp.status2())
+        if(sApp.vm.headLines.listHL.size>0)
+        return listOf(sApp.currentNewsPaper.name,sApp.vm.headLines.getCurrentChapter().kArticle.title)
+        else return listOf(sApp.currentNewsPaper.name,"")
+     }
+
+    return when(sApp.currentScreen.value){
+        is Screens.NewsPapersScreen  -> listOf("INews Reader"," News papers")
+        is Screens.HeadLinesScreen   -> getTitlesHeadlines()
+        is Screens.FullArticleScreen -> getTitlesFullArticleScreen()
+        is Screens.SongScreen        -> getTitlesSong()
+        else -> listOf(sApp.currentScreen.value.toString(),"patata")
     }
 }
-
 
 //border(BorderStroke(1.dp,Color.Green)).
 
@@ -522,7 +563,7 @@ fun appIcons(sApp: StatusApp) {
             IconButton(onClick = {
                 scope.launch {
                     //sApp.vm.checkUpdates(sApp)
-                    sApp.setMsg("checking updates")
+                    //sApp.setMsg("checking updates")
                     sApp.vm.headLines.checkUpdates(sApp)
                 }
             }, Modifier.size(sicon)) {
@@ -531,64 +572,23 @@ fun appIcons(sApp: StatusApp) {
     }
 }
 
-@Composable
-fun MessageBar(sApp: StatusApp) {
-    val value: String by sApp.vm.msg.mesage.collectAsState("")
-    if (value.isBlank()) return
-    //Timber.d("msg  $value")
-    //val visibleInfoBar = remember{ mutableStateOf(true)}
-    LaunchedEffect(value) {
-        delay(1600)
-        //visibleInfoBar.value=false
-        sApp.visibleInfoBar = false
-        // sApp.currentStatus.value = AppStatus.Idle
-        Timber.d("after closing msg ${sApp.status()}")
-    }
-
-    val m1 = Modifier
-        .padding(horizontal = 15.dp, vertical = 5.dp)
-        .fillMaxSize(1f)
-//    Column(modifier = Modifier.fillMaxSize(1f).border(BorderStroke(1.dp,Color.Blue)),verticalArrangement = Arrangement.Center) {
-    Column(modifier = Modifier.fillMaxSize(1f), verticalArrangement = Arrangement.Center) {
-        Card(
-            shape = RoundedCornerShape(6.dp),
-            modifier = m1,
-            elevation = 12.dp,
-            border = BorderStroke(Dp.Hairline, MaterialTheme.colors.error),
-            backgroundColor = MaterialTheme.colors.onBackground
-        ) {
-            Column(verticalArrangement = Arrangement.Center) {
-
-                    Text(
-                        value,
-                        color = MaterialTheme.colors.background,
-                        textAlign = TextAlign.Start,
-                        modifier = Modifier.padding(start = 10.dp)
-                    )
-
-            }
-        }
-    }
-}
-
-
 
 @ExperimentalComposeUiApi
 @Composable
 fun contactDialog(contactDialog: MutableState<Boolean>) {
     val context = LocalContext.current
-
     val s1 = remember{ mutableStateOf("") }
     var txt by remember{ mutableStateOf(TextFieldValue("")) }
-
     Dialog(onDismissRequest = { contactDialog.value = false }) {
         KWindow() {
             KHeader(txt = "Contact us", onClick = { contactDialog.value = false })
             KField2(txt = "holax", st = s1)
+            Text(s1.value)
             KButtonBar {
                 Button(onClick = {
-                    sendmail(s1.value)
-                    contactDialog.value = false
+                    //sendmail(s1.value)
+                    s1.value=testppt()
+                   // contactDialog.value = false
 
                 }) { Text(text = "Send") }
             }
@@ -597,18 +597,44 @@ fun contactDialog(contactDialog: MutableState<Boolean>) {
 }
 
 
+fun testppt():String{
+    val gart=GetArticle("CNV","en","2",0L)
+     val ah=articleHandler(gart.handler,gart.link,gart.tlang)
+    val d=KCache.getFileDate(ah.nameFileArticle())
+    var s=""
+    gart.clientdate=d
+    runBlocking {
+        when(val r=KNews().getUpdatedArticle(gart)){
+            is KResult3.Success->{
+                if(r.t.size==0) s="Succes: NO UPDATES size ${r.t.size}"
+                else {
+                    s="Succes UPDATES size ${r.t.size}"
+                    KCache.storeInCache(ah.nameFileArticle(), toJStr(r.t))
+                }
+            }
+            is KResult3.Error->{s="Error: ${r.msg}"}
+
+        }
+    }
+
+    return ah.nameFileArticle()+" "+strfromdateasLong(d)+" $s"
+
+}
+
 
 @ExperimentalMaterialApi
 @ExperimentalComposeUiApi
 @Composable
 fun screenDispatcher(contactdialog: MutableState<Boolean>, sApp: StatusApp) {
-    Timber.w("Composable ${sApp.currentScreen.value}")
+    Timber.w("Composable ${sApp.currentScreen.value} ${sApp.currentStatus.value}")
+    Timber.w("status app -> ${sApp.status2()}")
     if (contactdialog.value) contactDialog(contactdialog)
     if (sApp.selectLang.value) editPreferences(sApp)
     Surface {
         when (val s = sApp.currentScreen.value) {
             is Screens.NewsPapersScreen ->   newsPapersScreen(sApp)
             is Screens.HeadLinesScreen -> headlinesScreen(sApp)
+            is Screens.SongScreen -> {   SongScreen(s.originalTransLink,sApp) }
             is Screens.FullArticleScreen -> ArticleScreen(s.originalTransLink, sApp)
             is Screens.SetUpScreen ->{}//SetUpScreen(sApp)
             is Screens.QuitScreen -> SetUpScreen(sApp) //newsPapersScreen(sApp)
@@ -642,7 +668,8 @@ fun displayError(sError: String, e: Exception? = null, sApp: StatusApp) {
                         sendmail(sAux)
                         sApp.currentStatus.value=AppStatus.Idle
                         sApp.currentScreen.value=sApp.currentBackScreen
-                        sApp.setMsg("Message send")
+                        //sApp.setMsg("Message send")
+                        sApp.snack("Message send")
 
                     }) { Text("Send email") }
                 }
@@ -656,7 +683,7 @@ fun displayError(sError: String, e: Exception? = null, sApp: StatusApp) {
     }
 }
 
-//Max val 664,726,754,720,737,668
+//Max val 664,726,754,720,737,668,774,658
 
 
 

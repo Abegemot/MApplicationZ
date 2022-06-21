@@ -18,9 +18,14 @@ object KProvider {
 
     //suspend fun getLocalNewsPapers(): NewsPaperVersion = fromStrToNewsPaperV(KCache.loadFromCache("knews.json"))
 
+    suspend fun checkMP3(sNameMp3:String):Boolean{
+          if(KCache.fileExist("MP3/$sNameMp3")) return true
+          return KNews().getMP3(sNameMp3, KCache.getFile("MP3/$sNameMp3"))
+    }
+
     @OptIn(ExperimentalTime::class)
     suspend fun getNewsPapers():KResult3<NewsPaperVersion> {
-            val sFileName = "zknews.json"
+            val sFileName = "knews.json"
             val np = measureTimedValue {
                 KCache.load<NewsPaperVersion>(sFileName)
             }
@@ -46,7 +51,7 @@ object KProvider {
                 //return nP
             } else {
                 Timber.d("news papers updates found")
-                KCache.storeInCache("knews.json", toStr(nP.t))
+                KCache.storeInCache("knews.json", toJStr(nP.t))
                 //return nP
             }
         }
@@ -61,6 +66,25 @@ object KProvider {
     }
 
     suspend fun  getImage2(nameImg:String,rec:Int=0): ImageBitmap?{
+        if(nameImg.isEmpty()) return null
+        val img2 = KCache.findImgInFile(nameImg)  //  ImageInFile(nameImg)
+        if (img2 != null) {
+            KCache.addImageInMemory(nameImg, img2)
+            return img2
+        }
+        if(KNews().getIMG(nameImg, KCache.getFile("Images/$nameImg"))){
+            val img3=KCache.findImgInFile(nameImg)
+            if(img3!=null){
+                KCache.addImageInMemory(nameImg,img3)
+                return img3
+            }
+        }else return null
+        return null
+    }
+
+
+    suspend fun  getImage3(nameImg:String,rec:Int=0): ImageBitmap?{
+            if(nameImg.isEmpty()) return null
             val img2 = KCache.findImgInFile(nameImg)  //  ImageInFile(nameImg)
             if (img2 != null) {
                 KCache.addImageInMemory(nameImg, img2);
@@ -110,9 +134,13 @@ object KProvider {
         val(hl,time) = measureTimedValue {
              KCache.load<THeadLines>(nameFile)
         }
-        if(hl.lhl.isNotEmpty()) {  Timber.d("Found in cache in (${time.inWholeMilliseconds}) ms"); return KResult3.Success(hl,"localHeadLines",time.inWholeMilliseconds)}
+        if(hl.lhl.isNotEmpty()) {
+            Timber.d("Found in cache in (${time.inWholeMilliseconds}) ms")
+//            Timber.d(toJStr(hl.lhl))
+            return KResult3.Success(hl,"localHeadLines",time.inWholeMilliseconds)
+        }
         return when(val hl2=KNews().getHeadLines(getHeadLines)){
-            is KResult3.Success -> { KCache.storeInCache(nameFile,toStr(hl2.t)); hl2 }
+            is KResult3.Success -> { KCache.storeInCache(nameFile,toJStr(hl2.t)); hl2 }
             is KResult3.Error   ->  hl2
         }
     }
@@ -125,7 +153,7 @@ object KProvider {
         if (thl2 is KResult3.Success) {
             if (thl2.t.datal != 0L) {
                 KCache.removeHeadLinesOf(ghl.handler)
-                KCache.storeInCache(nameFile, toStrFromTHeadlines(thl2.t))
+                KCache.storeInCache(nameFile, toJStr(thl2.t))
                 Timber.d(
                     "end HEADLINES HAVE CHANGED data original  ${strfromdateasLong(ghl.datal)}  new data ${
                         strfromdateasLong(
@@ -158,10 +186,10 @@ object KProvider {
         if(art.isNotEmpty()) return KResult3.Success(art,"localArticle",elapsed)
         val resp = KNews().getArticle(articleHandler.nphandler, articleHandler.link, articleHandler.tlang)
         if(resp is KResult3.Success){
-            KCache.storeInCache(articleHandler.nameFileArticle(),toStr<List<OriginalTrans>>(resp.t))
+            KCache.storeInCache(articleHandler.nameFileArticle(),toJStr<List<OriginalTrans>>(resp.t))
         }
         return resp
     }
 }
 
-//Max 214 219 240 267 273 283 306 167
+//Max 214 219 240 267 273 283 306 167 172 195

@@ -34,7 +34,8 @@ import timber.log.Timber
 fun ArticleScreen(originalTransLink: OriginalTransLink, sApp: StatusApp) {
     val lstate= rememberLazyListState(sApp.vm.article.iInitialItem.value)
     val q = articleHandler(sApp.currentNewsPaper.handler,originalTransLink.kArticle.link,sApp.lang)
-    Timber.d("${sApp.currentNewsPaper.desc} ${q.nameFileArticle()} link ->${originalTransLink.kArticle.link}  initial position ${sApp.vm.article.iInitialItem.value}")
+    Timber.d("${sApp.currentNewsPaper.desc} ${q.nameFileArticle()} link ->${originalTransLink.kArticle.link} l2->${originalTransLink.kArticle.l2}  initial position ${sApp.vm.article.iInitialItem.value}")
+    Timber.d(sApp.status2())
     sApp.currentBackScreen = Screens.HeadLinesScreen
 
     LaunchedEffect(sApp.lang) {
@@ -54,6 +55,17 @@ fun ArticleScreen(originalTransLink: OriginalTransLink, sApp: StatusApp) {
     }
 }
 
+suspend fun loadArticle(originalTransLink: OriginalTransLink, sApp: StatusApp,lstate:LazyListState){
+    Timber.d(sApp.status2())
+    sApp.currentStatus.value = AppStatus.Loading
+    val q = articleHandler(sApp.currentNewsPaper.handler,originalTransLink.kArticle.link,sApp.lang)
+    sApp.vm.article.reinicializeArticle(q,lstate)
+    sApp.currentLink = originalTransLink.kArticle.link
+    sApp.arethereBookMarks = !sApp.vm.article.bookMarks.value.bkMap.isEmpty()
+    sApp.vm.article.getTransArt(q,sApp)
+}
+
+
 fun bookMark2(index:Int,sApp: StatusApp):Modifier {
     val bkmark = sApp.vm.article.bookMarks.value.isBookMark(index)
     val initial = (sApp.vm.article.iInitialItem.value == index)
@@ -70,12 +82,12 @@ fun bookMark2(index:Int,sApp: StatusApp):Modifier {
 @ExperimentalComposeUiApi
 @ExperimentalMaterialApi
 @Composable
-fun drawArticle(sApp: StatusApp,otl:OriginalTransLink, lstate: LazyListState) {
+fun drawArticle(sApp: StatusApp,otl:OriginalTransLink, lstate: LazyListState,skip:Boolean=false) {
     val lItems = sApp.vm.article.lArticle.value
     Timber.d("Start Draw  initial position ${sApp.vm.article.iInitialItem.value} nItems=${lItems.size}")
     val cs = rememberCoroutineScope()
     LaunchedEffect(key1 = sApp.vm.article.iInitialItem, block ={lstate.scrollToItem(sApp.vm.article.iInitialItem.value)} )
-    resfreshWraper(sApp.currentStatus.value == AppStatus.Loading) {
+    resfreshWraper(sApp.currentStatus.value == AppStatus.Loading,skip) {
         val original = remember { mutableStateOf(true) }
         LazyColumn(state = lstate,modifier = ListModifier()) {
             itemsIndexed(lItems) { index, it ->

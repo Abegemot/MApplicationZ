@@ -28,7 +28,7 @@ class headLines() {
         return lHeadLines.value.lhl[currChapter.value]
     }
     override fun toString():String{
-        return "HEADLINES: currChapter ${currChapter.value} hl $listHL"
+        return "HEADLINES(${listHL.size}): currChapter ${currChapter.value}"
     }
 
 
@@ -70,9 +70,13 @@ class headLines() {
             is KResult3.Success -> {
                 sApp.currentStatus.value = AppStatus.Idle
                 lHeadLines.value = resp.t
-                Timber.d("getLines OK ${resp.timeInfo()}")
+                Timber.d("getLines OK ${resp.timeInfo()} nHL.size=${resp.t.lhl.size}")
                 //Timber.d(lHeadLines.value.lhl.print("getlines"))
                 currChapter.value=loadSelectedChapter(sApp)
+                if(sApp.currentNewsPaper.mutable){
+                       Timber.d("CHECK UPDATES")
+                       checkUpdates(sApp)
+                }
             }
             is KResult3.Error -> {
                 Timber.d("SERVER ERROR!!!")
@@ -91,9 +95,9 @@ class headLines() {
                 Timber.d("changes '${resp.t}'")
                 if (resp.t.datal != 0L) {
                     lHeadLines.value = resp.t
-                    sApp.vm.msg.setMsg(sApp, "New Headlines  !!")
+                    sApp.snack("Headlines Changed  !!")
                     storeLastSelectedChapter(sApp,0) //?? Vols dir?
-                } else sApp.vm.msg.setMsg(sApp, "No new Headlines  !!")
+                } //else sApp.snack("No new Headlines  !!")
                 sApp.currentStatus.value = AppStatus.Idle
             }
             is KResult3.Error -> {
@@ -104,3 +108,5 @@ class headLines() {
         }
     }
 }
+
+//Max 108

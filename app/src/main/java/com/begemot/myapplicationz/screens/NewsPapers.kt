@@ -79,7 +79,7 @@ fun draw_newsPapers(sApp: StatusApp) {
                 //shape = RoundedCornerShape(8.dp),
                 //elevation = 7.dp,
                 onClik = {
-                    Timber.d("on click going Headlines Screen")
+                    Timber.w("on click going Headlines Screen with: $it")
                     sApp.currentScreen.value = Screens.HeadLinesScreen
                     sApp.currentBackScreen = Screens.NewsPapersScreen
                     sApp.currentNewsPaper = it
