@@ -98,7 +98,6 @@ fun TestC5(){
 package com.begemot.myapplicationz
 
 import com.begemot.knewscommon.KResult
-import com.begemot.knewscommon.KResult3
 import com.begemot.knewscommon.KTimer
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO

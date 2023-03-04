@@ -14,7 +14,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.viewModelScope
-import com.begemot.knewscommon.KResult3
 import com.begemot.knewscommon.KindOfNews
 import com.begemot.myapplicationz.App.Companion.sApp
 import com.begemot.myapplicationz.PreferencesNEW.TT.stringToPrefKey

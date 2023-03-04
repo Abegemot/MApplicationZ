@@ -38,7 +38,6 @@ import com.begemot.kclib.KText2
 import com.begemot.kclib.KWindow
 import com.begemot.knewsclient.KNews
 import com.begemot.knewscommon.GetHeadLines
-import com.begemot.knewscommon.KResult3
 
 
 import com.begemot.myapplicationz.App.Companion.sApp
