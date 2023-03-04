@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  plugins {
      id("com.android.application")
      kotlin("android")
-     kotlin("plugin.serialization") version "1.6.21"
+     kotlin("plugin.serialization") version "1.7.20"
      id("com.google.gms.google-services")
      id("com.google.firebase.crashlytics")
 
@@ -18,13 +18,13 @@ android {
             keyPassword = "edmund"
         }
     }
-    compileSdk =32
-     defaultConfig {
+    compileSdk =33
+        defaultConfig {
         applicationId="com.begemot.myapplicationz"
         minSdk = 26
-        targetSdk= 30
-        versionCode= 41
-        versionName= "0.4.8"
+        targetSdk= 31
+        versionCode= 42
+        versionName= "0.4.9"
 //        testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
@@ -48,15 +48,15 @@ android {
     packagingOptions {
         resources.excludes.add("META-INF/NOTICE.md")
         resources.excludes.add("META-INF/LICENSE.md")
-
+        resources.excludes.add("META-INF/INDEX.LIST")  //?
         //exclude("project.properties")
         //exclude("META-INF/*.kotlin_module")
         //pickFirst("META-INF/LICENSE.txt")
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11 //JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_11//JavaVersion.VERSION_1_8
     }
     composeOptions {
         //kotlinCompilerVersion = "1.3.61-dev-withExperimentalGoogleExtensions-20200129"
@@ -64,7 +64,7 @@ android {
         //kotlinCompilerVersion="1.4.0-dev-withExperimentalGoogleExtensions-20200720"
        // kotlinCompilerVersion="1.4.21-2"
        //  kotlinCompilerExtensionVersion = "1.0.5"
-        kotlinCompilerExtensionVersion = "1.2.0-rc01"//""1.1.1"
+        kotlinCompilerExtensionVersion = "1.3.2" //1.2.0"//""1.1.1"
     }
 
 
@@ -73,6 +73,7 @@ android {
         //useIR = true
         //freeCompilerArgs += "-Xallow-jvm-ir-dependencies"
         //freeCompilerArgs= listOf("-P","plugin:androidx.compose.plugins.idea:liveLiterals=false")
+
     }
 }
 
@@ -140,9 +141,14 @@ android {
 
 
 dependencies {
+    val composeBom = platform("androidx.compose:compose-bom:2023.01.00")
+    implementation (composeBom)
+    androidTestImplementation(composeBom)
+
+
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(platform("com.begemota:sharedlibrary"))
-    implementation(platform("com.google.firebase:firebase-bom:30.1.0"))
+    implementation(platform("com.google.firebase:firebase-bom:31.2.3"))
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-crashlytics-ktx")
 
@@ -163,13 +169,15 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
 
-    implementation( "androidx.compose.runtime:runtime")
-    implementation("androidx.compose.compiler:compiler")
+    //implementation( "androidx.compose.runtime:runtime")
+    //implementation("androidx.compose.compiler:compiler")
 
     //implementation("androidx.core:core-ktx")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx")
     //implementation("androidx.lifecycle:lifecycle-runtime-ktx")
     implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation ("androidx.datastore:datastore:1.0.0")
@@ -183,9 +191,24 @@ dependencies {
 
     implementation("com.begemot:KNewsClient")
     api("com.begemot:kclib")
-    implementation("com.begemot:knewscommon")
+    implementation("com.begemot:KNewsCommon")
+    //implementation("io.ktor:ktor-client-logging:2.2.3")
+    //implementation("ch.qos.logback:logback-classic")
+    //implementation("ch.qos.logback:logback-core:1.4.5")
 
-    testImplementation("junit:junit")
-    androidTestImplementation("androidx.test.ext:junit")
+    //implementation("com.github.tony19:logback-android:2.0.1")
+    //implementation("org.slf4j:slf4j-api:1.7.36")
+
+    //api("microutils:kotlin.logging:1.2.1")
+    //api("io.github.microutils:kotlin-logging:1.3")
+    //api("org.slf4j.slf4j-android:1.7.21")
+    //implementation("io.github.microutils:kotlin-logging-jvm")
+   // implementation( "ch.qos.logback:logback-classic") //necesari
+    //implementation("org.slf4j:slf4j-android:1.7.21")
+    //implementation("org.slf4j:slf4j-simple:2.0.6")
+    implementation("com.gitlab.mvysny.slf4j:slf4j-handroid:2.0.4")
+    //implementation("org.slf4j:slf4j-api:2.0.6")
+    //testImplementation("junit:junit")
+    //androidTestImplementation("androidx.test.ext:junit")
    // implementation("io.ktor:ktor-client-android")
 }

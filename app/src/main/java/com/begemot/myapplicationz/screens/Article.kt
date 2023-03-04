@@ -52,6 +52,7 @@ fun ArticleScreen(originalTransLink: OriginalTransLink, sApp: StatusApp) {
         is AppStatus.Loading -> drawArticle(sApp = sApp,originalTransLink,lstate )
         is AppStatus.Error -> displayError(status.sError, status.e, sApp)
         is AppStatus.Idle -> drawArticle(sApp = sApp,originalTransLink,lstate)
+        else -> {}
     }
 }
 
@@ -174,7 +175,7 @@ fun onclikcard(sApp: StatusApp, cs: CoroutineScope, index: Int,original: Mutable
             //val idx=350
             //sApp.vm.article.lzls.animateScrollToItem(index)
             //sApp.vm.article.iInitialItem.value=index
-            onClickBookMark(index)
+        onClickBookMark(index)
             //ls.animateScrollToItem(index)
             //Timber.d("scrooll to $index ${sApp.vm.article.lzls.firstVisibleItemIndex}")
 

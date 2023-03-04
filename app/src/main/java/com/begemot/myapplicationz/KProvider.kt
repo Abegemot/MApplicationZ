@@ -5,7 +5,9 @@ import android.graphics.BitmapFactory
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import com.begemot.knewsclient.*
+
 import com.begemot.knewscommon.*
+//import com.begemot.knewscommon.KResult
 import com.begemot.myapplicationz.model.articleHandler
 import kotlinx.coroutines.*
 //import io.ktor.util.*
@@ -24,42 +26,40 @@ object KProvider {
     }
 
     @OptIn(ExperimentalTime::class)
-    suspend fun getNewsPapers():KResult3<NewsPaperVersion> {
+    suspend fun getNewsPapers():KResult<NewsPaperVersion> {
             val sFileName = "knews.json"
             val np = measureTimedValue {
                 KCache.load<NewsPaperVersion>(sFileName)
             }
             if (np.value.newspaper.isNotEmpty()) {
                 Timber.d("loaded local News papers in (${np.duration.inWholeMilliseconds} ms)")
-                return   KResult3.Success(np.value,"KProvider.getNewsPapers local", np.duration.inWholeMilliseconds, 0)
+                return KResult(Result.success(np.value),np.duration.inWholeMilliseconds, sparams = "getLocalNewsPapers")
+                //return   KResult3.Success(np.value,"KProvider.getNewsPapers local", np.duration.inWholeMilliseconds, 0)
             }
             if (np.value.version == 0) {
                 val res= KNews().getNewsPapersWithVersion3(0)
-                Timber.d("Z :${res.msg()}")
+                Timber.d("Z :${res.logInfo()}")
                 return res
                 }
              Timber.d("return from getNewsPapers")
-           return KResult3.Success(np.value)
+             return KResult(Result.success(np.value))
     }
 
-    suspend fun getNewsPapersUpdates(currentver: Int): KResult3<NewsPaperVersion> {
+    suspend fun getNewsPapersUpdates(currentver: Int): KResult<NewsPaperVersion> {
         val nP = KNews().getNewsPapersWithVersion3(currentver)
         //checkImages(nP.newspaper)
-        if (nP is KResult3.Success) {
-            if (nP.t.version == 0) {
-                Timber.d("no updates current version ${currentver}")
-                //return nP
-            } else {
+        nP.res.onSuccess {
+            if(it.version==0) Timber.d("no updates current version ${currentver}")
+            else{
                 Timber.d("news papers updates found")
-                KCache.storeInCache("knews.json", toJStr(nP.t))
-                //return nP
+                KCache.storeInCache("knews.json", toJStr(it))
             }
+        }
+        nP.res.onFailure {
+            Timber.e(it)
         }
         return nP
     }
-
-
-
 
     suspend fun getImage(nameImg:String): ImageBitmap?{
         return withContext(Dispatchers.IO+CoroutineName("GETIMG")){ getImage2(nameImg) }
@@ -97,7 +97,35 @@ object KProvider {
         }
 
         val ba = KNews().getImage2("Images/$nameImg")
-        if(ba is KResult3.Success){
+        ba.res.onSuccess {
+            if(it.bresult.size>0) {
+                KCache.storeImageInFile(nameImg, it.bresult)
+                KCache.addImageInMemory(nameImg,
+                    BitmapFactory.decodeByteArray(it.bresult, 0, it.bresult.size)
+                        .asImageBitmap()
+
+                )
+                if(rec>0)
+                    Timber.d("getImage(${rec+1}) Ok $nameImg got from server and stored .... size ${it.bresult.size} bytes [${ba.timeInfo()}]")
+                return KCache.getBitmapImageFromMemCache(nameImg)
+            }else {
+                val s="$nameImg empty in Server!"
+                KCache.writeError(s)
+                Timber.e(s)
+                return null
+            }
+        }.onFailure {
+            Timber.e("Failed to load  $nameImg ${ba.logInfo()}  ${ba.timeInfo()}")
+            KCache.writeError("${nameImg}  NOT FOUND  ${ba.logInfo()}")
+            //Timber.d("${nameImg}  NOT FOUND  ${ba.msg}")
+            Timber.e("GET IMAGE AGAIN !!! $nameImg  (${rec+2})")
+            return getImage2(nameImg,rec+1)
+            //return null
+
+        }
+
+
+       /* if(ba is KResult3.Success){
                 if(ba.t.bresult.size>0) {
                     KCache.storeImageInFile(nameImg, ba.t.bresult)
                     KCache.addImageInMemory(nameImg,
@@ -106,7 +134,7 @@ object KProvider {
 
                     )
                     if(rec>0)
-                    Timber.d("getImage(${rec+1}) Ok $nameImg got from server and stored .... size ${ba.t.bresult.size} bytes [${ba.timeInfo()}]")
+                        Timber.d("getImage(${rec+1}) Ok $nameImg got from server and stored .... size ${ba.t.bresult.size} bytes [${ba.timeInfo()}]")
                     return KCache.getBitmapImageFromMemCache(nameImg)
                 }else {
                     val s="$nameImg empty in Server!"
@@ -122,42 +150,40 @@ object KProvider {
                 Timber.e("GET IMAGE AGAIN !!! $nameImg  (${rec+2})")
                 return getImage2(nameImg,rec+1)
                 //return null
-        }
+        }*/
         return null
     }
 
-
     @OptIn(ExperimentalTime::class)
-    suspend fun getHeadLines(getHeadLines: GetHeadLines): KResult3<THeadLines>
-    {
-        val nameFile=getHeadLines.AndroidNameFile()
-        val(hl,time) = measureTimedValue {
-             KCache.load<THeadLines>(nameFile)
+    suspend fun getHeadLines(getHeadLines: GetHeadLines): Result<THeadLines> {
+        val nameFile = getHeadLines.AndroidNameFile()
+        val (hl, time) = measureTimedValue {
+            KCache.load<THeadLines>(nameFile)
         }
-        if(hl.lhl.isNotEmpty()) {
+        if (hl.lhl.isNotEmpty()) {
             Timber.d("Found in cache in (${time.inWholeMilliseconds}) ms")
 //            Timber.d(toJStr(hl.lhl))
-            return KResult3.Success(hl,"localHeadLines",time.inWholeMilliseconds)
+            return Result.success(hl)  //KResult3.Success(hl,"localHeadLines",time.inWholeMilliseconds)
         }
-        return when(val hl2=KNews().getHeadLines(getHeadLines)){
-            is KResult3.Success -> { KCache.storeInCache(nameFile,toJStr(hl2.t)); hl2 }
-            is KResult3.Error   ->  hl2
-        }
+        val z= KNews().getHeadLines(getHeadLines)
+        z.res.onSuccess {  KCache.storeInCache(nameFile, toJStr(it)) }
+        .onFailure {}
+        return z.res
     }
 
-    suspend fun checkUpdates2(ghl:GetHeadLines):KResult3<THeadLines> {
+    suspend fun checkUpdates2(ghl:GetHeadLines): KResult<THeadLines> {
         val nameFile = "Headlines/${ghl.handler}${ghl.tlang}"
         val thl2 = KNews().getHeadLines(ghl)
-        Timber.d("check updates ${thl2.timeInfo()}")
-        if (thl2 is KResult3.Error) return thl2
-        if (thl2 is KResult3.Success) {
-            if (thl2.t.datal != 0L) {
+        //Timber.d("check updates ${thl2.timeInfo()}")
+        if(thl2.res.isFailure) return thl2
+        thl2.res.onSuccess {
+            if (it.datal != 0L) {
                 KCache.removeHeadLinesOf(ghl.handler)
-                KCache.storeInCache(nameFile, toJStr(thl2.t))
+                KCache.storeInCache(nameFile, toJStr(it))
                 Timber.d(
                     "end HEADLINES HAVE CHANGED data original  ${strfromdateasLong(ghl.datal)}  new data ${
                         strfromdateasLong(
-                            thl2.t.datal
+                            it.datal
                         )
                     }"
                 )
@@ -169,27 +195,30 @@ object KProvider {
                         strfromdateasLong(
                             ghl.datal
                         )
-                    }  new data ${strfromdateasLong(thl2.t.datal)}"
+                    }  new data ${strfromdateasLong(it.datal)}"
                 )
-                return KResult3.Success(THeadLines())
+                return KResult(Result.success(THeadLines()))
             }
-        } else {
-            return thl2
         }
+            return thl2
     }
 
-    suspend fun  getArticle(articleHandler: articleHandler):KResult3<List<OriginalTrans>>{
+
+
+
+
+    suspend fun  getArticle(articleHandler: articleHandler):KResult<List<OriginalTrans>>{
         lateinit var art:List<OriginalTrans>
         val elapsed = measureTimeMillis{
             art=KCache.load<List<OriginalTrans>>(articleHandler.nameFileArticle())
         }
-        if(art.isNotEmpty()) return KResult3.Success(art,"localArticle",elapsed)
+        if(art.isNotEmpty()) return KResult(Result.success(art),elapsed,sparams="loadlocalArticle")
         val resp = KNews().getArticle(articleHandler.nphandler, articleHandler.link, articleHandler.tlang)
-        if(resp is KResult3.Success){
-            KCache.storeInCache(articleHandler.nameFileArticle(),toJStr<List<OriginalTrans>>(resp.t))
+        if(resp.res.isSuccess){
+            KCache.storeInCache(articleHandler.nameFileArticle(),toJStr<List<OriginalTrans>>(resp.res.getOrThrow())) //Oju !!
         }
         return resp
     }
 }
 
-//Max 214 219 240 267 273 283 306 167 172 195
+//Max 214 219 240 267 273 283 306 167 172 195 214 251 215 224

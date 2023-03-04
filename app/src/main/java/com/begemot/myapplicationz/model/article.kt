@@ -87,7 +87,7 @@ class article {
         //Timber.d("Book Marks ${bookMarks.value.bkMap}")
         val ii = KCache.load<Int>("${qarticleHandler.value.nameFileBooMarksAndLast()}.LIN")
         iInitialItem.value = ii
-        Timber.d("Loaded Book Marks ${bookMarks.value.bkMap} initial Item = ${iInitialItem.value}")
+        Timber.d("Loaded Book Marks ${bookMarks.value.bkMap} initial Item = ${iInitialItem.value} ")
         //Timber.d("........Load end")
     }
 
@@ -105,45 +105,36 @@ class article {
         Timber.d("(s) NewsPaper ${ah.nphandler} chapter/link ${ah.link}  lang ${ah.tlang} time elapsed ${resp.timeInfo()}")
         Timber.d("sapp.current link ${sApp.currentLink} sapp current chapter ${sApp.vm.headLines.currChapter.value}")
         Timber.d("Article handler ${sApp.vm.article.qarticleHandler.value.nameFileArticle()}")
-        when (resp) {
-            is KResult3.Success -> {
-                //Timber.d("size ${resp.t.size}")
-                sApp.currentStatus.value = AppStatus.Idle
-                lArticle.value = resp.t
-                //         Timber.d(lArticle.value.print("article"))
-                if (resp.t.size == 0) {
-                    lArticle.value = listOf(OriginalTrans("Article only for subscriptors"))
-                }
-                if (sApp.currentNewsPaper.mutable) {
-                    checkUpdatedArticle(sApp, ah)
-                }
+        resp.res.onSuccess {
+            sApp.currentStatus.value = AppStatus.Idle
+            lArticle.value = it
+            //         Timber.d(lArticle.value.print("article"))
+            if (lArticle.value.size == 0) {
+                lArticle.value = listOf(OriginalTrans("Article only for subscriptors"))
             }
-            is KResult3.Error -> {
-                Timber.d("error")
-                sApp.currentStatus.value = AppStatus.Error(resp.msg, Exception(resp.msg))
+            if (sApp.currentNewsPaper.mutable) {
+                checkUpdatedArticle(sApp, ah)
             }
         }
+        resp.res.onFailure {
+            Timber.d("error")
+            sApp.currentStatus.value = AppStatus.Error(resp.logInfo(), Exception(resp.logInfo()))
+        }
     }
-
 
     suspend fun checkUpdatedArticle(sApp: StatusApp, ah: articleHandler) {
         val d = KCache.getFileDate(ah.nameFileArticle())
         val gart = GetArticle(ah.nphandler, ah.tlang, ah.link, d)
-
-        when (val r = KNews().getUpdatedArticle(gart)) {
-            is KResult3.Success -> {
-                if (r.t.size == 0) Timber.d("NO UPDATES")
-                else {
-                    Timber.d("ARTICLE UPDATED")
-                    sApp.snack("Article Updated!!")
-                    lArticle.value=r.t
-                    KCache.storeInCache(ah.nameFileArticle(), toJStr(r.t))
-                }
+        val res=KNews().getUpdatedArticle(gart)
+        res.res.onSuccess {
+            if (it.size == 0) Timber.d("NO UPDATES")
+            else {
+                Timber.d("ARTICLE UPDATED")
+                sApp.snack("Article Updated!!")
+                lArticle.value=it
+                KCache.storeInCache(ah.nameFileArticle(), toJStr(it))
             }
-            is KResult3.Error -> {}
         }
-
     }
 }
-
 //Max 177

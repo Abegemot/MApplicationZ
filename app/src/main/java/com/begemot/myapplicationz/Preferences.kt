@@ -26,7 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 //import androidx.compose.ui.VerticalAlignmentLine
 //import androidx.compose.ui.platform.ContextAmbient
-import androidx.compose.ui.tooling.preview.Preview
+//import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -380,7 +380,7 @@ suspend fun getCache(sApp: StatusApp):String{
 }
 
 
-suspend fun testIns():String{
+/*suspend fun testIns():String{
     //val r=KNews().getNewsPapersWithVersion(0)
 
     var s=""
@@ -394,7 +394,7 @@ suspend fun testIns():String{
     //if(r is KResult2.Success){
     //    s+="Succes ${r.t}"
     //}
-    val r2=KNews().getHeadLines(GetHeadLines("LV","es",0))
+    val r2=KNews().getHeadLines2(GetHeadLines("LV","es",0))
     if(r2 is KResult3.Error){
         s+="error ${r2.msg}\n"
     }
@@ -408,11 +408,11 @@ suspend fun testIns():String{
 
 
     return "testIns  $s   "
-}
+}*/
 
 
 
-@Preview
+//@Preview
 @Composable
 fun tps() {
     //var selectLang: MutableState<Boolean> = mutableStateOf(true)

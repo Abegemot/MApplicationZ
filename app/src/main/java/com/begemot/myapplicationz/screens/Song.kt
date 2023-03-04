@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.tooling.preview.Preview
+//import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.begemot.knewscommon.OriginalTransLink
 import com.begemot.knewscommon.milisToMinSec
@@ -151,7 +151,7 @@ fun SongScreen(s:OriginalTransLink, sApp: StatusApp){
         }
 }
 
-@Preview
+//@Preview
 @Composable
 fun NewMan(){
     Box(Modifier.padding(0.dp)){
@@ -196,7 +196,7 @@ fun NewMan(){
     }
 }
 
-@Preview
+//@Preview
 @Composable
 fun NSound(){
    /* Text("Row2 Green")
@@ -333,7 +333,7 @@ fun getTimeSlider():String{
     return t.milisToMinSec()
 }
 
-@Preview
+//@Preview
 @Composable
 fun DrawSoundBar(play:()->Unit={},stop:()->Unit={},playing:Boolean=false,loaded:Boolean=false){
     var checked by remember { mutableStateOf(false) }

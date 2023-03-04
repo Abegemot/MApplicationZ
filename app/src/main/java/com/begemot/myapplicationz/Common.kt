@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
+//import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 //import com.google.gson.Gson
 
@@ -53,7 +53,7 @@ fun resfreshWraper(loading: Boolean,skip:Boolean=false, children: @Composable() 
     }
 }
 
-@Preview
+//@Preview
 @Composable
 fun bb() {
     resfreshWraper(true) {

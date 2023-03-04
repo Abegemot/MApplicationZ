@@ -97,6 +97,7 @@ fun TestC5(){
 */
 package com.begemot.myapplicationz
 
+import com.begemot.knewscommon.KResult
 import com.begemot.knewscommon.KResult3
 import com.begemot.knewscommon.KTimer
 import kotlinx.coroutines.*
@@ -145,7 +146,7 @@ suspend fun KLauncher(name:String,cs:CoroutineScope,afun: suspend () -> Unit){
 }
 
 typealias voidfuncs  = suspend () ->Unit
-typealias voidfuncs2<T> = suspend () ->KResult3<T>
+typealias voidfuncs2<T> = suspend () -> KResult<T>
 //typealias lOfAsyncFuncs = List<suspend ()->Unit>
 
 typealias lOfAsyncFuncs = List<Pair<suspend ()->Unit,String>>
@@ -167,7 +168,7 @@ typealias lOfAsyncFuncs2<T>   = List<Pair<voidfuncs2<T>,String>>
 }
  */
 
-fun<T> toFN2(a: KSuspendFunction0<KResult3<Unit>>) : Pair<voidfuncs2<Unit>,String>{
+fun<T> toFN2(a: KSuspendFunction0<KResult<Unit>>) : Pair<voidfuncs2<Unit>,String>{
     val p=Pair(a,a.name)
     return p
 }
@@ -190,19 +191,19 @@ val eHandler= CoroutineExceptionHandler{_,exception->
 
 
 
-suspend fun<T> Ass2(lfuncs:lOfAsyncFuncs2<Unit>):List<KResult3<T>> {
+suspend fun<T> Ass2(lfuncs:lOfAsyncFuncs2<Unit>):List<KResult<T>> {
 
 //    Timber.d("ENTERING ASS")
     val scope = CoroutineScope(IO+CoroutineName("ASS"))
     //KTimber("LAUNCHING ASS2")
-    var x:List<KResult3<Unit>> = emptyList()
+    var x:List<KResult<Unit>> = emptyList()
     var t=0L
     val j1=scope.launch(eHandler) {
         //Timber.d(FDebug("ENTERING INNER ASS"))
  //       KTimber("ENTERING INNER ASS2",KT.LEVEL.ENTERING)
         var ls: String = ""
         val kt = KTimer()
-        val r:KResult3<T>
+        val r:KResult<T>
         t = measureTimeMillis {
             x = lfuncs.map { async { it.first.invoke() } }.awaitAll()
 
@@ -220,16 +221,16 @@ suspend fun<T> Ass2(lfuncs:lOfAsyncFuncs2<Unit>):List<KResult3<T>> {
     }
     KTimber("JOIN TIME=$rr  AWAIT TIME = ($t) ms",KT.LEVEL.LEAVING)
 
-    return x as List<KResult3<T>>
+    return x as List<KResult<T>>
 }
 
 
-suspend fun Ass(lfuncs:lOfAsyncFuncs):KResult3<Unit> {
+suspend fun Ass(lfuncs:lOfAsyncFuncs):KResult<Unit> {
 
 //    Timber.d("ENTERING ASS")
     val scope = CoroutineScope(IO+CoroutineName("ASS"))
     KTimber("LAUNCHING ASS")
-    var kr:KResult3<Unit>
+    var kr:KResult<Unit>
     var t=0L
     val j1=scope.launch(eHandler) {
         //Timber.d(FDebug("ENTERING INNER ASS"))
@@ -261,12 +262,12 @@ suspend fun Ass(lfuncs:lOfAsyncFuncs):KResult3<Unit> {
     }
     KTimber("JOIN TIME=$rr  LEAVING ASS TIME IN ASS = ($t) ms",KT.LEVEL.LEAVING)
 
-    return KResult3.Success<Unit>(Unit,"Ass Answer",t)
+    return KResult(Result.success(Unit),t,0,"Ass answer")
 }
 
-suspend fun<T> executeListOfAsyncFuncs2( lfuncs:lOfAsyncFuncs2<Unit> ):KResult3<Unit> {
+suspend fun<T> executeListOfAsyncFuncs2( lfuncs:lOfAsyncFuncs2<Unit> ):KResult<Unit> {
     var t = 1L
-    var rs:List<KResult3<Unit>> = emptyList()
+    var rs:List<KResult<Unit>> = emptyList()
     val pJ= CoroutineScope(IO+CoroutineName("asynclistfuncs"))
     KTimber("begin execute list of functions 1",KT.LEVEL.ENTERING)
     val j1=pJ.launch() {
@@ -278,22 +279,24 @@ suspend fun<T> executeListOfAsyncFuncs2( lfuncs:lOfAsyncFuncs2<Unit> ):KResult3<
 
     var OK=true
     rs.forEach {
-        when(it){
-            is KResult3.Success -> KTimber(it.msg())
-            is KResult3.Error->{ OK=false; KTimbere("Error KError3.msg  ${it.msg}")}
-        }
+        it.res.onSuccess {  KTimber("no se jo") }
+        it.res.onFailure {   OK=false; KTimbere("Error KError3.msg  ${it}")}
+        //when(it){
+        //    is KResult3.Success -> KTimber(it.msg())
+        //    is KResult3.Error->{ OK=false; KTimbere("Error KError3.msg  ${it.msg}")}
+        //}
     }
     KTimber("end execution list of functions ($t) ms ",KT.LEVEL.LEAVING)
-    if(OK) return KResult3.Success<Unit>(Unit,"executelist",t)
-    else return KResult3.Error("failed","executelist",t)
+    if(OK) return KResult(Result.success(Unit),t, sparams = "executelist")
+    else return KResult(Result.failure(Exception("xxxxx")),t, sparams = "vols dir?")
 }
 
 
 
-suspend fun executeListOfAsyncFuncs( lfuncs:lOfAsyncFuncs):KResult3<Unit> {
+suspend fun executeListOfAsyncFuncs( lfuncs:lOfAsyncFuncs):KResult<Unit> {
     var t = 1L
     var dif =1L
-    lateinit var R:KResult3<Unit>
+    lateinit var R:KResult<Unit>
     val pJ= CoroutineScope(IO+CoroutineName("asynclistfuncs"))
     Timber.d("begin execute list of functions 1")
     val j1=pJ.launch() {
@@ -302,36 +305,36 @@ suspend fun executeListOfAsyncFuncs( lfuncs:lOfAsyncFuncs):KResult3<Unit> {
             R=Ass(lfuncs)
 //            Timber.d("REALLYYYY GEORGE ???  ${R.timeInfo()}")
         }
-        dif=t-R.getclitime()
+        //dif=t-R.getclitime()
     }
     j1.join()
-    KTimber("end execution list of functions ($t) ms ass time = ${R.timeInfo()} time expended in Ass = ($dif)ms msg=${R.msg()} ",KT.LEVEL.LEAVING)
+    KTimber("end execution list of functions ($t) ms ass time = ${R.timeInfo()} time expended in Ass = ($dif)ms msg=${R} ",KT.LEVEL.LEAVING)
     // Timber.d("leaving executelistoffuncs ($t) ms")
-    R.setclitime(t)
+    //R.setclitime(t)
     return R
 }
 
-fun execBlockingLAF(lfuncs:lOfAsyncFuncs):KResult3<Unit> {
+fun execBlockingLAF(lfuncs:lOfAsyncFuncs):KResult<Unit> {
     return runBlocking {
         executeListOfAsyncFuncs(lfuncs)
     }
 }
 
 
-fun executeListOfAsyncFuncsZ( lfuncs:lOfAsyncFuncs):KResult3<Unit> {
+fun executeListOfAsyncFuncsZ( lfuncs:lOfAsyncFuncs):KResult<Unit> {
     var t = 1L
-    val R:KResult3<Unit>
+    val R:KResult<Unit>
      runBlocking(IO+CoroutineName("asynclistfuncs")) {
         Timber.d("begin execute list of functions")
         t= measureTimeMillis {
             R=Ass(lfuncs)
 //            Timber.d("REALLYYYY GEORGE ???  ${R.timeInfo()}")
         }
-        val dif=t-R.getclitime()
-        Timber.d("end execution list of functions ($t) ms ass time = ${R.timeInfo()} time expended in Ass = ($dif)ms msg=${R.msg()} ")
+        //val dif=t-R.getclitime()
+        Timber.d("end execution list of functions ($t) ms ass time = ${R.timeInfo()} time expended in Ass = (dif)ms msg={R.msg()} ")
     }
    // Timber.d("leaving executelistoffuncs ($t) ms")
-    R.setclitime(t)
+    //R.setclitime(t)
     return R
 }
 
@@ -340,4 +343,4 @@ fun executeListOfAsyncFuncsZ( lfuncs:lOfAsyncFuncs):KResult3<Unit> {
 
 
 
-//Max 204, 319,214
+//Max 204, 319,214, 343

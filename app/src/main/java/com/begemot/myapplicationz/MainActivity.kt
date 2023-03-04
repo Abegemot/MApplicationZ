@@ -604,17 +604,18 @@ fun testppt():String{
     var s=""
     gart.clientdate=d
     runBlocking {
-        when(val r=KNews().getUpdatedArticle(gart)){
-            is KResult3.Success->{
-                if(r.t.size==0) s="Succes: NO UPDATES size ${r.t.size}"
-                else {
-                    s="Succes UPDATES size ${r.t.size}"
-                    KCache.storeInCache(ah.nameFileArticle(), toJStr(r.t))
-                }
+        val res=KNews().getUpdatedArticle(gart)
+        res.res.onSuccess{
+            if(it.size==0) s="Succes: NO UPDATES size ${it.size}"
+            else {
+                s="Succes UPDATES size ${it.size}"
+                KCache.storeInCache(ah.nameFileArticle(), toJStr(it))
             }
-            is KResult3.Error->{s="Error: ${r.msg}"}
-
         }
+        res.res.onFailure {
+            s="Error: ${it.message}"
+        }
+
     }
 
     return ah.nameFileArticle()+" "+strfromdateasLong(d)+" $s"
@@ -683,7 +684,7 @@ fun displayError(sError: String, e: Exception? = null, sApp: StatusApp) {
     }
 }
 
-//Max val 664,726,754,720,737,668,774,658
+//Max val 664,726,754,720,737,668,774,658 691
 
 
 

@@ -24,7 +24,7 @@
                   <project path="H:/prg/KNewsClient" />
                 </projects>
               </build>
-              <build path="H:/prg/KNewsCommon" name="knewscommon">
+              <build path="H:/prg/KNewsCommon" name="KNewsCommon">
                 <projects>
                   <project path="H:/prg/KNewsCommon" />
                 </projects>

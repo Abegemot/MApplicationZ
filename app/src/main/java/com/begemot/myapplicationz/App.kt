@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Build
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.datastore.core.DataStore
@@ -23,6 +24,8 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import mu.KotlinLogging
+import org.slf4j.impl.HandroidLoggerAdapter
 
 import timber.log.Timber
 import java.lang.Exception
@@ -33,23 +36,31 @@ import kotlin.system.measureTimeMillis
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
+ val logger = KotlinLogging.logger {}
 
+ //cli 11:44.608 ERROR  [main] KClient.invoke->(KClient.kt:285) debug enabled
  class LineNumberDebugTree : Timber.DebugTree() {
     override fun createStackElementTag(element: StackTraceElement): String? {
         val s="NKZ [${Thread.currentThread().name}] (${element.fileName}:${element.lineNumber}) ${element.methodName}"
+
+        logger.warn { "$s (${element.fileName}:${element.lineNumber})"}
+        return "NKZ (${element.fileName}:${element.lineNumber}) ${element.methodName}"
+        return s
         val el=element.methodName
-        val len=20
+         val len=20
         var smethod =""
         if(el.length>len) {
             smethod="Method Name too long > $len"
         }else
-        smethod=el.padStart(20,'-')
+             smethod=el.padStart(20,'-')
         val st =if(Thread.currentThread().name[0]=='D') "DD${Thread.currentThread().name.substringAfter("DefaultDispatcher")}" else "${Thread.currentThread().name}"
         val bs="NKZ [$st] (${element.fileName}:${element.lineNumber})".padEnd(54,'-')
         return "${bs}${smethod}"
     }
 
  }
+
+
 
  class KT{
      enum class LEVEL{ENTERING,LEAVING,STAYING}
@@ -68,7 +79,7 @@ import kotlin.time.measureTimedValue
      if(level==KT.LEVEL.ENTERING) KT.i++
      if(level==KT.LEVEL.LEAVING)  KT.i--
      if(msg.isNotEmpty())
-     Timber.e("${"     ".repeat(KT.i)}$msg->")
+         Timber.e("${"     ".repeat(KT.i)}$msg->")
  }
 
 
@@ -82,6 +93,11 @@ import kotlin.time.measureTimedValue
       }
 
      override fun onCreate() {
+        //System.setProperty(org.slf4j.simple.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG")
+         HandroidLoggerAdapter.DEBUG = BuildConfig.DEBUG
+         HandroidLoggerAdapter.ANDROID_API_LEVEL = Build.VERSION.SDK_INT;
+         HandroidLoggerAdapter.APP_NAME = "NKZ" //"ZGB"
+
         super.onCreate()
         lcontext = applicationContext
 
@@ -90,7 +106,7 @@ import kotlin.time.measureTimedValue
             System.setProperty(kotlinx.coroutines.DEBUG_PROPERTY_NAME,"on")
             Timber.plant(LineNumberDebugTree())
         }
-        Timber.d("START ALL")
+        Timber.d("START ALL (App.kt:102)")
         //checkWifi(App.instance)
         KCache.fP= fPath
         //KCache.makeDir("MP3")
@@ -126,7 +142,7 @@ import kotlin.time.measureTimedValue
                     sApp.currentNewsPaper = sApp.vm.newsPapers.lNewsPapers[sApp.selectedNews]
                     sApp.vm.headLines.getLines(sApp, sApp.currentNewsPaper)
                     if(sApp.currentNewsPaper.kind==KindOfNews.BOOK)
-                    sApp.setCurrentScreen(Screens.FullArticleScreen(sApp.vm.headLines.getCurrentChapter()))
+                        sApp.setCurrentScreen(Screens.FullArticleScreen(sApp.vm.headLines.getCurrentChapter()))
                     if(sApp.currentNewsPaper.kind==KindOfNews.SONGS)
                         sApp.setCurrentScreen(Screens.SongScreen(sApp.vm.headLines.getCurrentChapter()))
                 }
@@ -176,10 +192,10 @@ import kotlin.time.measureTimedValue
      }
 
 suspend fun checkServerUpdates() {
+    //return
     Timber.d("CHECK FOR SERVER UPDATES current version=${sApp.vm.newsPapers.Npversion}")
     sApp.vm.viewModelScope.launch(IO + CoroutineName("POSTUPDATE")) {
         sApp.vm.newsPapers.checkUpdates(sApp, sApp.vm.newsPapers.Npversion)
-
     }
 }
 
@@ -191,9 +207,9 @@ suspend fun checkServerUpdates() {
          sApp.setMsg2("LOAD INSTALLATION")
 
          val p= executeListOfAsyncFuncs2<Unit>(listOf(toFN2<Unit>(sApp.vm.toneAndPitchMap::loadToneandPitch2 ),toFN2<Unit>(App.sApp.vm.newsPapers::getNewsPapers2)))
-         if(p is KResult3.Success) Timber.d("xEND ${p.msg()}  time (${p.clientTime}) ms ${p.t}")
-         if(p is KResult3.Error) {
-             Timber.e("END ${p.msg()}  time (${p.clientTime}) ms")
+         if(p.res.isSuccess) Timber.d("xEND ${p.logInfo()}  time (${p.timeInfo()}) ms ${p.res.getOrThrow()}")
+         if(p.res.isFailure) {
+             Timber.e("END ${p.logInfo()}  time (${p.timeInfo()}) ms")
              OK=false
          }
          if(OK){
@@ -357,4 +373,4 @@ suspend fun checkServerUpdates() {
     }
 }
 
-//Max 321,353,382,399,427,438,443,470, 549, 563, 313, 515,562, 366,387,403,420,535,540,367,351
+//Max 321,353,382,399,427,438,443,470, 549, 563, 313, 515,562, 366,387,403,420,535,540,367,351,376

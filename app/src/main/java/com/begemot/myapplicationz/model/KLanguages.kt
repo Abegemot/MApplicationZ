@@ -1,14 +1,10 @@
 package com.begemot.myapplicationz.model
 
-import com.begemot.knewscommon.KResult3
-import com.begemot.knewscommon.NewsPaperVersion
+import com.begemot.knewscommon.KResult
+import com.begemot.knewscommon.fromJStr
+import com.begemot.knewscommon.toJStr
 import com.begemot.myapplicationz.KCache
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 import timber.log.Timber
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
@@ -37,7 +33,8 @@ class KLAnguanges(){
             Timber.d("Save Tone and Pitch NOT CHANGED NOT SAVED")
             return
         }
-        val sAux= Json.encodeToString(langContainer.serializer(),langContainer("pse",lMap))
+        val sAux=toJStr(langContainer("pse",lMap))
+        //val sAux= Json.encodeToString(langContainer.serializer(),langContainer("pse",lMap))
         Timber.d(sAux)
         KCache.storeInCache("/$namefile",sAux)
         changed = false
@@ -50,8 +47,8 @@ class KLAnguanges(){
 
 
     @OptIn(ExperimentalTime::class)
-    suspend fun loadToneandPitch2():KResult3<Unit>{
-        //withContext(Dispatchers.IO) {
+    suspend fun loadToneandPitch2(): KResult<Unit> {
+        //withContex   t(Dispatchers.IO) {
         Timber.d("KLanguages load start $namefile")
 
         val np = measureTimedValue {
@@ -59,12 +56,15 @@ class KLAnguanges(){
             lMap=ss.lMap
             ss
         }
-        val result = if(np.value.lMap.isEmpty()) KResult3.Success(Unit,"empty loadToneAndPitch2",np.duration.inWholeMilliseconds)
-        else KResult3.Success(Unit,"loadToneAndPitch2",np.duration.inWholeMilliseconds)
+        KResult(Result.success(Unit),np.duration.inWholeMilliseconds, sparams = "empty loadToneAndPitch2")
+
+        val result = if(np.value.lMap.isEmpty())        KResult(Result.success(Unit),np.duration.inWholeMilliseconds, sparams = "empty loadToneAndPitch2")
+        //KResult3.Success(Unit,"empty loadToneAndPitch2",np.duration.inWholeMilliseconds)
+        else KResult(Result.success(Unit),np.duration.inWholeMilliseconds, sparams = "loadToneAndPitch2") //KResult3.Success(Unit,"loadToneAndPitch2",np.duration.inWholeMilliseconds)
         Timber.d("KLanguages end (${np.duration.inWholeMilliseconds}) ms")
         return result
         // delay(1000)
-        try {
+        /*try {
             val lp = KCache.loadStringFromCache(namefile)
             if (lp.length == 0) return KResult3.Success(Unit,"loadToneandPitch2",0)
             val ss = Json.decodeFromString<langContainer>(lp)
@@ -76,9 +76,9 @@ class KLAnguanges(){
             //Timber.d("KLanguages load end $namefile")
             Timber.e("KLanguages load exception ${e.message}")
             return KResult3.Error("loadToneandPitch2 error  ${e.message}","loadToneandPitch2")
-        }
-        //}
+        }*/
     }
+
 
     suspend fun loadToneandPitch(){
         //withContext(Dispatchers.IO) {
@@ -87,7 +87,8 @@ class KLAnguanges(){
             try {
                 val lp = KCache.loadStringFromCache(namefile)
                 if (lp.length == 0) return
-                val ss = Json.decodeFromString<langContainer>(lp)
+                //val ss = Json.decodeFromString<langContainer>(lp)
+                val ss= fromJStr<langContainer>(lp)
                 Timber.d("KLanguages load OK end $namefile")
                 lMap = ss.lMap
 
@@ -111,4 +112,4 @@ class KLAnguanges(){
     }
 }
 
-//Max 114
+//Max 114 118

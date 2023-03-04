@@ -64,49 +64,43 @@ class headLines() {
         sApp.currentStatus.value = AppStatus.Loading
         lHeadLines.value = lHeadLines.value.copy(lhl = emptyList())
         //delay(2000)
-
-        val resp = KProvider.getHeadLines(sApp.getHeadLineParameters())
-        when (resp) {
-            is KResult3.Success -> {
+        KProvider.getHeadLines(sApp.getHeadLineParameters())
+            .onSuccess {
                 sApp.currentStatus.value = AppStatus.Idle
-                lHeadLines.value = resp.t
-                Timber.d("getLines OK ${resp.timeInfo()} nHL.size=${resp.t.lhl.size}")
+                lHeadLines.value = it
+                Timber.d("getLines OK nHL.size=${it.lhl.size}")
                 //Timber.d(lHeadLines.value.lhl.print("getlines"))
                 currChapter.value=loadSelectedChapter(sApp)
                 if(sApp.currentNewsPaper.mutable){
-                       Timber.d("CHECK UPDATES")
-                       checkUpdates(sApp)
+                    Timber.d("CHECK UPDATES")
+                    checkUpdates(sApp)
                 }
             }
-            is KResult3.Error -> {
-                Timber.d("SERVER ERROR!!!")
+            .onFailure {
+                Timber.d("SERVER ERROR!!! : ${it}")
                 sApp.currentStatus.value =
-                    AppStatus.Error("getLines ERROR\n${resp.msg}", Exception(resp.msg))
+                    AppStatus.Error("getLines ERROR\n${it.message}", Exception(it.message))
             }
         }
-    }
 
     suspend fun checkUpdates(sApp: StatusApp)=withContext(Dispatchers.IO) {
         Timber.d("enter ${sApp.status()}")
         sApp.currentStatus.value = AppStatus.Loading
         val resp = KProvider.checkUpdates2(sApp.getHeadLineParameters())
-        when (resp) {
-            is KResult3.Success -> {
-                Timber.d("changes '${resp.t}'")
-                if (resp.t.datal != 0L) {
-                    lHeadLines.value = resp.t
-                    sApp.snack("Headlines Changed  !!")
-                    storeLastSelectedChapter(sApp,0) //?? Vols dir?
-                } //else sApp.snack("No new Headlines  !!")
-                sApp.currentStatus.value = AppStatus.Idle
-            }
-            is KResult3.Error -> {
-                Timber.d("Aresp error : ${resp.msg}")
-                sApp.currentStatus.value =
-                    AppStatus.Error("CHECK UPDATES ERROR\n${resp.msg}", Exception(resp.msg))
-            }
+        resp.res.onSuccess {
+            Timber.d("changes '${it}'")
+            if (it.datal != 0L) {
+                lHeadLines.value = it
+                sApp.snack("Headlines Changed  !!")
+                storeLastSelectedChapter(sApp,0) //?? Vols dir?
+            } //else sApp.snack("No new Headlines  !!")
+            sApp.currentStatus.value = AppStatus.Idle
+        }
+        resp.res.onFailure {
+            Timber.d("Aresp error : ${resp.logInfo()}")
+            sApp.currentStatus.value =
+                AppStatus.Error("CHECK UPDATES ERROR\n${resp.logInfo()}", Exception(resp.logInfo()))
         }
     }
 }
-
-//Max 108
+//Max 108 112 141 106

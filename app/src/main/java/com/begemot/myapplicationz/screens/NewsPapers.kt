@@ -51,6 +51,7 @@ fun newsPapersScreen(sApp: StatusApp) {
         is AppStatus.Idle -> draw_newsPapers(sApp)
         is AppStatus.Error -> displayError(status.sError, status.e, sApp)
         is AppStatus.Loading -> {}
+        else -> {}
     }
 }
 
@@ -79,7 +80,7 @@ fun draw_newsPapers(sApp: StatusApp) {
                 //shape = RoundedCornerShape(8.dp),
                 //elevation = 7.dp,
                 onClik = {
-                    Timber.w("on click going Headlines Screen with: $it")
+                     Timber.w("on click going Headlines Screen with: $it")
                     sApp.currentScreen.value = Screens.HeadLinesScreen
                     sApp.currentBackScreen = Screens.NewsPapersScreen
                     sApp.currentNewsPaper = it

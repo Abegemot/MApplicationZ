@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.begemot.knewscommon.OriginalTransLink
@@ -31,6 +32,7 @@ import com.begemot.myapplicationz.R
 import com.begemot.myapplicationz.layout.DrawText
 import com.begemot.myapplicationz.layout.ListModifier
 import com.begemot.myapplicationz.layout.myCard2
+import com.google.firebase.annotations.PreviewApi
 import timber.log.Timber
 
 
@@ -54,6 +56,12 @@ fun headlinesScreen(sApp: StatusApp) {
         is AppStatus.Refreshing -> {}
     }
 //    Timber.d("<- ${status.toString()}")
+}
+
+@Preview
+@Composable
+fun Pepe(){
+    Text("Hola")
 }
 
 
