@@ -16,8 +16,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.viewModelScope
 import com.begemot.knewscommon.KindOfNews
 import com.begemot.myapplicationz.App.Companion.sApp
-import com.begemot.myapplicationz.PreferencesNEW.TT.stringToPrefKey
-
+import com.google.android.play.core.ktx.BuildConfig
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.Flow
@@ -25,7 +24,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import mu.KotlinLogging
 import org.slf4j.impl.HandroidLoggerAdapter
-
+//import org.slf4j.impl.HandroidLoggerAdapter
 import timber.log.Timber
 import java.lang.Exception
 import java.util.*
@@ -37,52 +36,15 @@ import kotlin.time.measureTimedValue
 
  val logger = KotlinLogging.logger {}
 
- //cli 11:44.608 ERROR  [main] KClient.invoke->(KClient.kt:285) debug enabled
+ //cli 11:44.608 ERROR  [main] KClient.invoke->(KClient.kt:285) debug   enabled
  class LineNumberDebugTree : Timber.DebugTree() {
     override fun createStackElementTag(element: StackTraceElement): String? {
-        val s="NKZ [${Thread.currentThread().name}] (${element.fileName}:${element.lineNumber}) ${element.methodName}"
-
-        logger.warn { "$s (${element.fileName}:${element.lineNumber})"}
-        return "NKZ (${element.fileName}:${element.lineNumber}) ${element.methodName}"
-        return s
-        val el=element.methodName
-         val len=20
-        var smethod =""
-        if(el.length>len) {
-            smethod="Method Name too long > $len"
-        }else
-             smethod=el.padStart(20,'-')
         val st =if(Thread.currentThread().name[0]=='D') "DD${Thread.currentThread().name.substringAfter("DefaultDispatcher")}" else "${Thread.currentThread().name}"
-        val bs="NKZ [$st] (${element.fileName}:${element.lineNumber})".padEnd(54,'-')
-        return "${bs}${smethod}"
+        val s="NKZ [$st] (${element.fileName}:${element.lineNumber}) ${element.methodName}"
+        return s
     }
-
  }
-
-
-
- class KT{
-     enum class LEVEL{ENTERING,LEAVING,STAYING}
-     companion object{
-         var i:Int=0
-     }
- }
-
- inline fun KTimber(msg:String,level: KT.LEVEL=KT.LEVEL.STAYING){
-     if(level==KT.LEVEL.ENTERING) KT.i++
-     if(level==KT.LEVEL.LEAVING)  KT.i--
-     if(KT.i==-1) KT.i=0
-     Timber.d("${"     ".repeat(KT.i)}->$msg")
- }
- inline fun KTimbere(msg:String="",level: KT.LEVEL=KT.LEVEL.STAYING){
-     if(level==KT.LEVEL.ENTERING) KT.i++
-     if(level==KT.LEVEL.LEAVING)  KT.i--
-     if(msg.isNotEmpty())
-         Timber.e("${"     ".repeat(KT.i)}$msg->")
- }
-
-
- class App:Application(){
+  class App:Application(){
 
       companion object{
          lateinit var lcontext: Context
@@ -198,7 +160,6 @@ suspend fun checkServerUpdates() {
     }
 }
 
-     @OptIn(ExperimentalTime::class)
      suspend fun LoadInstalation():Boolean{
          //delay(3000)
          Timber.e("BEGIN LOAD INSTALLATION !!!!!")
@@ -206,9 +167,9 @@ suspend fun checkServerUpdates() {
          sApp.setMsg2("LOAD INSTALLATION")
 
          val p= executeListOfAsyncFuncs2<Unit>(listOf(toFN2<Unit>(sApp.vm.toneAndPitchMap::loadToneandPitch2 ),toFN2<Unit>(App.sApp.vm.newsPapers::getNewsPapers2)))
-         if(p.res.isSuccess) Timber.d("xEND ${p.logInfo()}  time (${p.timeInfo()}) ms ${p.res.getOrThrow()}")
+         if(p.res.isSuccess) Timber.d("xEND ${p.logInfo()}")
          if(p.res.isFailure) {
-             Timber.e("END ${p.logInfo()}  time (${p.timeInfo()}) ms")
+             Timber.e("END ${p.logInfo()}")
              OK=false
          }
          if(OK){
@@ -227,12 +188,13 @@ suspend fun checkServerUpdates() {
 
 
 
+
  @OptIn(ExperimentalTime::class)
  fun createsApp():StatusApp{
      val ss:StatusApp
      val t= measureTimeMillis {
          runBlocking(IO) {
-             Timber.d("init sApp")
+              Timber.d("init sApp")
              val prefs:KNewsPrefs //=KNewsPrefs()
              val tm= measureTimedValue {
                  prefs = PreferencesNEW.newPrefsFlow.first()
@@ -322,7 +284,6 @@ suspend fun checkServerUpdates() {
     companion object TT{
         val newPrefsFlow: Flow<KNewsPrefs> =    App.lcontext.dataStore.data
             .map { preferences ->
-                Timber.e("newprefsflow")
                 val selectedNews=preferences[PrefKeys.SELECTEDNEWS]?:-1
                 val userid=preferences[PrefKeys.USERID]?:""
                 val fontsize=preferences[PrefKeys.FONTSIZE]?: 20

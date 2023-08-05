@@ -9,7 +9,7 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.lang.Exception
+import kotlin.Exception
 import kotlin.time.measureTimedValue
 
 class headLines() {
@@ -64,22 +64,21 @@ class headLines() {
         sApp.currentStatus.value = AppStatus.Loading
         lHeadLines.value = lHeadLines.value.copy(lhl = emptyList())
         //delay(2000)
-        KProvider.getHeadLines(sApp.getHeadLineParameters())
-            .onSuccess {
-                sApp.currentStatus.value = AppStatus.Idle
-                lHeadLines.value = it
-                Timber.d("getLines OK nHL.size=${it.lhl.size}")
-                //Timber.d(lHeadLines.value.lhl.print("getlines"))
-                currChapter.value=loadSelectedChapter(sApp)
-                if(sApp.currentNewsPaper.mutable){
-                    Timber.d("CHECK UPDATES")
-                    checkUpdates(sApp)
+        val resa=KProvider.getHeadLines(sApp.getHeadLineParameters())
+                resa.res.onSuccess {
+                    sApp.currentStatus.value = AppStatus.Idle
+                    lHeadLines.value = it
+                    Timber.d("getLines OK nHL.size=${it.lhl.size}")
+                    currChapter.value=loadSelectedChapter(sApp)
+                    if(sApp.currentNewsPaper.mutable){
+                        Timber.d("CHECK UPDATES")
+                        checkUpdates(sApp)
+                    }
                 }
-            }
-            .onFailure {
-                Timber.d("SERVER ERROR!!! : ${it}")
-                sApp.currentStatus.value =
-                    AppStatus.Error("getLines ERROR\n${it.message}", Exception(it.message))
+                .onFailure {
+                    Timber.d("SERVER ERROR!!! : ${it}")
+                    sApp.currentStatus.value =
+                    AppStatus.Error("getLines ERROR\n${resa.logInfo()}", it as Exception)
             }
         }
 

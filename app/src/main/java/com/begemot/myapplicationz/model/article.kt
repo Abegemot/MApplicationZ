@@ -28,7 +28,10 @@ class BookMark2(){
         if(bkMap[i]==null) bkMap[i]=i
         else bkMap.remove(i)
         KCache.storeInCache(q.nameFileBooMarksAndLast()+".BKM",
-            kjson.encodeToString(BookMark2.serializer(),this))
+            //kjson.encodeToString(BookMark2.serializer(),this)
+            toJStr(bkMap)
+        )
+
     }
     fun isBookMark(i:Int):Boolean{
         if(bkMap[i]==null) return false

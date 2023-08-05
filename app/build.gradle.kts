@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  plugins {
      id("com.android.application")
      kotlin("android")
-     kotlin("plugin.serialization") version "1.7.20"
+     kotlin("plugin.serialization") version "1.9.0"
      id("com.google.gms.google-services")
      id("com.google.firebase.crashlytics")
 
@@ -18,6 +18,7 @@ android {
             keyPassword = "edmund"
         }
     }
+    namespace = "com.begemot.myapplicationz"
     compileSdk =33
         defaultConfig {
         applicationId="com.begemot.myapplicationz"
@@ -45,7 +46,7 @@ android {
         }
 
     }
-    packagingOptions {
+    packaging {
         resources.excludes.add("META-INF/NOTICE.md")
         resources.excludes.add("META-INF/LICENSE.md")
         resources.excludes.add("META-INF/INDEX.LIST")  //?
@@ -55,8 +56,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11 //JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_11//JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
     composeOptions {
         //kotlinCompilerVersion = "1.3.61-dev-withExperimentalGoogleExtensions-20200129"
@@ -64,7 +65,7 @@ android {
         //kotlinCompilerVersion="1.4.0-dev-withExperimentalGoogleExtensions-20200720"
        // kotlinCompilerVersion="1.4.21-2"
        //  kotlinCompilerExtensionVersion = "1.0.5"
-        kotlinCompilerExtensionVersion = "1.3.2" //1.2.0"//""1.1.1"
+        kotlinCompilerExtensionVersion = "1.5.1"//"1.4.7" //1.2.0"//""1.1.1"
     }
 
 
@@ -141,14 +142,14 @@ android {
 
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2023.01.00")
+    val composeBom = platform("androidx.compose:compose-bom:2023.06.01")
     implementation (composeBom)
     androidTestImplementation(composeBom)
 
 
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(platform("com.begemota:sharedlibrary"))
-    implementation(platform("com.google.firebase:firebase-bom:31.2.3"))
+    implementation(platform("com.google.firebase:firebase-bom:32.2.2"))
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-crashlytics-ktx")
 
@@ -196,8 +197,12 @@ dependencies {
     //implementation("ch.qos.logback:logback-classic")
     //implementation("ch.qos.logback:logback-core:1.4.5")
 
+    //implementation("io.github.microutils:kotlin-logging:3.0.5")
     //implementation("com.github.tony19:logback-android:2.0.1")
+    //implementation("org.slf4j:slf4j-android:1.7.36")
     //implementation("org.slf4j:slf4j-api:1.7.36")
+    //implementation( "ch.qos.logback:logback-classic")
+    //
 
     //api("microutils:kotlin.logging:1.2.1")
     //api("io.github.microutils:kotlin-logging:1.3")
@@ -206,7 +211,7 @@ dependencies {
    // implementation( "ch.qos.logback:logback-classic") //necesari
     //implementation("org.slf4j:slf4j-android:1.7.21")
     //implementation("org.slf4j:slf4j-simple:2.0.6")
-    implementation("com.gitlab.mvysny.slf4j:slf4j-handroid:2.0.4")
+          implementation("com.gitlab.mvysny.slf4j:slf4j-handroid:2.0.4")
     //implementation("org.slf4j:slf4j-api:2.0.6")
     //testImplementation("junit:junit")
     //androidTestImplementation("androidx.test.ext:junit")

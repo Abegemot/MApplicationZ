@@ -1,6 +1,7 @@
 package com.begemot.myapplicationz
 
 import androidx.lifecycle.viewModelScope
+import com.google.android.play.core.ktx.BuildConfig
 
 import kotlinx.coroutines.*
 import timber.log.Timber

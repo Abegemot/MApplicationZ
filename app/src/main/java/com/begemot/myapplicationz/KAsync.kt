@@ -123,11 +123,9 @@ suspend fun execZ(msg:String, sc: CoroutineScope, afun:suspend ()->Unit){
 
 suspend fun KLauncher2(name:String,cs:CoroutineScope,afun: suspend () -> Unit){
     cs.launch(CoroutineName("KlauncherA")) {
-        KTimber("start job $name")
         val t= measureTimeMillis {
             afun()
         }
-        KTimber("end job $name computed in (${t}) ms")
     }
     //j.join()  // Noooorrrr or paralelisme will be destroyed!!
 }
@@ -135,11 +133,9 @@ suspend fun KLauncher2(name:String,cs:CoroutineScope,afun: suspend () -> Unit){
 
 suspend fun KLauncher(name:String,cs:CoroutineScope,afun: suspend () -> Unit){
     cs.launch(CoroutineName("KlauncherA")) {
-            KTimber("start job $name")
             val t= measureTimeMillis {
                 afun()
             }
-            KTimber("end job $name computed in (${t}) ms")
         }
     //j.join()  // Noooorrrr or paralelisme will be destroyed!!
 }
@@ -211,14 +207,14 @@ suspend fun<T> Ass2(lfuncs:lOfAsyncFuncs2<Unit>):List<KResult<T>> {
     }
     j1.invokeOnCompletion { throwable->
         if (throwable != null) {
-            KTimbere("ASS ERROR: ${throwable}")
+            Timber.e("ASS ERROR: ${throwable}")
         }
         //KTimber("ASS FULLFITED")
     }
     val rr= measureTimeMillis {
         j1.join()
     }
-    KTimber("JOIN TIME=$rr  AWAIT TIME = ($t) ms",KT.LEVEL.LEAVING)
+    Timber.d("JOIN TIME=$rr  AWAIT TIME = ($t) ms")
 
     return x as List<KResult<T>>
 }
@@ -228,13 +224,11 @@ suspend fun Ass(lfuncs:lOfAsyncFuncs):KResult<Unit> {
 
 //    Timber.d("ENTERING ASS")
     val scope = CoroutineScope(IO+CoroutineName("ASS"))
-    KTimber("LAUNCHING ASS")
+    Timber.d("LAUNCHING ASS")
     var kr:KResult<Unit>
     var t=0L
     val j1=scope.launch(eHandler) {
         //Timber.d(FDebug("ENTERING INNER ASS"))
-        KTimber("ENTERING INNER ASS",KT.LEVEL.ENTERING)
-        KTimber("",KT.LEVEL.ENTERING)
         var ls: String = ""
         val kt = KTimer()
         t = measureTimeMillis {
@@ -248,18 +242,18 @@ suspend fun Ass(lfuncs:lOfAsyncFuncs):KResult<Unit> {
             //    kr=KResult3.Error("Ass error from '$ls()' = ${e}", kt.getElapsed())
             }
         }
-        KTimber("LEAVING INNER ASS WAITING FOR JOIN")
+        Timber.d("LEAVING INNER ASS WAITING FOR JOIN")
     }
     j1.invokeOnCompletion { throwable->
         if (throwable != null) {
-            KTimbere("ASS ERROR: ${throwable}")
+            Timber.e("ASS ERROR: ${throwable}")
         }
-        KTimber("ASS FULLFITED")
+        Timber.d("ASS FULLFITED")
      }
     val rr= measureTimeMillis {
         j1.join()
     }
-    KTimber("JOIN TIME=$rr  LEAVING ASS TIME IN ASS = ($t) ms",KT.LEVEL.LEAVING)
+    Timber.d("JOIN TIME=$rr  LEAVING ASS TIME IN ASS = ($t) ms")
 
     return KResult(Result.success(Unit),t,0,"Ass answer")
 }
@@ -268,7 +262,7 @@ suspend fun<T> executeListOfAsyncFuncs2( lfuncs:lOfAsyncFuncs2<Unit> ):KResult<U
     var t = 1L
     var rs:List<KResult<Unit>> = emptyList()
     val pJ= CoroutineScope(IO+CoroutineName("asynclistfuncs"))
-    KTimber("begin execute list of functions 1",KT.LEVEL.ENTERING)
+    Timber.d("begin execute list of functions 1")
     val j1=pJ.launch() {
         t= measureTimeMillis {
              rs=Ass2<Unit>(lfuncs)
@@ -278,14 +272,10 @@ suspend fun<T> executeListOfAsyncFuncs2( lfuncs:lOfAsyncFuncs2<Unit> ):KResult<U
 
     var OK=true
     rs.forEach {
-        it.res.onSuccess {  KTimber("no se jo") }
-        it.res.onFailure {   OK=false; KTimbere("Error KError3.msg  ${it}")}
-        //when(it){
-        //    is KResult3.Success -> KTimber(it.msg())
-        //    is KResult3.Error->{ OK=false; KTimbere("Error KError3.msg  ${it.msg}")}
-        //}
+
+        it.res.onFailure {   OK=false; Timber.e("Error KError3.msg  ${it}")}
     }
-    KTimber("end execution list of functions ($t) ms ",KT.LEVEL.LEAVING)
+    Timber.d("end execution list of functions ($t) ms ")
     if(OK) return KResult(Result.success(Unit),t, sparams = "executelist")
     else return KResult(Result.failure(Exception("xxxxx")),t, sparams = "vols dir?")
 }
@@ -299,7 +289,7 @@ suspend fun executeListOfAsyncFuncs( lfuncs:lOfAsyncFuncs):KResult<Unit> {
     val pJ= CoroutineScope(IO+CoroutineName("asynclistfuncs"))
     Timber.d("begin execute list of functions 1")
     val j1=pJ.launch() {
-        KTimber("begin execute list of functions 2",KT.LEVEL.ENTERING)
+        Timber.d("begin execute list of functions 2")
         t= measureTimeMillis {
             R=Ass(lfuncs)
 //            Timber.d("REALLYYYY GEORGE ???  ${R.timeInfo()}")
@@ -307,7 +297,7 @@ suspend fun executeListOfAsyncFuncs( lfuncs:lOfAsyncFuncs):KResult<Unit> {
         //dif=t-R.getclitime()
     }
     j1.join()
-    KTimber("end execution list of functions ($t) ms ass time = ${R.timeInfo()} time expended in Ass = ($dif)ms msg=${R} ",KT.LEVEL.LEAVING)
+    Timber.d("end execution list of functions ($t) ms ass time = ${R.timeInfo()} time expended in Ass = ($dif)ms msg=${R} ")
     // Timber.d("leaving executelistoffuncs ($t) ms")
     //R.setclitime(t)
     return R

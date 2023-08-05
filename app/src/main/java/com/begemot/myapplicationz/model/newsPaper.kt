@@ -43,27 +43,6 @@ class NewsPapers() {
         Timber.d("iner time ($t) ms")
         return nr
     }
-
-
-    suspend fun getNewsPapers(){
-        //delay(50)
-        //sApp.currentStatus.value = AppStatus.Idle
-        val t= measureTimeMillis {
-            //val np = KProvider.getNewsPapers()
-            val nP=KProvider.getNewsPapers()
-            nP.res.onSuccess {
-                newsPapers=it
-                Timber.d("OK getNewsPapers = provider time ${nP.timeInfo()} ${it.toString().substring(0,50)}")
-            }
-            .onFailure {
-                Timber.e("2 resp error  : exception -> ${nP.logInfo()}")
-                sApp.currentStatus.value = AppStatus.Error("getLocalNewsPapers Error: ${it}", null)
-            }
-        }
-        Timber.d("iner time ($t) ms")
-        return
-    }
-
     suspend fun checkUpdates(sApp: StatusApp, version:Int=0): Boolean {
         val nP=KProvider.getNewsPapersUpdates(version)//sApp.vm.newsPapers.Npversion)
         if(nP.res.isSuccess){

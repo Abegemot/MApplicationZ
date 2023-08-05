@@ -5,10 +5,10 @@
 >
     <appender name="logcat" class="ch.qos.logback.classic.android.LogcatAppender">
         <tagEncoder>
-            <pattern>%logger{12}</pattern>
+            <pattern>%NKZ{12}</pattern>
         </tagEncoder>
         <encoder>
-            <pattern>ZORGLUB[%-20thread] %msg</pattern>
+            <pattern>NKZ[%-20thread] %msg</pattern>
         </encoder>
     </appender>
 

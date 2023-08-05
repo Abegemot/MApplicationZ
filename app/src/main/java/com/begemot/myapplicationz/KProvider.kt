@@ -155,7 +155,7 @@ object KProvider {
     }
 
     @OptIn(ExperimentalTime::class)
-    suspend fun getHeadLines(getHeadLines: GetHeadLines): Result<THeadLines> {
+    suspend fun getHeadLines(getHeadLines: GetHeadLines): KResult<THeadLines> {
         val nameFile = getHeadLines.AndroidNameFile()
         val (hl, time) = measureTimedValue {
             KCache.load<THeadLines>(nameFile)
@@ -163,12 +163,13 @@ object KProvider {
         if (hl.lhl.isNotEmpty()) {
             Timber.d("Found in cache in (${time.inWholeMilliseconds}) ms")
 //            Timber.d(toJStr(hl.lhl))
-            return Result.success(hl)  //KResult3.Success(hl,"localHeadLines",time.inWholeMilliseconds)
+            return KResult<THeadLines>(Result.success(hl),-1,time.inWholeMilliseconds,"","")
+            //return  //KResult3.Success(hl,"localHeadLines",time.inWholeMilliseconds)
         }
         val z= KNews().getHeadLines(getHeadLines)
         z.res.onSuccess {  KCache.storeInCache(nameFile, toJStr(it)) }
         .onFailure {}
-        return z.res
+        return z
     }
 
     suspend fun checkUpdates2(ghl:GetHeadLines): KResult<THeadLines> {

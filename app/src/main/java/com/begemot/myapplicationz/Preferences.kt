@@ -41,6 +41,7 @@ import com.begemot.knewscommon.GetHeadLines
 
 
 import com.begemot.myapplicationz.App.Companion.sApp
+import com.google.android.play.core.ktx.BuildConfig
 import kotlinx.coroutines.launch
 
 import timber.log.Timber
